@@ -31,7 +31,8 @@ export const removePhotoCascade = (db, photoId) => {
   dropNotifications(db, (n) => n.targetId === photoId)
 }
 
-export const postsService = {
+// Posts for the local demo backend. Same interface as posts.supabase.js.
+export const localPostsService = {
   /** Friends' activity (and your own), newest first. No strangers, no ranking. */
   async getFeed({ before = null } = {}) {
     await latency()

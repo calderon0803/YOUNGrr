@@ -21,7 +21,8 @@ const resolveTarget = (db, me, targetType, targetId) => {
   return photoOwnerIds(db, photo)
 }
 
-export const interactionsService = {
+// Grr and comments for the local demo backend. Same interface as interactions.supabase.js.
+export const localInteractionsService = {
   /**
    * Makes (value = true) or removes (value = false) a Grr. Idempotent: the
    * unique (user, target) constraint means repeating it never duplicates.

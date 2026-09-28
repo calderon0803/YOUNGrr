@@ -88,3 +88,52 @@ export const fromSettings = (settings) => ({
   theme: settings.appearance.theme,
   nearby_radius_km: settings.nearby.radiusKm,
 })
+
+const toSummary = (json) => ({
+  id: json.id,
+  firstName: json.first_name,
+  lastName: json.last_name,
+  avatarUrl: json.avatar_url ?? null,
+})
+
+/** @returns {import('@/types/models').CommentView} */
+export const toComment = (json) => ({
+  id: json.id,
+  targetType: json.target_type,
+  targetId: json.target_id,
+  authorId: json.author_id,
+  text: json.text,
+  createdAt: json.created_at,
+  author: toSummary(json.author),
+})
+
+/**
+ * @param {object} json post_json() from the database
+ * @param {Record<string, string>} urls signed URLs by Storage path
+ * @returns {import('@/types/models').PostView}
+ */
+export const toPost = (json, urls = {}) => ({
+  id: json.id,
+  authorId: json.author_id,
+  text: json.text,
+  photoId: json.photo_id,
+  createdAt: json.created_at,
+  updatedAt: json.updated_at,
+  author: toSummary(json.author),
+  photo: json.photo
+    ? {
+        id: json.photo.id,
+        url: urls[json.photo.storage_path] ?? null,
+        width: json.photo.width,
+        height: json.photo.height,
+        albumId: json.photo.album_id,
+      }
+    : null,
+  grrCount: json.grr_count,
+  hasGrr: json.has_grr,
+  grrBy: json.grr_by.map(toSummary),
+  commentCount: json.comment_count,
+  comments: json.comments.map(toComment),
+})
+
+export { toSummary }

@@ -6,6 +6,9 @@ export const SUPABASE = {
   anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
 }
 
+/** Private photos are served through signed URLs valid for this long. */
+export const PHOTO_URL_TTL_S = 60 * 60
+
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
   db: 'youngrr:db:v11',

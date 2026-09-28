@@ -6,7 +6,7 @@ algoritmos, tendencias ni contenido de desconocidos.
 
 La interacción propia de YOUNGrr es **Grr**: el equivalente a "me gusta", con más actitud.
 Es binaria (haces Grr o lo quitas), única por persona y contenido, y funciona en
-estados, fotos subidas y fotografías.
+estados y fotografías. Los avisos de «ha subido N fotos» son solo informativos.
 
 ## Arrancar
 

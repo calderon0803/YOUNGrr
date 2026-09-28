@@ -11,9 +11,9 @@
 /** Stored notification groups, in display order. `list` is where visiting clears them. */
 export const STORED_GROUPS = [
   { key: 'wall', types: ['wall_message'], pref: 'comments', one: 'mensaje nuevo en tu tablón', many: 'mensajes nuevos en tu tablón', single: 'wall', list: 'wall' },
-  { key: 'comments_posts', types: ['comment_post'], pref: 'comments', one: 'comentario nuevo en tu actividad', many: 'comentarios nuevos en tu actividad', single: 'post', list: 'posts' },
+  { key: 'comments_posts', types: ['comment_post'], pref: 'comments', one: 'comentario nuevo en tu estado', many: 'comentarios nuevos en tu estado', single: 'post', list: 'posts' },
   { key: 'comments_photos', types: ['comment_photo'], pref: 'comments', one: 'comentario nuevo en tus fotos', many: 'comentarios nuevos en tus fotos', single: 'photo', list: 'photos' },
-  { key: 'grr_posts', types: ['grr_post'], pref: 'grr', one: 'Grr nuevo en tu actividad', many: 'Grr nuevos en tu actividad', single: 'post', list: 'posts' },
+  { key: 'grr_posts', types: ['grr_post'], pref: 'grr', one: 'Grr nuevo en tu estado', many: 'Grr nuevos en tu estado', single: 'post', list: 'posts' },
   { key: 'grr_photos', types: ['grr_photo'], pref: 'grr', one: 'Grr nuevo en tus fotos', many: 'Grr nuevos en tus fotos', single: 'photo', list: 'photos' },
   { key: 'tags', types: ['photo_tag'], pref: 'tags', one: 'etiqueta nueva en fotos', many: 'etiquetas nuevas en fotos', single: 'photo', list: 'tagged' },
   { key: 'owners_accepted', types: ['photo_owner_accepted'], pref: 'tags', one: 'amigo ha aceptado compartir tu foto', many: 'amigos han aceptado compartir tus fotos', single: 'photo', list: 'photos' },
@@ -80,7 +80,7 @@ const storedGroups = (me, unread) =>
       pref: group.pref,
       count: items.length,
       label: pick(items.length, group.one, group.many),
-      // Your status and photo uploads have no list page: go to the newest one.
+      // Your status has no list page: go to the newest one.
       link: targets.length === 1 || group.single === 'post' ? singleLink(me, group.single, targets[0]) : listLink(me, group.list),
     }
   })

@@ -51,9 +51,11 @@ const post = computed(() => feed.posts[props.postId])
 const isOwn = computed(() => post.value?.authorId === auth.meId)
 const isAlbumUpload = computed(() => post.value?.kind === 'album_upload')
 // An album upload whose photos were all deleted has nothing left to show.
+// Only statuses take Grr and comments; photo uploads just tell there are new photos.
+const interactive = computed(() => !props.compact && !isAlbumUpload.value)
 const isVisible = computed(() => post.value && (!isAlbumUpload.value || post.value.photos.length > 0))
 const titleId = computed(() => `post-${props.postId}-title`)
-const showComments = computed(() => !props.compact && (commenting.value || (post.value?.commentCount ?? 0) > 0))
+const showComments = computed(() => interactive.value && (commenting.value || (post.value?.commentCount ?? 0) > 0))
 const uploadLabel = computed(() => {
   const n = post.value?.photoTotal ?? 0
   const label = n === 1 ? 'ha subido una foto al álbum' : `ha subido ${n} fotos al álbum`
@@ -79,7 +81,7 @@ const onMenu = async (key) => {
     const ok = await confirm({
       title: isAlbumUpload.value ? 'Quitar de las novedades' : 'Borrar tu estado',
       message: isAlbumUpload.value
-        ? 'Las fotos siguen en el álbum. Se eliminarán los comentarios y Grr de esta novedad.'
+        ? 'Las fotos siguen en el álbum; solo desaparece el aviso de que las has subido.'
         : 'Se eliminarán también sus comentarios y Grr. No se puede deshacer.',
       confirmLabel: 'Eliminar',
       danger: true,
@@ -135,7 +137,7 @@ const comment = async () => {
           <RelativeTime :value="post.createdAt" />
         </RouterLink>
         <span v-if="placeLabel" class="item__sep">{{ placeLabel }}</span>
-        <span v-if="!compact" class="item__sep">
+        <span v-if="interactive" class="item__sep">
           <GrrButton
             compact
             :active="post.hasGrr"
@@ -146,7 +148,7 @@ const comment = async () => {
           />
           <button v-if="post.grrCount" type="button" class="item__link" @click="showGrrers = true">quién</button>
         </span>
-        <span v-if="!compact" class="item__sep">
+        <span v-if="interactive" class="item__sep">
           <button type="button" class="item__link" :aria-expanded="showComments" @click="comment">
             Comentar<template v-if="post.commentCount"> ({{ post.commentCount }})</template>
           </button>

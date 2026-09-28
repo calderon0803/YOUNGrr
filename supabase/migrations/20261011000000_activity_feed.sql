@@ -33,6 +33,43 @@ drop function if exists nearby_posts(int, timestamptz, int);
 drop function if exists hide_post(uuid, boolean);
 drop function if exists posts_page(uuid[]);
 
+-- ---- Only statuses take Grr and comments ---------------------------------------------
+-- "Ha subido N fotos" items only tell that there are new photos; each photo has
+-- its own Grr and comments.
+
+delete from notifications n
+where n.type in ('grr_post', 'comment_post')
+  and exists (select 1 from posts p where p.id = n.target_id and p.kind = 'album_upload');
+delete from grrs g where exists (select 1 from posts p where p.id = g.post_id and p.kind = 'album_upload');
+delete from comments c where exists (select 1 from posts p where p.id = c.post_id and p.kind = 'album_upload');
+
+-- Checks the viewer can see the target and returns its owners.
+create or replace function yg_target_owners(me uuid, target_type text, target uuid) returns uuid[]
+language plpgsql stable security definer set search_path = public as $$
+declare
+  po posts;
+begin
+  if target_type = 'post' then
+    select * into po from posts where id = target;
+    if po.id is null then raise exception 'yg:not_found:Este estado ya no existe.'; end if;
+    if not can_view_post(me, po.author_id) then raise exception 'yg:forbidden:No puedes ver este estado.'; end if;
+    if po.kind <> 'status' then raise exception 'yg:forbidden:Solo los estados admiten Grr y comentarios.'; end if;
+    return array[po.author_id];
+  elsif target_type = 'photo' then
+    if not exists (select 1 from photos where id = target) then raise exception 'yg:not_found:Esta fotografía ya no existe.'; end if;
+    if not can_view_photo(me, target) then raise exception 'yg:forbidden:No puedes ver esta fotografía.'; end if;
+    return (
+      select array_agg(u) from (
+        select owner_id as u from photos where id = target
+        union
+        select user_id from photo_owners where photo_id = target and status = 'accepted'
+      ) owners
+    );
+  end if;
+  raise exception 'yg:validation:Tipo de contenido no válido.';
+end;
+$$;
+
 -- ---- Status ----------------------------------------------------------------------------
 
 -- The new status replaces the previous one (with its comments and Grr).

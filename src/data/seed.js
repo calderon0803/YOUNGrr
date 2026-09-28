@@ -236,14 +236,10 @@ export const buildSeed = () => {
 
   C('post', 'p_estado-carlos', 'ana', 'Ahí estaré!!', ago({ d: 5 }))
   C('post', 'p_estado-carlos', 'pablo', 'Llevo yo el postre', ago({ m: 30 }))
-  C('post', 'p_up-lisboa', 'laura', 'Traedme pastéis de nata o no volváis', ago({ h: 18 }))
-  C('post', 'p_up-lisboa', 'sara', 'Qué envidia!! Pasadlo genial', ago({ h: 12 }))
   C('post', 'p_estado-pablo', 'javi', 'Cuenta conmigo', ago({ h: 3, m: 40 }))
   C('post', 'p_estado-pablo', 'carlos', 'Yo voy, pero de defensa que la última vez...', ago({ h: 3 }))
   C('post', 'p_estado-sara', 'laura', 'Ahí estaremos!!', ago({ d: 1 }))
   C('post', 'p_estado-javi', 'carlos', 'Máquina. El año que viene la media maratón', ago({ d: 1, h: 2 }))
-  C('post', 'p_up-piso', 'ana', 'Qué piso más bonito', ago({ d: 3, h: 22 }))
-  C('post', 'p_up-piso', 'laura', 'Mucha suerte en Madrid, Sara', ago({ d: 3, h: 21 }))
   C('post', 'p_estado-nerea', 'laura', 'Yo llevo discos, guardadme sitio', ago({ m: 40 }))
   C('post', 'p_estado-hugo', 'hugo', 'Mañana a la misma hora, quien quiera venir', ago({ h: 4 }))
   C('photo', 'ph_verano-3', 'laura', 'Esta foto es de postal', ago({ d: 35 }))
@@ -251,6 +247,8 @@ export const buildSeed = () => {
   C('photo', 'ph_cumple-5', 'ana', 'Os quiero mucho 🥹', ago({ d: 19 }))
   C('photo', 'ph_cumple-2', 'pablo', 'La tarta más buena del mundo', ago({ d: 19 }))
   C('photo', 'ph_lisboa-3', 'carlos', 'Qué luz', ago({ d: 4 }))
+  C('photo', 'ph_lisboa-1', 'laura', 'Traedme pastéis de nata o no volváis', ago({ h: 18 }))
+  C('photo', 'ph_piso-1', 'ana', 'Qué piso más bonito', ago({ d: 3, h: 22 }))
 
   // ---- Grrs ---------------------------------------------------------------
 
@@ -260,12 +258,10 @@ export const buildSeed = () => {
     users.forEach((u) => grrs.push({ id: `g_${++grrSeq}`, userId: id(u), targetType, targetId, createdAt }))
 
   G('post', 'p_estado-carlos', ['ana', 'pablo', 'laura'], ago({ m: 10 }))
-  G('post', 'p_up-lisboa', ['carlos', 'laura', 'sara', 'irene'], ago({ h: 15 }))
   G('post', 'p_estado-pablo', ['javi'], ago({ h: 3 }))
   G('post', 'p_estado-sara', ['ana', 'laura', 'miguel'], ago({ d: 1 }))
   G('post', 'p_estado-javi', ['pablo', 'miguel'], ago({ d: 1 }))
   G('post', 'p_estado-miguel', ['javi', 'sara', 'diego'], ago({ d: 2 }))
-  G('post', 'p_up-piso', ['ana', 'laura', 'carlos', 'miguel'], ago({ d: 3 }))
   G('post', 'p_estado-nerea', ['laura', 'bea'], ago({ m: 30 }))
   G('post', 'p_estado-hugo', ['claudia', 'oscar', 'nerea'], ago({ h: 3 }))
   G('post', 'p_estado-claudia', ['nerea'], ago({ d: 1 }))

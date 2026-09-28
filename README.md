@@ -115,8 +115,11 @@ Estado de la conexión con Supabase (`src/services/supabase/`):
 - **Hecho:** registro, login, sesión, cierre de sesión y cambio de contraseña con Supabase
   Auth. El registro guarda nombre y pueblo (con coordenadas) en los metadatos y el trigger
   crea el perfil, los ajustes y el álbum del muro.
-- **Pendiente:** el resto de servicios. Con `VITE_DATA_SOURCE=supabase` solo funcionan
-  el registro y el login; las demás secciones fallarán hasta migrarlas.
+- **Hecho:** perfiles (ver, editar, avatar y portada en el bucket público `avatars`,
+  visitas), ajustes y amigos (lista, solicitudes, buscar personas, sugerencias). La
+  privacidad se calcula en funciones de la base de datos como el usuario que consulta.
+- **Pendiente:** publicaciones, fotos, eventos, mensajes, búsqueda global y contadores de
+  la portada. Con `VITE_DATA_SOURCE=supabase` esas secciones fallarán hasta migrarlas.
 
 En el panel de Supabase, *Authentication > URL Configuration*: pon como *Site URL* la
 dirección de la app y añade `http://localhost:5173/login` a las *Redirect URLs* para

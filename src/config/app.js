@@ -1,5 +1,11 @@
 export const DATA_SOURCE = import.meta.env.VITE_DATA_SOURCE ?? 'local'
 
+/** Public Supabase settings: the anon key is safe in the browser, RLS protects the data. */
+export const SUPABASE = {
+  url: import.meta.env.VITE_SUPABASE_URL ?? '',
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+}
+
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
   db: 'youngrr:db:v11',

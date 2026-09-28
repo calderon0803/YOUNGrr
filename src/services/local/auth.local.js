@@ -6,9 +6,9 @@ import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { DATA_SOURCE, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
 
-export const isLocalBackend = DATA_SOURCE === 'local'
+// Auth for the local demo backend (IndexedDB). Same interface as auth.supabase.js.
 
 const hash = async (salt, password) => {
   const data = new TextEncoder().encode(`${salt}:${password}`)
@@ -25,7 +25,7 @@ const hash = async (salt, password) => {
 
 const randomSalt = () => uid('salt')
 
-export const authService = {
+export const localAuthService = {
   /** Returns the signed-in profile, or null. */
   async getSession() {
     const db = await getDb()
@@ -102,12 +102,12 @@ export const authService = {
     })
     await commit()
     setSessionUserId(id)
-    return { ...profileOf(db, id) }
+    return { profile: { ...profileOf(db, id) }, needsConfirmation: false }
   },
 
   /** Demo sign-in, only available with the local backend. */
   async loginDemo(userId) {
-    ensure(isLocalBackend && DEMO_ACCOUNT_IDS.includes(userId), 'forbidden', 'Esta cuenta de demostración no está disponible.')
+    ensure(DEMO_ACCOUNT_IDS.includes(userId), 'forbidden', 'Esta cuenta de demostración no está disponible.')
     await latency()
     const db = await getDb()
     setSessionUserId(userId)
@@ -115,7 +115,6 @@ export const authService = {
   },
 
   async listDemoAccounts() {
-    if (!isLocalBackend) return []
     const db = await getDb()
     return DEMO_ACCOUNT_IDS.map((id) => summaryOf(db, id))
   },

@@ -10,8 +10,7 @@ import TabNav from '@/components/common/TabNav.vue'
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
-import BirthdaysWidget from '@/components/friends/BirthdaysWidget.vue'
-import UpcomingEventsWidget from '@/components/events/UpcomingEventsWidget.vue'
+import CalendarWidget from '@/components/events/CalendarWidget.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
@@ -69,8 +68,9 @@ watch(locationKey, () => {
   <div class="home">
     <h1 class="visually-hidden">Inicio</h1>
 
-    <aside class="home__left" aria-label="Tus novedades">
+    <aside class="home__left" aria-label="Tus novedades y tu calendario">
       <NotificationSummary />
+      <CalendarWidget />
     </aside>
 
     <section class="home__center panel" aria-labelledby="feed-title">
@@ -129,9 +129,7 @@ watch(locationKey, () => {
       </ActivityList>
     </section>
 
-    <aside class="home__right" aria-label="Planes y cumpleaños">
-      <UpcomingEventsWidget />
-      <BirthdaysWidget />
+    <aside class="home__right" aria-label="Personas que quizá conozcas">
       <SuggestionsWidget />
     </aside>
 

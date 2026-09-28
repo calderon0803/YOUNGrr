@@ -84,3 +84,14 @@ export const toDateInput = (value) => {
 export const nowIso = () => {
   return new Date().toISOString()
 }
+
+/** Whole days from today to a local YYYY-MM-DD date (0 = today, negative = past). */
+export const daysUntil = (date, now = new Date()) => {
+  const [y, m, d] = date.split('-').map(Number)
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((Date.UTC(y, m - 1, d) - today) / 86_400_000)
+}
+
+/** "2 de oct." for a local YYYY-MM-DD date. */
+export const shortDayMonth = (date) =>
+  new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(eventDateTime(date, '00:00'))

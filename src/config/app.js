@@ -11,7 +11,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v14',
+  db: 'youngrr:db:v15',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -36,6 +36,9 @@ export const ALBUM_UPLOAD_PREVIEW = 6
 
 /** Friends' news: activity of the last days, one block per person. */
 export const ACTIVITY_WINDOW_DAYS = 30
+
+/** People shown in "Quizá conozcas a". */
+export const SUGGESTIONS_MAX = 3
 export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000
 export const TOAST_DURATION_MS = 3200

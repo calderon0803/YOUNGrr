@@ -61,6 +61,7 @@ const FRIENDS = [
   ['ana', 'laura', 800], ['ana', 'sara', 1000], ['ana', 'pablo', 600], ['ana', 'irene', 3],
   ['pablo', 'javi', 300], ['laura', 'sara', 500], ['laura', 'lucia', 5],
   ['javi', 'miguel', 250], ['sara', 'miguel', 350], ['miguel', 'diego', 90],
+  ['pablo', 'hugo', 420], ['sara', 'nerea', 380],
   ['lucia', 'marta', 120], ['diego', 'alvaro', 60], ['marta', 'irene', 40],
 ]
 

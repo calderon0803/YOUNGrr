@@ -239,7 +239,9 @@ const comment = async () => {
     display: flex;
     flex-wrap: wrap;
     gap: $space-1;
-    margin-top: $space-2;
+    margin: $space-2 0 0;
+    padding: 0;
+    list-style: none;
   }
 
   // Reset first so the shared box below wins.

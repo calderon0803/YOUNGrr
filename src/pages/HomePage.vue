@@ -176,6 +176,9 @@ watch(locationKey, () => {
   .home {
     display: grid;
     grid-template-columns: 15rem minmax(0, 1fr);
+    // The first row fits the left column; the second takes the rest of the
+    // feed's height, so the right column sits just below instead of far down.
+    grid-template-rows: auto 1fr;
     grid-template-areas:
       'left center'
       'right center';
@@ -202,6 +205,7 @@ watch(locationKey, () => {
 @media (min-width: $bp-desktop) {
   .home {
     grid-template-columns: 15rem minmax(0, 1fr) 14.5rem;
+    grid-template-rows: auto;
     grid-template-areas: 'left center right';
   }
 }

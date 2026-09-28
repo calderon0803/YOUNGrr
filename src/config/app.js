@@ -41,7 +41,7 @@ export const ACTIVITY_WINDOW_DAYS = 30
 export const SUGGESTIONS_MAX = 3
 
 /** Sign up is by invitation only: invitations each person has, and how long they last. */
-export const INVITATIONS_PER_USER = 10
+export const INVITATIONS_PER_USER = 5
 export const INVITATION_DAYS = 30
 export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000

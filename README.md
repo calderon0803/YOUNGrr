@@ -70,7 +70,7 @@ src/
 ### Solo por invitación
 
 Como Tuenti, no hay registro abierto. En Inicio, **Invitar a tus amigos** muestra tus
-invitaciones disponibles (10 por persona): escribes el correo de tu amigo y la app te da
+invitaciones disponibles (5 por persona al registrarse): escribes el correo de tu amigo y la app te da
 un enlace personal (`/register?invite=…`) para mandárselo por donde quieras. La cuenta
 solo se puede crear con ese correo, el enlace caduca a los 30 días y al registrarse os
 hacéis amigos automáticamente. Las invitaciones pendientes se pueden cancelar y se

@@ -41,7 +41,7 @@ $$;
 create or replace function list_invitations() returns jsonb
 language sql stable security definer set search_path = public as $$
   select jsonb_build_object(
-    'available', greatest(0, 10 - yg_invites_used(yg_me())),
+    'available', greatest(0, 5 - yg_invites_used(yg_me())),
     'invitations', coalesce((
       select jsonb_agg(invitation_json(i) order by i.created_at desc)
       from invitations i where i.inviter_id = yg_me()
@@ -64,7 +64,7 @@ begin
   select * into inv from invitations
   where inviter_id = me and email = address and used_by is null and expires_at > now();
   if inv.id is not null then return invitation_json(inv); end if;
-  if yg_invites_used(me) >= 10 then raise exception 'yg:forbidden:No te quedan invitaciones disponibles.'; end if;
+  if yg_invites_used(me) >= 5 then raise exception 'yg:forbidden:No te quedan invitaciones disponibles.'; end if;
   insert into invitations (inviter_id, email) values (me, address) returning * into inv;
   return invitation_json(inv);
 end;

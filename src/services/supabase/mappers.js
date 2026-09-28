@@ -40,7 +40,8 @@ export const toProfileView = (json) => ({
   photosCount: json.photos_count ?? 0,
   canViewProfile: !!json.can_view_profile,
   canSendRequest: !!json.can_send_request,
-  visits: json.visits ?? 0,
+  // Only present on your own profile.
+  visits: json.visits ?? null,
 })
 
 export const toFriendRequest = (json) => {

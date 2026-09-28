@@ -36,11 +36,6 @@ const { processing, read } = useImagePicker()
 // COMPUTED
 const profile = computed(() => props.view.profile)
 const isSelf = computed(() => props.view.friendship === 'self')
-// "1.284 visitas", counted from other people's visits.
-const visitsLabel = computed(() => {
-  const n = props.view.visits ?? 0
-  return `${new Intl.NumberFormat('es-ES', { useGrouping: 'always' }).format(n)} ${n === 1 ? 'visita' : 'visitas'}`
-})
 const person = computed(() => ({
   ...profile.value,
   friendship: props.view.friendship,
@@ -103,7 +98,6 @@ const sendMessage = async () => {
             {{ profile.city }}
           </span>
           <span>{{ plural(view.friendsCount, 'amigo', 'amigos') }}</span>
-          <span>{{ visitsLabel }}</span>
           <span v-if="!isSelf && view.mutualFriends">{{ plural(view.mutualFriends, 'en común', 'en común') }}</span>
         </p>
         <p v-if="profile.bio" class="profile-header__bio user-text">{{ profile.bio }}</p>

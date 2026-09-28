@@ -40,13 +40,15 @@ export const localUsersService = {
     if (userId !== me) {
       delete exposed.cityLat
       delete exposed.cityLng
+      delete exposed.visitCount
     }
 
     return {
       profile: exposed,
       friendship: friendshipStatus(db, me, userId),
       friendsCount: friendIdsOf(db, userId).length,
-      visits: profile.visitCount ?? 0,
+      // Only you see how many visits your profile has (on your home page).
+      visits: userId === me ? profile.visitCount ?? 0 : null,
       mutualFriends: mutualFriends(db, me, userId),
       postsCount: visible ? db.posts.filter((p) => p.authorId === userId && canViewPost(db, me, p)).length : 0,
       photosCount: visible ? db.photos.filter((p) => p.ownerId === userId).length : 0,
@@ -57,13 +59,14 @@ export const localUsersService = {
 
   /**
    * Counts a visit to someone else's profile, as Tuenti's visit counter did.
-   * Your own visits don't count, and each person counts once per day.
+   * Your own visits don't count, and each person counts once per day. The total
+   * is private: only the owner sees it, on their home page.
    */
   async registerVisit(userId) {
     const db = await getDb()
     const me = requireUserId(db)
     const profile = profileOf(db, userId)
-    if (userId === me || !canViewProfile(db, me, userId)) return profile.visitCount ?? 0
+    if (userId === me || !canViewProfile(db, me, userId)) return
     const day = toDateInput(new Date())
     const already = db.profileVisits.some((v) => v.profileId === userId && v.visitorId === me && v.day === day)
     if (!already) {
@@ -71,7 +74,6 @@ export const localUsersService = {
       profile.visitCount = (profile.visitCount ?? 0) + 1
       await commit()
     }
-    return profile.visitCount
   },
 
   async updateProfile(update) {

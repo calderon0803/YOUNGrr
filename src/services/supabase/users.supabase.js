@@ -28,7 +28,7 @@ export const supabaseUsersService = {
   },
 
   async registerVisit(userId) {
-    return rpc('register_visit', { profile: userId })
+    await rpc('register_visit', { profile: userId })
   },
 
   async updateProfile(update) {

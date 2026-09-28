@@ -67,6 +67,19 @@ src/
 └── utils/
 ```
 
+### Solo por invitación
+
+Como Tuenti, no hay registro abierto. En Inicio, **Invitar a tus amigos** muestra tus
+invitaciones disponibles (10 por persona): escribes el correo de tu amigo y la app te da
+un enlace personal (`/register?invite=…`) para mandárselo por donde quieras. La cuenta
+solo se puede crear con ese correo, el enlace caduca a los 30 días y al registrarse os
+hacéis amigos automáticamente. Las invitaciones pendientes se pueden cancelar y se
+recuperan.
+
+La base de datos lo impone: un trigger rechaza cualquier alta en `auth.users` sin una
+invitación válida para ese correo, aunque se llame a la API directamente. Las altas
+hechas desde el panel de Supabase (*Invite user*) no pasan por esa comprobación.
+
 ### Novedades y visitas
 
 Como en Tuenti, no hay lista de notificaciones ni campana. En Inicio hay un bloque de

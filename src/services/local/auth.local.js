@@ -1,7 +1,9 @@
 import { DEMO_ACCOUNT_IDS } from '@/data/seed'
 import { commit, getDb, latency } from '@/services/local/db'
 import { clearSession, getSessionUserId, setSessionUserId } from '@/services/local/session'
-import { profileOf, summaryOf } from '@/services/local/access'
+import { pairKey, profileOf, summaryOf } from '@/services/local/access'
+import { notify } from '@/services/local/notify'
+import { findPendingInvitation } from '@/services/local/invitations.local'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
@@ -49,7 +51,8 @@ export const localAuthService = {
     return { ...profileOf(db, account.id) }
   },
 
-  async register({ firstName, lastName, email, password, location }) {
+  /** Only with a pending invitation for that email. */
+  async register({ firstName, lastName, email, password, location, inviteToken }) {
     validate(
       rules.required(firstName, 'El nombre'),
       rules.max(firstName, LIMITS.name, 'El nombre'),
@@ -64,6 +67,8 @@ export const localAuthService = {
     const db = await getDb()
     const normalizedEmail = email.trim().toLowerCase()
     ensure(!db.users.some((u) => u.email === normalizedEmail), 'conflict', 'Ya existe una cuenta con ese correo.')
+    const invitation = findPendingInvitation(db, inviteToken, normalizedEmail)
+    ensure(invitation, 'forbidden', 'La invitación no es válida para ese correo o ya se ha usado.')
 
     const id = uid('u')
     const salt = randomSalt()
@@ -100,6 +105,12 @@ export const localAuthService = {
       createdAt,
       updatedAt: createdAt,
     })
+    // Whoever invited you is your first friend.
+    invitation.usedBy = id
+    invitation.usedAt = createdAt
+    const [userA, userB] = pairKey(invitation.inviterId, id)
+    db.friendships.push({ userA, userB, createdAt })
+    notify(db, { userId: invitation.inviterId, actorId: id, type: 'friend_accepted', targetId: id })
     await commit()
     setSessionUserId(id)
     return { profile: { ...profileOf(db, id) }, needsConfirmation: false }

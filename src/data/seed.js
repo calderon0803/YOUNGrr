@@ -426,6 +426,11 @@ export const buildSeed = () => {
     wallMessages,
     hiddenPosts: [],
     reports: [],
+    // Carlos invited Javi (now friends) and has one invitation still pending.
+    invitations: [
+      { id: 'inv_javi', token: 'demo-javi', inviterId: id('carlos'), email: 'javi@demo.youngrr.app', createdAt: ago({ d: 8 }), expiresAt: ago({ d: -22 }), usedBy: id('javi'), usedAt: ago({ d: 7 }) },
+      { id: 'inv_marina', token: 'demo-marina', inviterId: id('carlos'), email: 'marina@example.com', createdAt: ago({ d: 1 }), expiresAt: ago({ d: -29 }), usedBy: null, usedAt: null },
+    ],
   }
 }
 

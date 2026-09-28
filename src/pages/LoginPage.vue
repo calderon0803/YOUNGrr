@@ -9,7 +9,7 @@ import DemoAccounts from '@/components/auth/DemoAccounts.vue'
     <p class="auth-card__lead">Tus amigos te están esperando.</p>
     <LoginForm />
     <p class="auth-card__alt">
-      ¿No tienes cuenta? <RouterLink :to="{ name: 'register' }">Crear cuenta</RouterLink>
+      ¿No tienes cuenta? YOUNGrr es solo por invitación: pide a un amigo que te invite.
     </p>
     <DemoAccounts class="auth-card__demo" />
   </div>

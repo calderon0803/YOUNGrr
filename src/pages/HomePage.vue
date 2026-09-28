@@ -11,6 +11,7 @@ import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
 import CalendarWidget from '@/components/events/CalendarWidget.vue'
+import InviteWidget from '@/components/friends/InviteWidget.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
@@ -68,8 +69,9 @@ watch(locationKey, () => {
   <div class="home">
     <h1 class="visually-hidden">Inicio</h1>
 
-    <aside class="home__left" aria-label="Tus novedades y tu calendario">
+    <aside class="home__left" aria-label="Tus novedades, invitaciones y calendario">
       <NotificationSummary />
+      <InviteWidget />
       <CalendarWidget />
     </aside>
 

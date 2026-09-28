@@ -11,7 +11,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v16',
+  db: 'youngrr:db:v17',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -39,6 +39,10 @@ export const ACTIVITY_WINDOW_DAYS = 30
 
 /** People shown in "Quizá conozcas a". */
 export const SUGGESTIONS_MAX = 3
+
+/** Sign up is by invitation only: invitations each person has, and how long they last. */
+export const INVITATIONS_PER_USER = 10
+export const INVITATION_DAYS = 30
 export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000
 export const TOAST_DURATION_MS = 3200

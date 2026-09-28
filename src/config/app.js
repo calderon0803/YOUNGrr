@@ -14,7 +14,17 @@ export const STORAGE_KEYS = {
   db: 'youngrr:db:v13',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
+  // Open chat windows, per user (a per-browser convenience).
+  chatDock: 'youngrr:chat-dock',
 }
+
+/** Same values as styles/abstracts/_breakpoints.scss. */
+export const BREAKPOINTS = { tablet: 768, desktop: 1200 }
+
+/** Chat windows that fit next to the chat panel. */
+export const CHAT_MAX_WINDOWS = { tablet: 1, desktop: 3 }
+/** How often open chats check for new messages. */
+export const CHAT_POLL_INTERVAL_MS = 10_000
 
 /** Browser chrome color per theme (matches $blue-600 / $blue-850). */
 export const THEME_COLORS = { light: '#2350a0', dark: '#142a57' }

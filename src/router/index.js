@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useMessagesStore } from '@/stores/messages'
+import { BREAKPOINTS } from '@/config/app'
 
 const app = (path, name, loader, meta = {}) => ({ path, name, component: loader, meta: { auth: true, ...meta } })
 
@@ -40,15 +42,24 @@ export const router = createRouter({
   },
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   const auth = useAuthStore()
   await auth.restore()
   if (to.meta.auth && !auth.isAuthenticated) return { name: 'login', query: to.fullPath !== '/home' ? { next: to.fullPath } : {} }
   if (to.meta.guest && auth.isAuthenticated) return { name: 'home' }
   if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId } }
+  // From tablet up, messages live in the chat dock instead of a page.
+  if ((to.name === 'messages' || to.name === 'conversation') && window.matchMedia(`(min-width: ${BREAKPOINTS.tablet}px)`).matches) {
+    const messages = useMessagesStore()
+    if (to.name === 'conversation') messages.openWindow(String(to.params.id))
+    else messages.toggleDock(true)
+    return from.matched.length ? false : { name: 'home' }
+  }
   return true
 })
 
-router.afterEach((to) => {
+router.afterEach((to, from, failure) => {
+  // Cancelled navigations (e.g. a chat opened in the dock) keep the title.
+  if (failure) return
   document.title = to.meta.title ? `${to.meta.title} · YOUNGrr` : 'YOUNGrr'
 })

@@ -13,6 +13,8 @@ import { fullName } from '@/utils/text'
 // PROPS
 const props = defineProps({
   conversationId: { type: String, required: true },
+  /** Inside a chat window, which has its own header. */
+  embedded: { type: Boolean, default: false },
 })
 
 // STORES
@@ -21,6 +23,7 @@ const auth = useAuthStore()
 
 // DATA
 const scroller = ref(null)
+const composer = ref(null)
 
 // COMPUTED
 const state = computed(() => messages.threads[props.conversationId] ?? { status: 'loading', error: null, conversation: null, messages: [] })
@@ -44,14 +47,17 @@ const scrollToEnd = async () => {
   if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight
 }
 
+defineExpose({ focus: () => composer.value?.focus() })
+
 // WATCHERS
-watch(() => props.conversationId, (id) => messages.loadThread(id), { immediate: true })
+// A chat window loads its thread through the dock (minimized ones stay unread).
+watch(() => props.conversationId, (id) => !props.embedded && messages.loadThread(id), { immediate: true })
 watch(() => state.value.messages.length, scrollToEnd)
 </script>
 
 <template>
-  <section class="thread" :aria-label="other ? `Conversación con ${fullName(other)}` : 'Conversación'">
-    <header class="thread__header">
+  <section class="thread" :class="{ 'thread--embedded': embedded }" :aria-label="other ? `Conversación con ${fullName(other)}` : 'Conversación'">
+    <header v-if="!embedded" class="thread__header">
       <RouterLink class="thread__back btn btn--ghost btn--icon" :to="{ name: 'messages' }" aria-label="Volver a las conversaciones">
         <ArrowLeft aria-hidden="true" />
       </RouterLink>
@@ -91,7 +97,7 @@ watch(() => state.value.messages.length, scrollToEnd)
       </AsyncState>
     </div>
 
-    <MessageComposer v-if="state.status === 'success' && other" :recipient="fullName(other)" :send="(text) => messages.send(conversationId, text)" />
+    <MessageComposer ref="composer" v-if="state.status === 'success' && other" :recipient="fullName(other)" :send="(text) => messages.send(conversationId, text)" />
   </section>
 </template>
 
@@ -137,6 +143,10 @@ watch(() => state.value.messages.length, scrollToEnd)
       font-weight: 600;
       color: $color-text-muted;
     }
+  }
+
+  &--embedded &__scroll {
+    padding: $space-2;
   }
 
   &__list {

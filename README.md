@@ -87,6 +87,11 @@ visitado.
 - **Estado**: es tu última publicación de solo texto; se muestra bajo tu nombre en el perfil.
 - **Perfil** sin portada: foto grande, datos y amigos a la izquierda; nombre, estado y
   pestañas (Tablón, Publicaciones, Fotos, Etiquetas, Álbumes, Amigos) a la derecha.
+- **Chat** abajo a la derecha (tablet y escritorio): un panel plegable con tus
+  conversaciones; cada chat que abres se coloca a su izquierda y se puede minimizar o
+  cerrar. Los chats abiertos se recuerdan en el navegador. En móvil, Mensajes sigue
+  siendo una página de la barra inferior.
+- Tu perfil se abre desde tu foto en la barra superior o desde «Ver mi perfil».
 - **Tablón**: lo que te escriben tus amigos en tu perfil. Lo lee quien puede ver tu
   perfil, escriben tú y tus amigos, y lo borra quien lo escribió o tú.
 

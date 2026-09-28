@@ -9,9 +9,11 @@ import { useFriendsStore } from '@/stores/friends'
 import { useEventsStore } from '@/stores/events'
 import { usePhotosStore } from '@/stores/photos'
 import { useUserStore } from '@/stores/user'
-import { BADGE_POLL_INTERVAL_MS } from '@/config/app'
+import { useMediaQuery } from '@/composables/useMediaQuery'
+import { BADGE_POLL_INTERVAL_MS, BREAKPOINTS } from '@/config/app'
 
 const PhotoViewer = defineAsyncComponent(() => import('@/components/photos/PhotoViewer.vue'))
+const ChatDock = defineAsyncComponent(() => import('@/components/messages/ChatDock.vue'))
 
 // STORES
 const notifications = useNotificationsStore()
@@ -23,6 +25,8 @@ const photos = usePhotosStore()
 const user = useUserStore()
 
 // DATA
+// On mobile, messages keep their own page (bottom navigation).
+const hasDock = useMediaQuery(`(min-width: ${BREAKPOINTS.tablet}px)`)
 let poll = null
 
 // METHODS
@@ -62,6 +66,7 @@ watch(() => route.fullPath, refreshBadges)
     <slot />
   </main>
   <BottomNav />
+  <ChatDock v-if="hasDock" />
   <PhotoViewer v-if="photos.viewer.open" />
 </template>
 

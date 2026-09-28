@@ -289,21 +289,40 @@ $$;
 
 -- Account and profile share one privacy setting: posts follow it.
 create or replace function can_view_post(viewer uuid, post_author uuid) returns boolean
-language sql stable as $
+language sql stable as $$
   select can_view_profile(viewer, post_author);
-$;
+$$;
+
+create or replace function can_send_request(sender uuid, target uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select sender <> target
+     and not are_friends(sender, target)
+     and case (select friend_requests from user_settings where user_id = target)
+           when 'everyone' then true
+           when 'friends_of_friends' then mutual_friends(sender, target) > 0
+           else false
+         end;
+$$;
+
+-- Haversine distance in km between two coordinates.
+create or replace function distance_km(lat1 double precision, lng1 double precision, lat2 double precision, lng2 double precision)
+returns double precision language sql immutable as $$
+  select 2 * 6371 * asin(sqrt(
+    power(sin(radians(lat2 - lat1) / 2), 2) + cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2)
+  ));
+$$;
 
 create or replace function can_view_city(viewer uuid, owner uuid) returns boolean
-language sql stable security definer set search_path = public as $
+language sql stable security definer set search_path = public as $$
   select can_view_profile(viewer, owner)
      and allowed_by(viewer, owner, (select city_visibility from user_settings where user_id = owner));
-$;
+$$;
 
 create or replace function can_view_distance(viewer uuid, owner uuid) returns boolean
-language sql stable security definer set search_path = public as $
+language sql stable security definer set search_path = public as $$
   select can_view_profile(viewer, owner)
      and allowed_by(viewer, owner, (select distance_visibility from user_settings where user_id = owner));
-$;
+$$;
 
 create or replace function is_photo_owner(u uuid, photo uuid) returns boolean
 language sql stable security definer set search_path = public as $$
@@ -535,7 +554,7 @@ $$;
 -- Removes the photo from the caller's profile. It is deleted only when no owner
 -- is left; if the uploader leaves, the next owner takes it into their wall album.
 create or replace function leave_photo(photo uuid) returns text
-language plpgsql security definer set search_path = public as $
+language plpgsql security definer set search_path = public as $$
 declare
   ph photos;
   heir uuid;
@@ -563,11 +582,11 @@ begin
   delete from photo_owners where photo_id = photo and user_id = heir;
   return 'left';
 end;
-$;
+$$;
 
 -- Counts a visit to someone else's profile (not your own, once per day).
 create or replace function register_visit(profile uuid) returns int
-language plpgsql security definer set search_path = public as $
+language plpgsql security definer set search_path = public as $$
 declare
   counted int;
 begin
@@ -578,7 +597,7 @@ begin
   end if;
   return (select visit_count from profiles where id = profile);
 end;
-$;
+$$;
 
 create or replace function start_conversation(other uuid) returns uuid
 language plpgsql security definer set search_path = public as $$
@@ -603,7 +622,7 @@ $$;
 -- Coordinates never leave the database.
 create or replace function nearby_posts(radius_km int, before timestamptz default null, page_size int default 8)
 returns table (post_id uuid, city text, distance_km int)
-language sql stable security definer set search_path = public as $
+language sql stable security definer set search_path = public as $$
   with me as (select city_lat, city_lng from profiles where id = auth.uid())
   select p.id,
          case when can_view_city(auth.uid(), a.id) then a.city end,
@@ -621,7 +640,7 @@ language sql stable security definer set search_path = public as $
     and (before is null or p.created_at < before)
   order by p.created_at desc
   limit page_size + 1;
-$;
+$$;
 
 -- =============================================================================
 -- Notifications: grouped counters on the home page. Pending things (messages,

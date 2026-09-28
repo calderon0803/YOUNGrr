@@ -43,7 +43,14 @@ onMounted(() => invitations.load())
 <template>
   <section class="panel invite" :aria-labelledby="titleId">
     <h2 :id="titleId" class="panel-title">Invitar a tus amigos</h2>
-    <div class="invite__body">
+    <div v-if="invitations.state.status === 'error'" class="invite__body">
+      <p class="invite__available">No se han podido cargar tus invitaciones.</p>
+      <button type="button" class="invite__all" @click="invitations.load()">Reintentar</button>
+    </div>
+    <div v-else-if="invitations.state.status !== 'success'" class="invite__body" aria-busy="true">
+      <p class="invite__available">Cargando…</p>
+    </div>
+    <div v-else class="invite__body">
       <p class="invite__available">
         <strong>{{ invitations.state.available }}</strong>
         {{ invitations.state.available === 1 ? 'invitación disponible' : 'invitaciones disponibles' }}

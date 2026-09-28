@@ -63,11 +63,14 @@ export const formatEventDate = (date, time) => {
   return `${label.charAt(0).toUpperCase()}${label.slice(1)} · ${time}`
 }
 
+// Three letters for every month; Intl gives "sept" for September.
+const SHORT_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
 export const eventDayParts = (date) => {
   const value = eventDateTime(date, '00:00')
   return {
     day: value.getDate(),
-    month: new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(value).replace('.', ''),
+    month: SHORT_MONTHS[value.getMonth()],
   }
 }
 
@@ -92,6 +95,8 @@ export const daysUntil = (date, now = new Date()) => {
   return Math.round((Date.UTC(y, m - 1, d) - today) / 86_400_000)
 }
 
-/** "2 de oct." for a local YYYY-MM-DD date. */
-export const shortDayMonth = (date) =>
-  new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(eventDateTime(date, '00:00'))
+/** "2 oct" for a local YYYY-MM-DD date. */
+export const shortDayMonth = (date) => {
+  const value = eventDateTime(date, '00:00')
+  return `${value.getDate()} ${SHORT_MONTHS[value.getMonth()]}`
+}

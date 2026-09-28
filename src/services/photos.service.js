@@ -14,7 +14,7 @@ import {
 } from '@/services/local/access'
 import { dropNotifications, notify } from '@/services/local/notify'
 import { albumView, photoView } from '@/services/local/views'
-import { removePhotoCascade } from '@/services/posts.service'
+import { removePhotoCascade } from '@/services/local/posts.local'
 import { ensure, ensureAccess, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'

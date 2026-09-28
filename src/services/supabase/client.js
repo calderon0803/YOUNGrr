@@ -42,8 +42,16 @@ export const rpc = async (name, args = {}, fallback) => {
   const { data, error } = await getSupabase().rpc(name, args)
   if (error) {
     const match = YG_ERROR.exec(error.message ?? '')
-    if (match) throw new ApiError(match[1], match[2])
+    // For inaccessible content the owner's id comes in the detail, to redirect to their profile.
+    if (match) throw new ApiError(match[1], match[2], match[1] === 'forbidden' && error.details ? { ownerId: error.details } : {})
     throw toApiError(error, fallback)
   }
   return data
+}
+
+/** Current signed-in user id (Supabase Auth). */
+export const currentUserId = async () => {
+  const { data } = await getSupabase().auth.getUser()
+  if (!data?.user) throw new ApiError('unauthorized', 'Tu sesión ha caducado. Vuelve a entrar.')
+  return data.user.id
 }

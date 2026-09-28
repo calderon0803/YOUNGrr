@@ -20,6 +20,17 @@ export const STORED_GROUPS = [
   { key: 'friends_accepted', types: ['friend_accepted'], pref: 'friendRequests', one: 'petición de amistad aceptada', many: 'peticiones de amistad aceptadas', single: 'friends', list: 'friends' },
 ]
 
+/** Photo groups that, when there are several, open the list of those photos. */
+const PHOTO_NEWS = {
+  ...Object.fromEntries(STORED_GROUPS.filter((g) => g.single === 'photo').map((g) => [g.key, g.types])),
+  shares: ['photo_owner_invite'],
+}
+
+/** Types shown in the photo news list for a group key (null if it has none). */
+export const photoNewsTypes = (key) => PHOTO_NEWS[key] ?? null
+
+const photoNewsLink = (key) => `/photos/news?grupo=${key}`
+
 /** Notification types a visited place clears (all of them without a list). */
 export const typesSeenAt = (list) =>
   (list ? STORED_GROUPS.filter((g) => g.list === list) : STORED_GROUPS).flatMap((g) => g.types)
@@ -67,9 +78,17 @@ const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, shar
     pref: 'tags',
     count: sharePhotoIds.length,
     label: pick(sharePhotoIds.length, 'invitación para compartir una foto', 'invitaciones para compartir fotos'),
-    link: `/photo/${sharePhotoIds[0]}`,
+    link: sharePhotoIds.length === 1 ? `/photo/${sharePhotoIds[0]}` : photoNewsLink('shares'),
   },
 ]
+
+const linkFor = (me, group, targets) => {
+  // Your status has no list page: go to the newest one.
+  if (targets.length === 1 || group.single === 'post') return singleLink(me, group.single, targets[0])
+  // Several photos: a list of exactly those, with who did what.
+  if (group.single === 'photo') return photoNewsLink(group.key)
+  return listLink(me, group.list)
+}
 
 const storedGroups = (me, unread) =>
   STORED_GROUPS.map((group) => {
@@ -80,8 +99,7 @@ const storedGroups = (me, unread) =>
       pref: group.pref,
       count: items.length,
       label: pick(items.length, group.one, group.many),
-      // Your status has no list page: go to the newest one.
-      link: targets.length === 1 || group.single === 'post' ? singleLink(me, group.single, targets[0]) : listLink(me, group.list),
+      link: linkFor(me, group, targets),
     }
   })
 

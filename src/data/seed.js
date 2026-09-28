@@ -244,6 +244,8 @@ export const buildSeed = () => {
   C('post', 'p_estado-hugo', 'hugo', 'Mañana a la misma hora, quien quiera venir', ago({ h: 4 }))
   C('photo', 'ph_verano-3', 'laura', 'Esta foto es de postal', ago({ d: 35 }))
   C('photo', 'ph_verano-3', 'ana', 'Fondo de pantalla ya', ago({ d: 34 }))
+  C('photo', 'ph_verano-3', 'laura', 'Qué recuerdos!!', ago({ h: 3 }))
+  C('photo', 'ph_verano-3', 'pablo', 'Repetimos el año que viene', ago({ h: 2 }))
   C('photo', 'ph_cumple-5', 'ana', 'Os quiero mucho 🥹', ago({ d: 19 }))
   C('photo', 'ph_cumple-2', 'pablo', 'La tarta más buena del mundo', ago({ d: 19 }))
   C('photo', 'ph_lisboa-3', 'carlos', 'Qué luz', ago({ d: 4 }))
@@ -395,6 +397,10 @@ export const buildSeed = () => {
     N('comment_post', 'pablo', 'p_estado-carlos', ago({ m: 30 })),
     N('grr_post', 'pablo', 'p_estado-carlos', ago({ m: 12 })),
     N('comment_photo', 'ana', 'ph_cumple-5', ago({ h: 5 })),
+    N('comment_photo', 'laura', 'ph_verano-3', ago({ h: 3 })),
+    N('comment_photo', 'pablo', 'ph_verano-3', ago({ h: 2 })),
+    N('grr_photo', 'sara', 'ph_cumple-5', ago({ h: 6 })),
+    N('grr_photo', 'pablo', 'ph_verano-3', ago({ h: 8 })),
     N('grr_photo', 'laura', 'ph_verano-3', ago({ d: 1 }), true),
     N('photo_tag', 'ana', 'ph_lisboa-4', ago({ d: 2 }), true),
     N('photo_tag', 'sara', 'ph_piso-2', ago({ d: 3 })),

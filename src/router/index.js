@@ -16,6 +16,7 @@ const routes = [
   app('/post/:id', 'post', () => import('@/pages/PostPage.vue'), { title: 'Novedad' }),
   app('/friends', 'friends', () => import('@/pages/FriendsPage.vue'), { title: 'Amigos' }),
   app('/photos', 'photos', () => import('@/pages/PhotosPage.vue'), { title: 'Fotos' }),
+  app('/photos/news', 'photo-news', () => import('@/pages/PhotoNewsPage.vue'), { title: 'Novedades de tus fotos' }),
   app('/photo/:id', 'photo', () => import('@/pages/PhotoPage.vue'), { title: 'Fotografía' }),
   app('/albums/:id', 'album', () => import('@/pages/AlbumPage.vue'), { title: 'Álbum' }),
   app('/events', 'events', () => import('@/pages/EventsPage.vue'), { title: 'Eventos' }),

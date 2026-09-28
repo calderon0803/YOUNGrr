@@ -86,6 +86,9 @@ Como en Tuenti, no hay lista de notificaciones ni campana. En Inicio hay un bloq
 **Novedades** con contadores agrupados ("2 mensajes privados nuevos", "1 petición de
 amistad", "3 Grr nuevos en tus fotos"...). Cada línea lleva a donde se atiende y
 desaparece al visitarlo o responderlo. El total aparece como contador en *Inicio*.
+Si hay una sola, lleva directamente a ella. Si hay varias sobre fotos (comentarios, Grr,
+etiquetas, invitaciones para compartir), abre una lista con exactamente esas fotos y quién
+ha hecho qué; al abrir cada foto se marca como vista solo esa.
 
 Debajo de las Novedades está tu **contador de visitas**, que solo ves tú: cuentan las
 visitas de otras personas a tu perfil, una por persona y día. Nunca se muestra quién ha

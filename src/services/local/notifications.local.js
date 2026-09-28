@@ -3,7 +3,7 @@
 import { commit, getDb } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
 import { canSeeEvent } from '@/services/local/views'
-import { settingsOf } from '@/services/local/access'
+import { settingsOf, summaryOf } from '@/services/local/access'
 import { buildSummary, typesSeenAt } from '@/services/notifications.groups'
 import { nowIso } from '@/utils/time'
 
@@ -36,6 +36,40 @@ export const localNotificationsService = {
         .filter((n) => n.userId === me && !n.readAt && db.profiles.some((p) => p.id === n.actorId))
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     })
+  },
+
+  /**
+   * Photos behind the photo counters (unread comments, Grr, tags, accepted or
+   * pending shares), newest first, with who did what. Marks nothing as seen.
+   * @param {string[]} types
+   */
+  async getPhotoNews(types) {
+    const db = await getDb()
+    const me = requireUserId(db)
+    const items = [
+      ...db.notifications
+        .filter((n) => n.userId === me && !n.readAt && types.includes(n.type) && n.type !== 'photo_owner_invite')
+        .map((n) => ({ photoId: n.targetId, type: n.type, actorId: n.actorId, createdAt: n.createdAt })),
+      ...(types.includes('photo_owner_invite')
+        ? db.photoOwners
+            .filter((o) => o.userId === me && o.status === 'pending')
+            .map((o) => ({ photoId: o.photoId, type: 'photo_owner_invite', actorId: o.invitedBy, createdAt: o.createdAt }))
+        : []),
+    ]
+    const byPhoto = new Map()
+    for (const item of items.sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+      const photo = db.photos.find((p) => p.id === item.photoId)
+      if (!photo) continue
+      if (!byPhoto.has(photo.id)) {
+        const album = db.albums.find((a) => a.id === photo.albumId)
+        byPhoto.set(photo.id, {
+          photo: { id: photo.id, url: photo.url, width: photo.width, height: photo.height, caption: photo.caption, albumTitle: album?.title ?? '' },
+          items: [],
+        })
+      }
+      byPhoto.get(photo.id).items.push({ type: item.type, actor: summaryOf(db, item.actorId), createdAt: item.createdAt })
+    }
+    return [...byPhoto.values()]
   },
 
   /**

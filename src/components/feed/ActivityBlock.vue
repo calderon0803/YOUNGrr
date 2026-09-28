@@ -12,8 +12,8 @@ import { formatDistance } from '@/utils/geo'
 import { plural } from '@/utils/text'
 
 // One friend in "Novedades de tus amigos", as in Tuenti: their current status
-// on top and, below, what they have done lately (photos uploaded, new friends,
-// photos where they were tagged).
+// (with its comments) on top and, apart below, what they have done lately in
+// compact lines (photos uploaded, new friends, photos where they were tagged).
 
 // PROPS
 const props = defineProps({
@@ -61,38 +61,42 @@ const openTagged = (photoId) =>
       </p>
     </header>
 
-    <ul v-if="hasMore" class="block__more" role="list">
-      <li v-for="id in block.uploadIds" :key="id" class="block__row">
-        <Images class="block__icon" aria-hidden="true" />
-        <PostCard bare :post-id="id" />
-      </li>
+    <section v-if="hasMore" class="block__activity" :aria-label="`Actividad de ${block.person.firstName}`">
+      <h3 class="block__label" aria-hidden="true">Actividad</h3>
+      <ul class="block__more" role="list">
+        <li v-for="id in block.uploadIds" :key="id" class="block__row">
+          <Images class="block__icon" aria-hidden="true" />
+          <PostCard bare compact :post-id="id" />
+        </li>
 
-      <li v-if="block.newFriends.length" class="block__row">
-        <UserPlus class="block__icon" aria-hidden="true" />
-        <p class="block__text">
-          {{ block.newFriendsTotal === 1 ? 'Nueva amistad con' : 'Nuevas amistades con' }}
-          <template v-for="(f, i) in block.newFriends" :key="f.person.id">
-            <PersonLink :person="f.person" /><template v-if="i < block.newFriends.length - 2">, </template><template v-else-if="i === block.newFriends.length - 2 && !moreFriends"> y </template>
-          </template>
-          <template v-if="moreFriends"> y {{ plural(moreFriends, 'persona más', 'personas más') }}</template>
-          <span class="block__when"> · <RelativeTime :value="block.newFriends[0].createdAt" /></span>
-        </p>
-      </li>
+        <li v-if="block.newFriends.length" class="block__row">
+          <UserPlus class="block__icon" aria-hidden="true" />
+          <p class="block__text">
+            {{ block.newFriendsTotal === 1 ? 'Nueva amistad con' : 'Nuevas amistades con' }}
+            <template v-for="(f, i) in block.newFriends" :key="f.person.id">
+              <PersonLink :person="f.person" /><template v-if="i < block.newFriends.length - 2">, </template><template v-else-if="i === block.newFriends.length - 2 && !moreFriends"> y </template>
+            </template>
+            <template v-if="moreFriends"> y {{ plural(moreFriends, 'persona más', 'personas más') }}</template>
+            <span class="block__when"> · <RelativeTime :value="block.newFriends[0].createdAt" /></span>
+          </p>
+        </li>
 
-      <li v-if="block.tagged.length" class="block__row">
-        <Tag class="block__icon" aria-hidden="true" />
-        <div class="block__text">
-          <RouterLink :to="profileTab('tagged')">{{ plural(block.taggedTotal, 'foto etiquetada', 'fotos etiquetadas') }}</RouterLink>
-          <PhotoStrip
+        <li v-if="block.tagged.length" class="block__row">
+          <Tag class="block__icon" aria-hidden="true" />
+          <div class="block__text">
+            <RouterLink :to="profileTab('tagged')">{{ plural(block.taggedTotal, 'foto etiquetada', 'fotos etiquetadas') }}</RouterLink>
+            <PhotoStrip
+              small
             label="Fotos en las que sale"
-            :photos="block.tagged"
-            :more-count="block.taggedTotal - block.tagged.length"
-            :more-to="profileTab('tagged')"
-            @open="openTagged"
-          />
-        </div>
-      </li>
-    </ul>
+              :photos="block.tagged"
+              :more-count="block.taggedTotal - block.tagged.length"
+              :more-to="profileTab('tagged')"
+              @open="openTagged"
+            />
+          </div>
+        </li>
+      </ul>
+    </section>
   </article>
 </template>
 
@@ -123,13 +127,28 @@ const openTagged = (photoId) =>
     color: $color-text-muted;
   }
 
-  // Indented under the name, like Tuenti's sub-items.
+  // Apart from the status, indented under the name.
+  &__activity {
+    margin: 0 $space-3 $space-2 calc(#{$space-3} + #{$space-3} + 2.5rem);
+    padding-top: $space-2;
+    border-top: 1px dashed $color-border;
+  }
+
+  &__label {
+    margin-bottom: $space-1;
+    font-size: $fs-xs;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $color-text-muted;
+  }
+
   &__more {
     display: flex;
     flex-direction: column;
     gap: $space-2;
     margin: 0;
-    padding: 0 $space-3 $space-2 calc(#{$space-3} + #{$space-3} + 2.5rem);
+    padding: 0;
   }
 
   &__row {

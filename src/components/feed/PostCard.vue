@@ -27,6 +27,8 @@ const props = defineProps({
   nearby: { type: Object, default: null },
   /** Without avatar and name (inside an activity block). */
   bare: { type: Boolean, default: false },
+  /** One compact line: comments open on the item's own page. */
+  compact: { type: Boolean, default: false },
 })
 
 // STORES
@@ -42,6 +44,7 @@ const reporting = ref(false)
 const showGrrers = ref(false)
 const OWN_MENU = [{ key: 'delete', label: 'Eliminar', danger: true }]
 const OTHER_MENU = [{ key: 'report', label: 'Reportar', danger: true }]
+const COMPACT_PHOTOS = 4
 
 // COMPUTED
 const post = computed(() => feed.posts[props.postId])
@@ -50,13 +53,15 @@ const isAlbumUpload = computed(() => post.value?.kind === 'album_upload')
 // An album upload whose photos were all deleted has nothing left to show.
 const isVisible = computed(() => post.value && (!isAlbumUpload.value || post.value.photos.length > 0))
 const titleId = computed(() => `post-${props.postId}-title`)
-const showComments = computed(() => commenting.value || (post.value?.commentCount ?? 0) > 0)
+const showComments = computed(() => !props.compact && (commenting.value || (post.value?.commentCount ?? 0) > 0))
 const uploadLabel = computed(() => {
   const n = post.value?.photoTotal ?? 0
   const label = n === 1 ? 'ha subido una foto al álbum' : `ha subido ${n} fotos al álbum`
   return props.bare ? `${label.charAt(0).toUpperCase()}${label.slice(1)}` : label
 })
-const hiddenPhotos = computed(() => (post.value?.photoTotal ?? 0) - (post.value?.photos.length ?? 0))
+// Compact lines keep one row of thumbnails; "+N" links to the album.
+const shownPhotos = computed(() => (props.compact ? (post.value?.photos ?? []).slice(0, COMPACT_PHOTOS) : (post.value?.photos ?? [])))
+const hiddenPhotos = computed(() => (post.value?.photoTotal ?? 0) - shownPhotos.value.length)
 const what = computed(() => (isAlbumUpload.value ? 'la novedad' : 'el estado'))
 
 // The town; the distance only replaces it when the person hides the town.
@@ -117,7 +122,8 @@ const comment = async () => {
       <PhotoStrip
         v-if="isAlbumUpload"
         label="Fotos subidas"
-        :photos="post.photos"
+        :photos="shownPhotos"
+        :small="compact"
         :more-count="hiddenPhotos"
         :more-to="post.album ? { name: 'album', params: { id: post.album.id } } : null"
         @open="openUploaded"
@@ -140,7 +146,10 @@ const comment = async () => {
           <button v-if="post.grrCount" type="button" class="item__link" @click="showGrrers = true">quién</button>
         </span>
         <span class="item__sep">
-          <button type="button" class="item__link" :aria-expanded="showComments" @click="comment">
+          <RouterLink v-if="compact" class="item__link" :to="{ name: 'post', params: { id: post.id } }">
+            Comentar<template v-if="post.commentCount"> ({{ post.commentCount }})</template>
+          </RouterLink>
+          <button v-else type="button" class="item__link" :aria-expanded="showComments" @click="comment">
             Comentar<template v-if="post.commentCount"> ({{ post.commentCount }})</template>
           </button>
         </span>

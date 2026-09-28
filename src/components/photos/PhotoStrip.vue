@@ -10,13 +10,15 @@ defineProps({
   /** Photos not shown; with `moreTo`, a "+N" cell links to them. */
   moreCount: { type: Number, default: 0 },
   moreTo: { type: [Object, String], default: null },
+  /** Smaller thumbnails, for compact activity lines. */
+  small: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['open'])
 </script>
 
 <template>
-  <ul class="strip" :aria-label="label">
+  <ul class="strip" :class="{ 'strip--small': small }" :aria-label="label">
     <li v-for="p in photos" :key="p.id">
       <button type="button" class="strip__thumb" aria-label="Abrir fotografía" @click="emit('open', p.id)">
         <img v-if="p.url" :src="p.url" alt="" loading="lazy" decoding="async" />
@@ -71,6 +73,12 @@ const emit = defineEmits(['open'])
     font-weight: 700;
     color: $color-link;
     background: $color-surface-alt;
+  }
+
+  &--small &__thumb,
+  &--small &__more {
+    width: 3.25rem;
+    height: 3.25rem;
   }
 }
 </style>

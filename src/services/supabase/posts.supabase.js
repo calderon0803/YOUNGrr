@@ -1,14 +1,14 @@
 // Posts with Supabase. Same interface as local/posts.local.js.
 import { currentUserId, rpc } from '@/services/supabase/client'
 import { removePhotos, signPhotoUrls, uploadPhoto } from '@/services/supabase/storage'
-import { toPost } from '@/services/supabase/mappers'
+import { postPhotoPaths, toPost } from '@/services/supabase/mappers'
 import { validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { FEED_PAGE_SIZE, NEARBY_DEFAULT_RADIUS_KM, NEARBY_RADII_KM, REPORT_REASONS } from '@/config/app'
 
 /** Maps database posts and signs their photo URLs in one call. */
 const withPhotos = async (items) => {
-  const urls = await signPhotoUrls(items.map((p) => p.photo?.storage_path))
+  const urls = await signPhotoUrls(items.flatMap(postPhotoPaths))
   return items.map((p) => toPost(p, urls))
 }
 

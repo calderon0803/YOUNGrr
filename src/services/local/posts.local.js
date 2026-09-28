@@ -134,6 +134,7 @@ export const localPostsService = {
     const me = requireUserId(db)
     const post = findOr404(db.posts, (p) => p.id === postId, 'Esta publicación ya no existe.')
     ensure(post.authorId === me, 'forbidden', 'Solo puedes editar tus publicaciones.')
+    ensure(post.kind !== 'album_upload', 'forbidden', 'Esta novedad no se puede editar.')
     validate(
       text.trim() || post.photoId ? null : 'La publicación no puede quedar vacía.',
       rules.max(text, LIMITS.postText, 'La publicación'),

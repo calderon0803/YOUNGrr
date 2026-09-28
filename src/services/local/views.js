@@ -1,6 +1,6 @@
 // Builds the view models the UI consumes (joins + counters), as a SQL view would.
 import { canViewPhoto, canViewProfile, friendIdsOf, pendingOwnerInvite, photoOwnerIds, summaryOf } from '@/services/local/access'
-import { COMMENT_PREVIEW } from '@/config/app'
+import { ALBUM_UPLOAD_PREVIEW, COMMENT_PREVIEW } from '@/config/app'
 
 const byDateAsc = (a, b) => a.createdAt.localeCompare(b.createdAt)
 
@@ -28,8 +28,16 @@ export const postView = (db, me, post, { commentPreview = COMMENT_PREVIEW } = {}
     .slice(0, 2)
     .map((g) => summaryOf(db, g.userId))
 
+  // "Ha subido N fotos al álbum X": the photos that still exist, up to six.
+  const uploaded = post.kind === 'album_upload' ? (post.photoIds ?? []).map((id) => db.photos.find((p) => p.id === id)).filter(Boolean) : []
+  const album = post.albumId ? db.albums.find((a) => a.id === post.albumId) : null
+
   return {
     ...post,
+    kind: post.kind ?? 'post',
+    album: album ? { id: album.id, title: album.title } : null,
+    photos: uploaded.slice(0, ALBUM_UPLOAD_PREVIEW).map((p) => ({ id: p.id, url: p.url, width: p.width, height: p.height })),
+    photoTotal: uploaded.length,
     author: summaryOf(db, post.authorId),
     photo: photo
       ? { id: photo.id, url: photo.url, width: photo.width, height: photo.height, albumId: photo.albumId }

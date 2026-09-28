@@ -131,11 +131,68 @@ export const toPost = (json, urls = {}) => ({
         albumId: json.photo.album_id,
       }
     : null,
+  // "Ha subido N fotos al álbum X" items.
+  kind: json.kind ?? 'post',
+  album: json.album ? { id: json.album.id, title: json.album.title } : null,
+  photos: (json.photos ?? []).map((p) => ({ id: p.id, url: urls[p.storage_path] ?? null, width: p.width, height: p.height })),
+  photoTotal: json.photo_total ?? 0,
   grrCount: json.grr_count,
   hasGrr: json.has_grr,
   grrBy: json.grr_by.map(toSummary),
   commentCount: json.comment_count,
   comments: json.comments.map(toComment),
+})
+
+/** Storage paths of every photo a post references (single photo or album upload). */
+export const postPhotoPaths = (json) => [json.photo?.storage_path, ...(json.photos ?? []).map((p) => p.storage_path)]
+
+/** @returns {import('@/types/models').PhotoView} */
+export const toPhoto = (json, urls = {}) => ({
+  id: json.id,
+  ownerId: json.owner_id,
+  albumId: json.album_id,
+  url: urls[json.storage_path] ?? null,
+  width: json.width,
+  height: json.height,
+  caption: json.caption ?? '',
+  createdAt: json.created_at,
+  owner: toSummary(json.owner),
+  owners: (json.owners ?? []).map(toSummary),
+  isOwner: !!json.is_owner,
+  isUploader: !!json.is_uploader,
+  pendingOwners: (json.pending_owners ?? []).map(toSummary),
+  ownerInvite: json.owner_invite ? { invitedBy: toSummary(json.owner_invite.invited_by) } : null,
+  albumTitle: json.album_title ?? '',
+  albumAccessible: !!json.album_accessible,
+  grrCount: json.grr_count,
+  hasGrr: json.has_grr,
+  commentCount: json.comment_count,
+  tags: (json.tags ?? []).map((t) => ({
+    id: t.id,
+    photoId: t.photo_id,
+    userId: t.user_id,
+    taggedBy: t.tagged_by,
+    x: t.x,
+    y: t.y,
+    createdAt: t.created_at,
+    person: toSummary(t.person),
+  })),
+  ...(json.comments ? { comments: json.comments.map(toComment) } : {}),
+})
+
+/** @returns {import('@/types/models').AlbumView} */
+export const toAlbum = (json, urls = {}) => ({
+  id: json.id,
+  ownerId: json.owner_id,
+  kind: json.kind,
+  title: json.title,
+  description: json.description ?? '',
+  coverPhotoId: json.cover_photo_id,
+  createdAt: json.created_at,
+  updatedAt: json.updated_at,
+  owner: toSummary(json.owner),
+  coverUrl: urls[json.cover_path] ?? null,
+  photoCount: json.photo_count ?? 0,
 })
 
 export { toSummary }

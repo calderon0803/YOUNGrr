@@ -39,12 +39,12 @@ const toEvent = (json, urls) => ({
   members: json.members.map((m) => ({ person: toSummary(m.person), status: m.status })),
 })
 
-const withImages = async (items) => {
+export const eventsWithImages = async (items) => {
   const urls = await signPhotoUrls(items.map((e) => e.image_path))
   return items.map((e) => toEvent(e, urls))
 }
 
-const one = async (json) => (await withImages([json]))[0]
+const one = async (json) => (await eventsWithImages([json]))[0]
 
 const isNewImage = (value) => typeof value === 'string' && value.startsWith('data:')
 
@@ -59,7 +59,7 @@ const params = (input, imagePath) => ({
 
 export const supabaseEventsService = {
   async listEvents() {
-    return splitEvents(await withImages(await rpc('list_events', {}, 'No se han podido cargar los eventos.')))
+    return splitEvents(await eventsWithImages(await rpc('list_events', {}, 'No se han podido cargar los eventos.')))
   },
 
   async getEvent(eventId) {

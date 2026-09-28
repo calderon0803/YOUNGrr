@@ -12,7 +12,7 @@ const photosWithUrls = async (items) => {
   return items.map((p) => toPhoto(p, urls))
 }
 
-const albumsWithUrls = async (items) => {
+export const albumsWithUrls = async (items) => {
   const urls = await signPhotoUrls(items.map((a) => a.cover_path))
   return items.map((a) => toAlbum(a, urls))
 }

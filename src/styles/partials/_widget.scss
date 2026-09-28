@@ -1,0 +1,43 @@
+// Shared look for the small side panels (requests, events, suggestions).
+@use '../abstracts' as *;
+
+.widget {
+  &__list {
+    margin: 0;
+    padding: $space-1 $space-4;
+  }
+
+  &__item {
+    display: flex;
+    gap: $space-3;
+    padding: $space-3 0;
+
+    & + & {
+      border-top: 1px solid $color-border;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__sub {
+    font-size: $fs-sm;
+    color: $color-text-muted;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-2;
+    margin-top: $space-2;
+  }
+
+  &__all {
+    display: block;
+    padding: $space-2 $space-4 $space-3;
+    font-size: $fs-sm;
+    font-weight: 600;
+  }
+}

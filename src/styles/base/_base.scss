@@ -1,0 +1,87 @@
+@use '../abstracts' as *;
+
+html {
+  background: $color-header-bg;
+}
+
+body {
+  min-height: 100dvh;
+  font-family: $font-body;
+  font-size: $fs-base;
+  line-height: 1.45;
+  color: $color-text;
+  background: $color-bg;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: $font-display;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: $color-link;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+:focus-visible {
+  @include focus-ring;
+}
+
+::selection {
+  background: $color-brand-soft;
+}
+
+.visually-hidden {
+  @include visually-hidden;
+}
+
+.skip-link {
+  position: fixed;
+  top: $space-2;
+  left: $space-2;
+  z-index: $z-toast;
+  padding: $space-2 $space-4;
+  background: $color-surface;
+  color: $color-text;
+  border-radius: $radius;
+  transform: translateY(-200%);
+
+  &:focus {
+    transform: none;
+  }
+}
+
+.user-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.page-title {
+  font-size: $fs-xl;
+  font-weight: 800;
+  margin-bottom: $space-4;
+}
+
+.panel {
+  @include panel;
+}
+
+.panel-title {
+  @include section-title;
+  padding: $space-3 $space-4;
+  border-bottom: 1px solid $color-border;
+}
+
+.muted {
+  color: $color-text-muted;
+}

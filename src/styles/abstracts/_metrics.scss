@@ -1,0 +1,40 @@
+$font-body: 'Source Sans 3 Variable', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+$font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', $font-body;
+
+$fs-xs: 0.75rem;
+$fs-sm: 0.8125rem;
+$fs-base: 0.9375rem;
+$fs-md: 1.0625rem;
+$fs-lg: 1.25rem;
+$fs-xl: 1.625rem;
+$fs-xxl: 2.125rem;
+
+$space-1: 0.25rem;
+$space-2: 0.5rem;
+$space-3: 0.75rem;
+$space-4: 1rem;
+$space-5: 1.25rem;
+$space-6: 1.5rem;
+$space-8: 2rem;
+$space-10: 2.5rem;
+
+$radius-sm: 3px;
+$radius: 5px;
+$radius-lg: 8px;
+$radius-pill: 999px;
+
+$header-height: 3.25rem;
+$bottom-nav-height: 3.5rem;
+$content-max: 72rem;
+
+$ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+$ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+$duration-fast: 120ms;
+$duration: 200ms;
+
+$z-header: 40;
+$z-nav: 45;
+$z-dropdown: 60;
+$z-modal: 80;
+$z-viewer: 90;
+$z-toast: 100;

@@ -1,0 +1,54 @@
+// Raw YOUNGrr palette. Only the theme partial reads these; components use the
+// semantic tokens from _colors.scss.
+
+// Brand blue ("azul tinta")
+$blue-950: #0c1c40;
+$blue-900: #11265a;
+$blue-850: #142a57;
+$blue-800: #183375;
+$blue-700: #1d418c;
+$blue-600: #2350a0;
+$blue-500: #3464bd;
+$blue-400: #5b86d6;
+$blue-300: #8fb0e8;
+$blue-200: #c3d4f1;
+$blue-100: #dfe8f7;
+$blue-50: #eff4fb;
+
+// Grr accent (warm coral-orange)
+$grr-700: #b8391a;
+$grr-600: #d4441f;
+$grr-500: #f0582f;
+$grr-400: #ff7a52;
+$grr-100: #fde4da;
+$grr-50: #fff2ec;
+$grr-dark-soft: #3a2119;
+
+// Neutrals with a blue cast
+$ink-950: #0e131a;
+$ink-900: #141a23;
+$ink-850: #19212c;
+$ink-800: #1f2935;
+$ink-750: #273342;
+$ink-700: #334153;
+$ink-600: #4a586b;
+$ink-500: #5b6778;
+$ink-400: #7d8898;
+$ink-300: #a7b1bf;
+$ink-200: #cbd3de;
+$ink-150: #d9e0e9;
+$ink-100: #e6ebf1;
+$ink-75: #edf1f6;
+$ink-50: #f5f7fa;
+$white: #ffffff;
+$black: #000000;
+
+// Status
+$green-700: #22683f;
+$green-100: #dff1e6;
+$green-dark-soft: #173524;
+$green-300: #7bd0a0;
+$red-700: #b3261e;
+$red-100: #fbe3e1;
+$red-dark-soft: #3c1b1a;
+$red-300: #f2a39d;

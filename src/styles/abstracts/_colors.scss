@@ -1,0 +1,44 @@
+// Semantic color tokens. Each one resolves to a CSS custom property defined in
+// styles/base/_theme.scss, so light/dark themes switch at runtime.
+
+$color-bg: var(--c-bg);
+$color-surface: var(--c-surface);
+$color-surface-alt: var(--c-surface-alt);
+$color-surface-hover: var(--c-surface-hover);
+$color-border: var(--c-border);
+$color-border-strong: var(--c-border-strong);
+
+$color-text: var(--c-text);
+$color-text-muted: var(--c-text-muted);
+$color-text-soft: var(--c-text-soft);
+$color-link: var(--c-link);
+
+$color-brand: var(--c-brand);
+$color-brand-strong: var(--c-brand-strong);
+$color-brand-soft: var(--c-brand-soft);
+$color-brand-tint: var(--c-brand-tint);
+$color-on-brand: var(--c-on-brand);
+$color-on-brand-muted: var(--c-on-brand-muted);
+
+$color-header-bg: var(--c-header-bg);
+$color-header-hover: var(--c-header-hover);
+
+$color-grr: var(--c-grr);
+$color-grr-strong: var(--c-grr-strong);
+$color-grr-soft: var(--c-grr-soft);
+$color-grr-logo: var(--c-grr-logo);
+
+$color-success: var(--c-success);
+$color-success-soft: var(--c-success-soft);
+$color-danger: var(--c-danger);
+$color-danger-soft: var(--c-danger-soft);
+
+$color-focus: var(--c-focus);
+$color-overlay: var(--c-overlay);
+$color-viewer-bg: var(--c-viewer-bg);
+$color-viewer-text: var(--c-viewer-text);
+$color-viewer-solid: var(--c-viewer-solid);
+$color-shadow: var(--c-shadow);
+$color-skeleton: var(--c-skeleton);
+$color-toast-bg: var(--c-toast-bg);
+$color-toast-text: var(--c-toast-text);

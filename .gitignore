@@ -1,0 +1,12 @@
+node_modules
+dist
+dev-dist
+*.local
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.DS_Store
+
+# Local Claude Code config (dev server launch settings)
+.claude/

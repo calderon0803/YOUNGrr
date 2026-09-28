@@ -19,7 +19,7 @@ defineProps({
 const emit = defineEmits(['retry'])
 
 // DATA
-const NO_RETRY = ['not_found', 'forbidden']
+const NO_RETRY = ['not_found', 'forbidden', 'not_available']
 </script>
 
 <template>

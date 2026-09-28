@@ -1,0 +1,90 @@
+@use '../abstracts' as *;
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+
+  &__label {
+    font-size: $fs-sm;
+    font-weight: 600;
+    color: $color-text;
+  }
+
+  &__hint {
+    font-size: $fs-xs;
+    color: $color-text-muted;
+  }
+
+  &__error {
+    font-size: $fs-sm;
+    color: $color-danger;
+  }
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: $space-2 $space-3;
+  background: $color-surface;
+  border: 1px solid $color-border-strong;
+  border-radius: $radius;
+  color: $color-text;
+  transition: border-color $duration-fast;
+
+  &::placeholder {
+    color: $color-text-soft;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $color-text-soft;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: -1px;
+    border-color: $color-focus;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: $color-danger;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 5rem;
+  line-height: 1.45;
+}
+
+.form-grid {
+  display: grid;
+  gap: $space-4;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-2;
+  flex-wrap: wrap;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+
+  input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: $color-brand;
+  }
+}

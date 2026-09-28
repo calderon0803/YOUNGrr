@@ -1,0 +1,67 @@
+// Shared layout for the settings sections.
+@use '../abstracts' as *;
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+
+  &__block {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+    padding: $space-4;
+
+    & + & {
+      border-top: 1px solid $color-border;
+    }
+  }
+
+  &__title {
+    font-size: $fs-md;
+    font-weight: 700;
+  }
+
+  &__form {
+    max-width: 26rem;
+  }
+
+  &__options {
+    display: grid;
+    gap: $space-1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__option {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-3;
+    padding: $space-2 $space-3;
+    border: 1px solid $color-border;
+    border-radius: $radius;
+    cursor: pointer;
+
+    input {
+      width: 1.05rem;
+      height: 1.05rem;
+      margin-top: 0.2rem;
+      accent-color: $color-brand;
+    }
+
+    &:has(input:checked) {
+      border-color: $color-brand;
+      background: $color-brand-tint;
+    }
+  }
+
+  &__option-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__option-hint {
+    font-size: $fs-sm;
+    color: $color-text-muted;
+  }
+}

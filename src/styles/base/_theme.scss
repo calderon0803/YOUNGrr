@@ -1,0 +1,90 @@
+@use '../abstracts/palette' as p;
+
+:root {
+  color-scheme: light;
+  --c-bg: #{p.$ink-100};
+  --c-surface: #{p.$white};
+  --c-surface-alt: #{p.$ink-50};
+  --c-surface-hover: #{p.$ink-75};
+  --c-border: #{p.$ink-150};
+  --c-border-strong: #{p.$ink-200};
+
+  --c-text: #{p.$ink-900};
+  --c-text-muted: #{p.$ink-500};
+  --c-text-soft: #{p.$ink-400};
+  --c-link: #{p.$blue-600};
+
+  --c-brand: #{p.$blue-600};
+  --c-brand-strong: #{p.$blue-800};
+  --c-brand-soft: #{p.$blue-100};
+  --c-brand-tint: #{p.$blue-50};
+  --c-on-brand: #{p.$white};
+  --c-on-brand-muted: #{p.$blue-200};
+
+  --c-header-bg: #{p.$blue-600};
+  --c-header-hover: #{p.$blue-700};
+
+  --c-grr: #{p.$grr-500};
+  --c-grr-strong: #{p.$grr-700};
+  --c-grr-soft: #{p.$grr-50};
+  --c-grr-logo: #{p.$grr-400};
+
+  --c-success: #{p.$green-700};
+  --c-success-soft: #{p.$green-100};
+  --c-danger: #{p.$red-700};
+  --c-danger-soft: #{p.$red-100};
+
+  --c-focus: #{p.$blue-500};
+  --c-overlay: #{rgba(p.$ink-950, 0.55)};
+  --c-viewer-bg: #{rgba(p.$ink-950, 0.94)};
+  --c-viewer-solid: #{p.$ink-950};
+  --c-viewer-text: #{p.$ink-75};
+  --c-shadow: #{rgba(p.$blue-950, 0.12)};
+  --c-skeleton: #{p.$ink-100};
+  --c-toast-bg: #{p.$ink-900};
+  --c-toast-text: #{p.$white};
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-bg: #{p.$ink-950};
+  --c-surface: #{p.$ink-900};
+  --c-surface-alt: #{p.$ink-850};
+  --c-surface-hover: #{p.$ink-800};
+  --c-border: #{p.$ink-800};
+  --c-border-strong: #{p.$ink-700};
+
+  --c-text: #{p.$ink-75};
+  --c-text-muted: #{p.$ink-300};
+  --c-text-soft: #{p.$ink-400};
+  --c-link: #{p.$blue-300};
+
+  --c-brand: #{p.$blue-500};
+  --c-brand-strong: #{p.$blue-300};
+  --c-brand-soft: #{p.$ink-750};
+  --c-brand-tint: #{p.$ink-850};
+  --c-on-brand: #{p.$white};
+  --c-on-brand-muted: #{p.$blue-200};
+
+  --c-header-bg: #{p.$blue-850};
+  --c-header-hover: #{p.$blue-800};
+
+  --c-grr: #{p.$grr-400};
+  --c-grr-strong: #{p.$grr-400};
+  --c-grr-soft: #{p.$grr-dark-soft};
+  --c-grr-logo: #{p.$grr-400};
+
+  --c-success: #{p.$green-300};
+  --c-success-soft: #{p.$green-dark-soft};
+  --c-danger: #{p.$red-300};
+  --c-danger-soft: #{p.$red-dark-soft};
+
+  --c-focus: #{p.$blue-300};
+  --c-overlay: #{rgba(p.$black, 0.65)};
+  --c-viewer-bg: #{rgba(p.$black, 0.95)};
+  --c-viewer-solid: #{p.$black};
+  --c-shadow: #{rgba(p.$black, 0.4)};
+  --c-skeleton: #{p.$ink-800};
+  --c-toast-bg: #{p.$ink-75};
+  --c-toast-text: #{p.$ink-900};
+}

@@ -64,7 +64,7 @@ onMounted(async () => {
         <div class="field">
           <label class="field__label" for="pw-current">Contraseña actual</label>
           <input id="pw-current" v-model="password.current" class="input" type="password" autocomplete="current-password" />
-          <p class="field__hint">Si es una cuenta de demostración, déjalo vacío.</p>
+          <p v-if="auth.isLocalBackend" class="field__hint">Si es una cuenta de demostración, déjalo vacío.</p>
         </div>
         <div class="field">
           <label class="field__label" for="pw-next">Nueva contraseña</label>

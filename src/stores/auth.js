@@ -27,8 +27,11 @@ export const useAuthStore = defineStore('auth', () => {
     me.value = await authService.login(email, password)
   }
 
+  /** @returns {Promise<{ needsConfirmation: boolean }>} */
   const register = async (input) => {
-    me.value = await authService.register(input)
+    const { profile, needsConfirmation } = await authService.register(input)
+    me.value = profile
+    return { needsConfirmation }
   }
 
   const loginDemo = async (userId) => {

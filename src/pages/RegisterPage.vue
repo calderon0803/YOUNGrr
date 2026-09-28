@@ -1,7 +1,9 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { MailCheck } from 'lucide-vue-next'
 import CityPicker from '@/components/common/CityPicker.vue'
+import StateMessage from '@/components/common/StateMessage.vue'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
@@ -17,6 +19,8 @@ const form = reactive({ firstName: '', lastName: '', email: '', password: '', lo
 const errors = reactive({})
 const serverError = ref('')
 const submitting = ref(false)
+/** Set when Supabase asks the user to confirm their email first. */
+const confirmEmail = ref('')
 
 // METHODS
 const validateForm = () => {
@@ -33,7 +37,11 @@ const submit = async () => {
   if (!validateForm()) return
   submitting.value = true
   try {
-    await auth.register({ ...form })
+    const { needsConfirmation } = await auth.register({ ...form })
+    if (needsConfirmation) {
+      confirmEmail.value = form.email.trim().toLowerCase()
+      return
+    }
     toast.success('Bienvenido a YOUNGrr. Busca a tus amigos para empezar.')
     router.replace({ name: 'friends', query: { tab: 'search' } })
   } catch (e) {
@@ -45,7 +53,17 @@ const submit = async () => {
 </script>
 
 <template>
-  <div class="register panel">
+  <div v-if="confirmEmail" class="register panel">
+    <h1 class="visually-hidden">Confirma tu correo</h1>
+    <StateMessage
+      :icon="MailCheck"
+      title="Revisa tu correo"
+      :text="`Te hemos enviado un enlace a ${confirmEmail}. Ábrelo para confirmar tu cuenta y después entra en YOUNGrr.`"
+    >
+      <RouterLink class="btn btn--primary" :to="{ name: 'login' }">Ir a entrar</RouterLink>
+    </StateMessage>
+  </div>
+  <div v-else class="register panel">
     <h1 class="register__title">Crear cuenta</h1>
     <p class="register__lead">YOUNGrr es para tus amigos de verdad. Usa tu nombre real para que te encuentren.</p>
 

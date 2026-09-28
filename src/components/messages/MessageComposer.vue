@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { Send } from 'lucide-vue-next'
 import { LIMITS } from '@/utils/validation'
 
@@ -11,6 +11,7 @@ const props = defineProps({
 })
 
 // DATA
+const inputId = useId()
 const text = ref('')
 const input = ref(null)
 
@@ -25,6 +26,8 @@ const submit = () => {
   input.value?.focus()
 }
 
+const focus = () => input.value?.focus()
+
 const onKeydown = (event) => {
   // Enter sends, Shift+Enter adds a new line (desktop habit).
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
@@ -32,13 +35,15 @@ const onKeydown = (event) => {
     submit()
   }
 }
+
+defineExpose({ focus })
 </script>
 
 <template>
   <form class="composer" @submit.prevent="submit">
-    <label class="visually-hidden" for="message-input">Mensaje para {{ recipient }}</label>
+    <label class="visually-hidden" :for="inputId">Mensaje para {{ recipient }}</label>
     <textarea
-      id="message-input"
+      :id="inputId"
       ref="input"
       v-model="text"
       class="composer__input"

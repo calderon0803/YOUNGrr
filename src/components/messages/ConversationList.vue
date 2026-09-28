@@ -9,6 +9,8 @@ import { shortStamp } from '@/utils/time'
 defineProps({
   conversations: { type: Array, required: true },
   activeId: { type: String, default: null },
+  /** Tighter rows for the chat panel. */
+  compact: { type: Boolean, default: false },
 })
 
 // STORES
@@ -19,7 +21,7 @@ const now = useNow()
 </script>
 
 <template>
-  <ul class="conversations" role="list" aria-label="Conversaciones">
+  <ul class="conversations" :class="{ 'conversations--compact': compact }" role="list" aria-label="Conversaciones">
     <li v-for="c in conversations" :key="c.id">
       <RouterLink
         class="conversations__item"
@@ -27,7 +29,7 @@ const now = useNow()
         :to="{ name: 'conversation', params: { id: c.id } }"
         :aria-current="c.id === activeId ? 'page' : undefined"
       >
-        <UserAvatar :person="c.other" size="md" />
+        <UserAvatar :person="c.other" :size="compact ? 'sm' : 'md'" />
         <span class="conversations__body">
           <span class="conversations__top">
             <span class="conversations__name">{{ fullName(c.other) }}</span>
@@ -109,6 +111,11 @@ const now = useNow()
     @include truncate;
     font-size: $fs-sm;
     color: $color-text-muted;
+  }
+
+  &--compact &__item {
+    gap: $space-2;
+    padding: $space-2 $space-3;
   }
 
   &__dot {

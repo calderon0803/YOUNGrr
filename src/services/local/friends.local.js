@@ -14,7 +14,7 @@ import {
 import { dropNotifications, notify } from '@/services/local/notify'
 import { ensure } from '@/services/errors'
 import { uid } from '@/utils/ids'
-import { nowIso } from '@/utils/time'
+import { nowIso, toDateInput } from '@/utils/time'
 
 const requestView = (db, me, request, otherId) => {
   const p = profileOf(db, otherId)
@@ -120,4 +120,29 @@ export const localFriendsService = {
     await commit()
     return personView(db, me, otherId)
   },
+
+  /** Friends' birthdays in the coming days (30 by default), soonest first. */
+  async upcomingBirthdays({ days = 30 } = {}) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return friendIdsOf(db, me)
+      .map((id) => profileOf(db, id))
+      .filter((p) => p.birthday)
+      .map((p) => {
+        const [, m, d] = p.birthday.split('-').map(Number)
+        let next = new Date(today.getFullYear(), m - 1, d)
+        if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d)
+        return {
+          person: { id: p.id, firstName: p.firstName, lastName: p.lastName, avatarUrl: p.avatarUrl },
+          date: toDateInput(next),
+          daysLeft: Math.round((next - today) / 86_400_000),
+        }
+      })
+      .filter((b) => b.daysLeft <= days)
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+  },
 }
+

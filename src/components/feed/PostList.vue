@@ -39,7 +39,7 @@ watch(sentinel, observe)
 </script>
 
 <template>
-  <AsyncState :status="list.status" :error="list.error" :empty="list.ids.length === 0" skeleton="post" :skeleton-count="2" @retry="emit('retry')">
+  <AsyncState :status="list.status" :error="list.error" :empty="list.ids.length === 0" skeleton="list" :skeleton-count="4" @retry="emit('retry')">
     <template #empty>
       <slot name="empty" />
     </template>
@@ -49,7 +49,7 @@ watch(sentinel, observe)
     </TransitionGroup>
 
     <div v-if="list.hasMore" ref="sentinel" class="post-list__more">
-      <button type="button" class="btn btn--secondary" :disabled="list.loadingMore" @click="emit('more')">
+      <button type="button" class="btn btn--ghost btn--sm" :disabled="list.loadingMore" @click="emit('more')">
         {{ list.loadingMore ? 'Cargando…' : 'Ver publicaciones anteriores' }}
       </button>
     </div>
@@ -58,16 +58,21 @@ watch(sentinel, observe)
 </template>
 
 <style lang="scss" scoped>
+// One block with dividers, like Tuenti's list of friends' news.
 .post-list {
   display: flex;
   flex-direction: column;
-  gap: $space-3;
+
+  > * + * {
+    border-top: 1px solid $color-border;
+  }
 
   &__more,
   &__end {
     display: flex;
     justify-content: center;
-    padding: $space-4 0;
+    padding: $space-2 0 $space-3;
+    border-top: 1px solid $color-border;
   }
 
   &__end {

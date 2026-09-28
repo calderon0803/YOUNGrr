@@ -1,6 +1,6 @@
 <script setup>
 import { computed, markRaw, useId } from 'vue'
-import { CalendarDays, Eye, Images, MessageCircle, MessageSquare, Tag, UserCheck, UserPlus } from 'lucide-vue-next'
+import { CalendarDays, Eye, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus } from 'lucide-vue-next'
 import GrrIcon from '@/components/common/GrrIcon.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useAuthStore } from '@/stores/auth'
@@ -18,6 +18,7 @@ const user = useUserStore()
 // DATA
 const titleId = useId()
 const ICONS = {
+  wall: markRaw(MessageSquareText),
   messages: markRaw(MessageCircle),
   requests: markRaw(UserPlus),
   events: markRaw(CalendarDays),

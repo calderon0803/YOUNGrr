@@ -42,6 +42,8 @@ export const toProfileView = (json) => ({
   canSendRequest: !!json.can_send_request,
   // Only present on your own profile.
   visits: json.visits ?? null,
+  // Latest text-only post, shown as the profile status.
+  status: json.status ? { postId: json.status.post_id, text: json.status.text, createdAt: json.status.created_at } : null,
 })
 
 export const toFriendRequest = (json) => {
@@ -137,3 +139,14 @@ export const toPost = (json, urls = {}) => ({
 })
 
 export { toSummary }
+
+export const toWallMessage = (json) => ({
+  id: json.id,
+  profileId: json.profile_id,
+  authorId: json.author_id,
+  text: json.text,
+  createdAt: json.created_at,
+  author: toSummary(json.author),
+})
+
+export const toBirthday = (json) => ({ person: toSummary(json.person), date: json.date, daysLeft: json.days_left })

@@ -5,18 +5,22 @@ import { Lock, UserX } from 'lucide-vue-next'
 import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import TabNav from '@/components/common/TabNav.vue'
-import ProfileHeader from '@/components/profile/ProfileHeader.vue'
-import ProfileInfo from '@/components/profile/ProfileInfo.vue'
+import RelativeTime from '@/components/common/RelativeTime.vue'
+import ProfileAside from '@/components/profile/ProfileAside.vue'
+import ProfileWall from '@/components/profile/ProfileWall.vue'
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import ProfilePhotos from '@/components/profile/ProfilePhotos.vue'
 import ProfileTaggedPhotos from '@/components/profile/ProfileTaggedPhotos.vue'
 import ProfileAlbums from '@/components/profile/ProfileAlbums.vue'
 import ProfileFriends from '@/components/profile/ProfileFriends.vue'
-import PostComposer from '@/components/feed/PostComposer.vue'
 import PostList from '@/components/feed/PostList.vue'
 import { useUserStore } from '@/stores/user'
 import { useFeedStore } from '@/stores/feed'
 import { useNotificationsStore } from '@/stores/notifications'
+import { fullName } from '@/utils/text'
+
+// Tuenti-style profile: details on the left; name, current status and the wall
+// (tablón) on the right, with the rest in tabs.
 
 // STORES
 const route = useRoute()
@@ -26,30 +30,28 @@ const notifications = useNotificationsStore()
 
 // DATA
 const editing = ref(false)
-const TAB_KEYS = ['posts', 'photos', 'tagged', 'albums', 'friends', 'info']
+const TAB_KEYS = ['wall', 'posts', 'photos', 'tagged', 'albums', 'friends']
+const TABS = [
+  { key: 'wall', label: 'Tablón' },
+  { key: 'posts', label: 'Publicaciones' },
+  { key: 'photos', label: 'Fotos' },
+  { key: 'tagged', label: 'Etiquetas' },
+  { key: 'albums', label: 'Álbumes' },
+  { key: 'friends', label: 'Amigos' },
+]
+// Your own tabs clear the home counters they cover.
+const SEEN_LIST = { wall: 'wall', posts: 'posts', photos: 'photos', tagged: 'tagged', friends: 'friends' }
 
 // COMPUTED
 const userId = computed(() => String(route.params.id))
 const state = computed(() => user.profiles[userId.value] ?? { status: 'loading', error: null, data: null })
 const view = computed(() => state.value.data)
 const isSelf = computed(() => view.value?.friendship === 'self')
-const tab = computed(() => (TAB_KEYS.includes(route.query.tab) ? route.query.tab : 'posts'))
+const tab = computed(() => (TAB_KEYS.includes(route.query.tab) ? route.query.tab : 'wall'))
 const timeline = computed(() => feed.timelines[userId.value] ?? { ids: [], status: 'loading', error: null, hasMore: false })
 
-const tabs = computed(() => [
-  { key: 'posts', label: 'Publicaciones' },
-  { key: 'photos', label: 'Fotos' },
-  { key: 'tagged', label: 'Etiquetas' },
-  { key: 'albums', label: 'Álbumes' },
-  { key: 'friends', label: 'Amigos' },
-  { key: 'info', label: 'Información' },
-])
-
 // METHODS
-const tabRoute = (key) => ({ query: key === 'posts' ? {} : { tab: key } })
-
-// Your own tabs clear the home counters they cover.
-const SEEN_LIST = { posts: 'posts', photos: 'photos', tagged: 'tagged', friends: 'friends' }
+const tabRoute = (key) => ({ query: key === 'wall' ? {} : { tab: key } })
 
 const loadTab = () => {
   if (isSelf.value && SEEN_LIST[tab.value]) notifications.markSeen({ list: SEEN_LIST[tab.value] })
@@ -75,40 +77,48 @@ watch(tab, loadTab)
   <div class="profile">
     <AsyncState :status="state.status" :error="state.error" skeleton="block" @retry="user.loadProfile(userId)">
       <template v-if="view">
-        <ProfileHeader :view="view" @edit="editing = true" />
+        <ProfileAside :key="view.profile.id" class="profile__aside" :view="view" @edit="editing = true" />
 
-        <div v-if="!view.canViewProfile" class="panel">
-          <StateMessage
-            :icon="Lock"
-            :title="`El perfil de ${view.profile.firstName} es privado.`"
-            :text="view.canSendRequest ? 'Solo sus amigos pueden verlo. Envíale una solicitud de amistad.' : 'Solo sus amigos pueden verlo.'"
-          />
-        </div>
+        <div class="profile__main">
+          <header class="profile__head panel">
+            <h1 class="profile__name">{{ fullName(view.profile) }}</h1>
+            <p v-if="view.status" class="profile__status">
+              <span class="user-text">{{ view.status.text }}</span>
+              <RelativeTime class="profile__status-time" :value="view.status.createdAt" />
+            </p>
+            <p v-else-if="isSelf && view.canViewProfile" class="profile__status profile__status--empty">
+              Todavía no has escrito tu estado. Hazlo desde
+              <RouterLink :to="{ name: 'home' }">Inicio</RouterLink>.
+            </p>
+          </header>
 
-        <template v-else>
-          <TabNav class="profile__tabs panel" label="Secciones del perfil" :tabs="tabs" :active="tab" :to="tabRoute" />
+          <div v-if="!view.canViewProfile" class="panel">
+            <StateMessage
+              :icon="Lock"
+              :title="`El perfil de ${view.profile.firstName} es privado.`"
+              :text="view.canSendRequest ? 'Solo sus amigos pueden verlo. Envíale una solicitud de amistad.' : 'Solo sus amigos pueden verlo.'"
+            />
+          </div>
 
-          <section v-if="tab === 'posts'" class="profile__section" aria-label="Publicaciones">
-            <PostComposer v-if="isSelf" />
-            <PostList :list="timeline" @retry="feed.loadTimeline(userId)" @more="feed.loadTimeline(userId, { more: true })">
+          <section v-else class="profile__content panel" aria-label="Secciones del perfil">
+            <TabNav class="profile__tabs" label="Secciones del perfil" :tabs="TABS" :active="tab" :to="tabRoute" />
+
+            <ProfileWall v-if="tab === 'wall'" :view="view" />
+            <PostList v-else-if="tab === 'posts'" :list="timeline" @retry="feed.loadTimeline(userId)" @more="feed.loadTimeline(userId, { more: true })">
               <template #empty>
-                <div class="panel">
-                  <StateMessage
-                    :icon="UserX"
-                    :title="isSelf ? 'Todavía no has publicado nada.' : `${view.profile.firstName} todavía no ha publicado nada.`"
-                    :text="isSelf ? 'Cuenta qué estás haciendo: tus amigos lo verán en su inicio.' : ''"
-                  />
-                </div>
+                <StateMessage
+                  :icon="UserX"
+                  :title="isSelf ? 'Todavía no has publicado nada.' : `${view.profile.firstName} todavía no ha publicado nada.`"
+                  :text="isSelf ? 'Escribe tu estado en Inicio: tus amigos lo verán en sus novedades.' : ''"
+                />
               </template>
             </PostList>
+            <ProfilePhotos v-else-if="tab === 'photos'" :view="view" />
+            <ProfileTaggedPhotos v-else-if="tab === 'tagged'" :view="view" />
+            <ProfileAlbums v-else-if="tab === 'albums'" :view="view" />
+            <ProfileFriends v-else :view="view" />
           </section>
-
-          <ProfilePhotos v-else-if="tab === 'photos'" :view="view" />
-          <ProfileTaggedPhotos v-else-if="tab === 'tagged'" :view="view" />
-          <ProfileAlbums v-else-if="tab === 'albums'" :view="view" />
-          <ProfileFriends v-else-if="tab === 'friends'" :view="view" />
-          <ProfileInfo v-else :profile="view.profile" :is-self="isSelf" @edit="editing = true" />
-        </template>
+        </div>
 
         <ProfileEditDialog v-if="isSelf" :open="editing" :profile="view.profile" @close="editing = false" />
       </template>
@@ -122,22 +132,65 @@ watch(tab, loadTab)
   flex-direction: column;
   gap: $space-3;
 
-  &__tabs {
-    border-radius: 0;
-  }
-
-  &__section {
+  &__main {
+    order: 2;
     display: flex;
     flex-direction: column;
     gap: $space-3;
+    min-width: 0;
+  }
+
+  &__head {
+    padding: $space-3 $space-4;
+  }
+
+  &__name {
+    font-size: $fs-xl;
+    font-weight: 800;
+  }
+
+  &__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 $space-2;
+    margin-top: $space-1;
+    font-size: $fs-md;
+
+    &--empty {
+      font-size: $fs-sm;
+      color: $color-text-muted;
+    }
+  }
+
+  &__status-time {
+    font-size: $fs-xs;
+    color: $color-text-muted;
+  }
+
+  &__content {
+    overflow: hidden;
+  }
+
+  &__tabs {
+    background: $color-surface-alt;
+  }
+
+  // The tabs' contents come as panels of their own; inside this block they are flat.
+  &__content :deep(> .panel) {
+    border: 0;
+    border-radius: 0;
   }
 }
 
 /* Media queries */
 
 @media (min-width: $bp-tablet) {
-  .profile__tabs {
-    border-radius: $radius;
+  .profile {
+    display: grid;
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+    align-items: start;
+    gap: $space-4;
   }
 }
 </style>

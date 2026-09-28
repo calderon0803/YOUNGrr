@@ -15,6 +15,7 @@ import { nowIso } from '@/utils/time'
 
 /** Stored notification groups, in display order. `list` is where visiting clears them. */
 const STORED_GROUPS = [
+  { key: 'wall', types: ['wall_message'], pref: 'comments', one: 'mensaje nuevo en tu tablón', many: 'mensajes nuevos en tu tablón', single: 'wall', list: 'wall' },
   { key: 'comments_posts', types: ['comment_post'], pref: 'comments', one: 'comentario nuevo en tus publicaciones', many: 'comentarios nuevos en tus publicaciones', single: 'post', list: 'posts' },
   { key: 'comments_photos', types: ['comment_photo'], pref: 'comments', one: 'comentario nuevo en tus fotos', many: 'comentarios nuevos en tus fotos', single: 'photo', list: 'photos' },
   { key: 'grr_posts', types: ['grr_post'], pref: 'grr', one: 'Grr nuevo en tus publicaciones', many: 'Grr nuevos en tus publicaciones', single: 'post', list: 'posts' },
@@ -29,6 +30,7 @@ const pick = (n, one, many) => (n === 1 ? one : many)
 
 const listLink = (me, list) => {
   if (list === 'friends') return '/friends'
+  if (list === 'wall') return `/profile/${me}`
   if (list === 'posts') return `/profile/${me}`
   return `/profile/${me}?tab=${list}`
 }
@@ -36,6 +38,7 @@ const listLink = (me, list) => {
 const singleLink = (me, kind, targetId) => {
   if (kind === 'post') return `/post/${targetId}`
   if (kind === 'photo') return `/photo/${targetId}`
+  if (kind === 'wall') return listLink(me, 'wall')
   return listLink(me, 'friends')
 }
 
@@ -115,7 +118,7 @@ export const notificationsService = {
   /**
    * Marks as seen what a visited place shows: one target (a post or photo) or
    * a whole list (your posts, photos, tags, friends).
-   * @param {{ targetId?: string, list?: 'posts' | 'photos' | 'tagged' | 'friends' }} place
+   * @param {{ targetId?: string, list?: 'wall' | 'posts' | 'photos' | 'tagged' | 'friends' }} place
    */
   async markSeen({ targetId = null, list = null }) {
     const db = await getDb()

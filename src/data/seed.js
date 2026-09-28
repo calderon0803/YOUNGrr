@@ -219,6 +219,8 @@ export const buildSeed = () => {
   const P = (key, author, text, createdAt, photoId = null) => ({ id: `p_${key}`, authorId: id(author), text, photoId, createdAt, updatedAt: null })
 
   const posts = [
+    P('estado-ana', 'ana', 'Contando las horas para Lisboa ✈️', ago({ h: 7 })),
+    P('estado-laura', 'laura', 'Modo exámenes activado. No me habléis hasta el viernes', ago({ d: 1, h: 6 })),
     P('lisboa', 'ana', 'Nos vamos de viaje!!! ✈️ Lisboa allá vamos, que alguien riegue mis plantas', ago({ m: 25 }), wp.lisboa),
     P('viernes', 'carlos', 'Por fin viernes 😂', ago({ h: 2 }), wp.viernes),
     P('partido', 'pablo', 'Mañana partido a las 11 en La Albericia. Nos faltan dos, ¿quién se apunta?', ago({ h: 4 })),
@@ -312,6 +314,19 @@ export const buildSeed = () => {
     { id: 't_6', photoId: 'ph_verano-7', userId: id('javi'), taggedBy: id('carlos'), x: 0.7, y: 0.42, createdAt: ago({ d: 34 }) },
     // A friend tags Carlos in a photo she uploaded.
     { id: 't_7', photoId: 'ph_piso-2', userId: id('carlos'), taggedBy: id('sara'), x: 0.5, y: 0.4, createdAt: ago({ d: 3 }) },
+  ]
+
+  // ---- Profile walls (tablón) --------------------------------------------
+
+  let wallSeq = 0
+  const W = (profile, author, text, createdAt) => ({ id: `w_${++wallSeq}`, profileId: id(profile), authorId: id(author), text, createdAt })
+  const wallMessages = [
+    W('carlos', 'ana', 'Ya he visto las fotos de Comillas. ¿Cuándo repetimos? 😎', ago({ h: 1, m: 20 })),
+    W('carlos', 'laura', 'Feliz semana! Nos vemos el viernes en la cena', ago({ d: 1, h: 3 })),
+    W('carlos', 'pablo', 'Me debes una revancha al futbolín', ago({ d: 4 })),
+    W('ana', 'carlos', 'Pásalo genial en Lisboa!!', ago({ m: 18 })),
+    W('ana', 'sara', 'Te echo de menos, a ver si vienes pronto a Madrid', ago({ d: 2 })),
+    W('laura', 'javi', 'Gracias por los apuntes, te debo un café', ago({ d: 3 })),
   ]
 
   // ---- Co-owned photos ---------------------------------------------------
@@ -409,6 +424,7 @@ export const buildSeed = () => {
 
   const notifications = [
     N('grr_post', 'ana', 'p_viernes', ago({ m: 10 })),
+    N('wall_message', 'ana', id('carlos'), ago({ h: 1, m: 20 })),
     N('comment_post', 'pablo', 'p_viernes', ago({ m: 30 })),
     N('grr_post', 'pablo', 'p_viernes', ago({ m: 12 })),
     N('comment_photo', 'ana', 'ph_cumple-5', ago({ h: 5 })),
@@ -440,6 +456,7 @@ export const buildSeed = () => {
     messages,
     notifications,
     profileVisits: [],
+    wallMessages,
     hiddenPosts: [],
     reports: [],
   }

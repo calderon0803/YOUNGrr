@@ -11,6 +11,8 @@ import { errorMessage } from '@/services/errors'
 // PROPS
 const props = defineProps({
   post: { type: Object, required: true },
+  /** Tuenti style: the comment box only opens when you click "Comentar". */
+  showForm: { type: Boolean, default: true },
 })
 
 // STORES
@@ -45,7 +47,7 @@ const remove = async (commentId) => {
   if (ok) feed.deleteComment(props.post.id, commentId)
 }
 
-const focus = () => form.value?.focus()
+const focus = () => requestAnimationFrame(() => form.value?.focus())
 
 defineExpose({ focus })
 </script>
@@ -64,15 +66,17 @@ defineExpose({ focus })
         @delete="remove"
       />
     </TransitionGroup>
-    <CommentForm ref="form" :submit="(text) => feed.addComment(post.id, text)" />
+    <CommentForm v-if="showForm" ref="form" :submit="(text) => feed.addComment(post.id, text)" />
   </div>
 </template>
 
 <style lang="scss" scoped>
 .post-comments {
-  padding: $space-1 $space-4 $space-3;
+  margin-top: $space-2;
+  padding: 0 $space-3 $space-2;
   background: $color-surface-alt;
-  border-top: 1px solid $color-border;
+  border-left: 2px solid $color-brand-soft;
+  border-radius: 0 $radius-sm $radius-sm 0;
 
   &__more {
     @include reset-button;

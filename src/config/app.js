@@ -11,7 +11,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v11',
+  db: 'youngrr:db:v13',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
 }
@@ -49,6 +49,7 @@ export const IMAGE = {
 export const TEXT_LIMITS = {
   postText: 2000,
   commentText: 500,
+  wallText: 500,
   messageText: 2000,
   name: 40,
   city: 60,

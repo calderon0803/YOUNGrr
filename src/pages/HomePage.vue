@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { MapPin, Users } from 'lucide-vue-next'
-import PostComposer from '@/components/feed/PostComposer.vue'
 import PostList from '@/components/feed/PostList.vue'
 import NearbyRadius from '@/components/feed/NearbyRadius.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
@@ -32,7 +31,6 @@ const editingLocation = ref(false)
 
 // COMPUTED
 const tab = computed(() => (route.query.feed === 'nearby' ? 'nearby' : 'friends'))
-const myStatus = computed(() => user.profiles[auth.meId]?.data?.status ?? null)
 const hasFriends = computed(() => (user.profiles[auth.meId]?.data?.friendsCount ?? 1) > 0)
 const radiusKm = computed(() => user.settings?.nearby?.radiusKm ?? NEARBY_DEFAULT_RADIUS_KM)
 // Reload "Cerca de ti" when the user changes town.
@@ -48,9 +46,6 @@ const load = () => {
     feed.loadNearby(radiusKm.value)
   }
 }
-
-// A text-only post is your new status.
-const onPublished = () => user.loadProfile(auth.meId, { silent: true })
 
 const changeRadius = async (km) => {
   await user.setNearbyRadius(km)
@@ -73,8 +68,7 @@ watch(locationKey, () => {
   <div class="home">
     <h1 class="visually-hidden">Inicio</h1>
 
-    <aside class="home__left" aria-label="Tu estado y tus novedades">
-      <PostComposer :status="myStatus" @published="onPublished" />
+    <aside class="home__left" aria-label="Tus novedades">
       <NotificationSummary />
     </aside>
 
@@ -100,7 +94,7 @@ watch(locationKey, () => {
           >
             <RouterLink class="btn btn--primary" :to="{ name: 'friends', query: { tab: 'search' } }">Buscar personas</RouterLink>
           </StateMessage>
-          <StateMessage v-else title="Todavía no hay novedades." text="Cuando tus amigos publiquen algo, aparecerá aquí. Puedes empezar tú." />
+          <StateMessage v-else title="Todavía no hay novedades." text="Cuando tus amigos publiquen algo, aparecerá aquí." />
         </template>
       </PostList>
 

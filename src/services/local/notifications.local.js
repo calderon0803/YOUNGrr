@@ -32,7 +32,9 @@ export const localNotificationsService = {
       sharePhotoIds: db.photoOwners
         .filter((o) => o.userId === me && o.status === 'pending' && db.photos.some((p) => p.id === o.photoId))
         .map((o) => o.photoId),
-      unread: db.notifications.filter((n) => n.userId === me && !n.readAt && db.profiles.some((p) => p.id === n.actorId)),
+      unread: db.notifications
+        .filter((n) => n.userId === me && !n.readAt && db.profiles.some((p) => p.id === n.actorId))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     })
   },
 

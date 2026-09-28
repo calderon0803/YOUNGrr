@@ -9,30 +9,23 @@ import { GRR_TOAST_DURATION_MS } from '@/config/app'
 /** @typedef {import('@/types/models').PostView} PostView */
 
 const listState = () => {
-  return { ids: [], status: 'idle', error: null, hasMore: false, loadingMore: false, stale: false }
+  return { blocks: [], status: 'idle', error: null, hasMore: false, loadingMore: false, stale: false }
 }
 
+// Friends' news: one block per person, Tuenti style. Status and "ha subido N
+// fotos" items are normalized in `posts` so Grr and comments update everywhere.
 export const useFeedStore = defineStore('feed', () => {
   const toast = useToast()
 
-  /** Normalized posts: home feed and profile timelines share the same objects. */
   const posts = reactive(/** @type {Record<string, PostView>} */ ({}))
   const home = reactive(listState())
-  /** "Cerca de ti": distance per post lives here, not on the shared post objects. */
-  const nearby = reactive({ ...listState(), radiusKm: null, needsLocation: false, originCity: '', meta: {} })
-  const timelines = reactive(/** @type {Record<string, ReturnType<typeof listState>>} */ ({}))
+  const nearby = reactive({ ...listState(), radiusKm: null, needsLocation: false, originCity: '' })
   const grrPending = ref(new Set())
 
-  const store = (items) => {
-    for (const post of items) posts[post.id] = post
-    return items.map((p) => p.id)
-  }
-
-  const removeEverywhere = (postId) => {
-    home.ids = home.ids.filter((id) => id !== postId)
-    nearby.ids = nearby.ids.filter((id) => id !== postId)
-    for (const t of Object.values(timelines)) t.ids = t.ids.filter((id) => id !== postId)
-    delete posts[postId]
+  const toBlock = ({ status, uploads, ...block }) => {
+    if (status) posts[status.id] = status
+    for (const upload of uploads) posts[upload.id] = upload
+    return { ...block, statusId: status?.id ?? null, uploadIds: uploads.map((u) => u.id) }
   }
 
   const loadInto = async (state, fetchPage, { more = false } = {}) => {
@@ -40,14 +33,14 @@ export const useFeedStore = defineStore('feed', () => {
       if (state.loadingMore || !state.hasMore) return
       state.loadingMore = true
     } else {
-      state.status = state.ids.length && !state.stale ? state.status : 'loading'
+      state.status = state.blocks.length && !state.stale ? state.status : 'loading'
       state.error = null
     }
     try {
-      const last = more ? posts[state.ids[state.ids.length - 1]] : null
-      const page = await fetchPage(last?.createdAt ?? null)
-      const ids = store(page.items)
-      state.ids = more ? [...state.ids, ...ids] : ids
+      const last = more ? state.blocks[state.blocks.length - 1] : null
+      const page = await fetchPage(last?.lastActivityAt ?? null)
+      const blocks = page.items.map(toBlock)
+      state.blocks = more ? [...state.blocks, ...blocks] : blocks
       state.hasMore = page.hasMore
       state.status = 'success'
       state.stale = false
@@ -62,40 +55,37 @@ export const useFeedStore = defineStore('feed', () => {
     }
   }
 
-  const loadFeed = (options) => loadInto(home, (before) => postsService.getFeed({ before }), options)
+  const loadActivity = (options) => loadInto(home, (before) => postsService.getActivity({ before }), options)
 
-  const loadTimeline = (userId, options) => {
-    timelines[userId] ??= listState()
-    return loadInto(timelines[userId], (before) => postsService.getUserPosts(userId, { before }), options)
-  }
-
-  /** Friendships changed: the next visit reloads. */
   const loadNearby = (radiusKm, options = {}) => {
-    if (!options.more && nearby.radiusKm !== radiusKm) {
-      nearby.ids = []
-      nearby.meta = {}
-    }
+    if (!options.more && nearby.radiusKm !== radiusKm) nearby.blocks = []
     nearby.radiusKm = radiusKm
     return loadInto(
       nearby,
       async (before) => {
-        const page = await postsService.getNearbyFeed({ before, radiusKm })
+        const page = await postsService.getNearbyActivity({ before, radiusKm })
         nearby.needsLocation = page.needsLocation
         nearby.originCity = page.originCity
-        const items = page.items.map(({ nearby: info, ...post }) => {
-          if (info) nearby.meta[post.id] = info
-          return post
-        })
-        return { ...page, items }
+        return page
       },
       options,
     )
   }
 
+  /** Friendships changed: the next visit reloads. */
   const invalidate = () => {
     home.stale = true
     nearby.stale = true
-    for (const t of Object.values(timelines)) t.stale = true
+  }
+
+  /** Takes a status or album upload out of the blocks; empty blocks go away. */
+  const removeEverywhere = (postId) => {
+    for (const state of [home, nearby]) {
+      state.blocks = state.blocks
+        .map((b) => ({ ...b, statusId: b.statusId === postId ? null : b.statusId, uploadIds: b.uploadIds.filter((id) => id !== postId) }))
+        .filter((b) => b.statusId || b.uploadIds.length || b.newFriends.length || b.tagged.length)
+    }
+    delete posts[postId]
   }
 
   const loadPost = async (postId) => {
@@ -104,61 +94,30 @@ export const useFeedStore = defineStore('feed', () => {
     return post
   }
 
-  const createPost = async (input) => {
-    const post = await postsService.createPost(input)
+  /** The new status replaces the previous one. */
+  const setStatus = async (text) => {
+    const post = await postsService.setStatus(text)
     posts[post.id] = post
-    home.ids = [post.id, ...home.ids]
-    const own = timelines[post.authorId]
-    if (own) own.ids = [post.id, ...own.ids]
-    toast.success('Publicación publicada.')
+    toast.success('Estado actualizado.')
     return post
-  }
-
-  const updatePost = async (postId, text) => {
-    const updated = await postsService.updatePost(postId, text)
-    posts[postId] = { ...updated, comments: posts[postId]?.comments ?? updated.comments }
-    toast.success('Publicación actualizada.')
   }
 
   const deletePost = async (postId) => {
     try {
       await postsService.deletePost(postId)
       removeEverywhere(postId)
-      toast.success('Publicación eliminada.')
+      toast.success('Eliminado.')
+      return true
     } catch (error) {
       toast.error(errorMessage(error))
-    }
-  }
-
-  const hidePost = async (postId) => {
-    const index = home.ids.indexOf(postId)
-    const nearbyIndex = nearby.ids.indexOf(postId)
-    home.ids = home.ids.filter((id) => id !== postId)
-    nearby.ids = nearby.ids.filter((id) => id !== postId)
-    try {
-      await postsService.hidePost(postId)
-      toast.show('Publicación ocultada.', {
-        action: {
-          label: 'Deshacer',
-          run: async () => {
-            await postsService.unhidePost(postId)
-            if (index !== -1 && !home.ids.includes(postId)) home.ids.splice(index, 0, postId)
-            if (nearbyIndex !== -1 && !nearby.ids.includes(postId)) nearby.ids.splice(nearbyIndex, 0, postId)
-          },
-        },
-      })
-    } catch (error) {
-      if (index !== -1) home.ids.splice(index, 0, postId)
-      if (nearbyIndex !== -1) nearby.ids.splice(nearbyIndex, 0, postId)
-      toast.error(errorMessage(error))
+      return false
     }
   }
 
   const reportPost = async (postId, reason) => {
     await postsService.reportPost(postId, reason)
-    home.ids = home.ids.filter((id) => id !== postId)
-    nearby.ids = nearby.ids.filter((id) => id !== postId)
-    toast.success('Gracias. Revisaremos la publicación.')
+    removeEverywhere(postId)
+    toast.success('Gracias. Lo revisaremos.')
   }
 
   /** Optimistic Grr toggle, with rollback if the backend fails. */
@@ -221,17 +180,13 @@ export const useFeedStore = defineStore('feed', () => {
     posts,
     home,
     nearby,
-    timelines,
     grrPending,
-    loadFeed,
+    loadActivity,
     loadNearby,
-    loadTimeline,
     loadPost,
     invalidate,
-    createPost,
-    updatePost,
+    setStatus,
     deletePost,
-    hidePost,
     reportPost,
     toggleGrr,
     loadGrrers,

@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { MapPin, Users } from 'lucide-vue-next'
-import PostList from '@/components/feed/PostList.vue'
+import ActivityList from '@/components/feed/ActivityList.vue'
+import StatusLine from '@/components/feed/StatusLine.vue'
 import NearbyRadius from '@/components/feed/NearbyRadius.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import TabNav from '@/components/common/TabNav.vue'
@@ -41,7 +42,7 @@ const tabRoute = (key) => ({ query: key === 'friends' ? {} : { feed: key } })
 
 const load = () => {
   if (tab.value === 'friends') {
-    if (feed.home.status !== 'success' || feed.home.stale) feed.loadFeed()
+    if (feed.home.status !== 'success' || feed.home.stale) feed.loadActivity()
   } else if (feed.nearby.status !== 'success' || feed.nearby.stale || feed.nearby.radiusKm !== radiusKm.value) {
     feed.loadNearby(radiusKm.value)
   }
@@ -74,6 +75,7 @@ watch(locationKey, () => {
 
     <section class="home__center panel" aria-labelledby="feed-title">
       <h2 id="feed-title" class="panel-title">Novedades de tus amigos</h2>
+      <StatusLine />
       <TabNav class="home__tabs" label="Qué novedades ver" :tabs="TABS" :active="tab" :to="tabRoute" />
       <NearbyRadius
         v-if="tab === 'nearby' && !feed.nearby.needsLocation"
@@ -84,24 +86,27 @@ watch(locationKey, () => {
         @update:model-value="changeRadius"
       />
 
-      <PostList v-if="tab === 'friends'" :list="feed.home" @retry="feed.loadFeed()" @more="feed.loadFeed({ more: true })">
+      <ActivityList v-if="tab === 'friends'" :list="feed.home" @retry="feed.loadActivity()" @more="feed.loadActivity({ more: true })">
         <template #empty>
           <StateMessage
             v-if="!hasFriends"
             :icon="Users"
             title="Todavía no tienes amigos."
-            text="Busca personas para empezar. Aquí verás lo que publican."
+            text="Busca personas para empezar. Aquí verás lo que hacen."
           >
             <RouterLink class="btn btn--primary" :to="{ name: 'friends', query: { tab: 'search' } }">Buscar personas</RouterLink>
           </StateMessage>
-          <StateMessage v-else title="Todavía no hay novedades." text="Cuando tus amigos publiquen algo, aparecerá aquí." />
+          <StateMessage
+            v-else
+            title="Tus amigos no han hecho nada estos días."
+            text="Cuando cambien su estado, suban fotos o hagan nuevos amigos, aparecerá aquí."
+          />
         </template>
-      </PostList>
+      </ActivityList>
 
-      <PostList
+      <ActivityList
         v-else
         :list="feed.nearby"
-        :meta="feed.nearby.meta"
         @retry="feed.loadNearby(radiusKm)"
         @more="feed.loadNearby(radiusKm, { more: true })"
       >
@@ -110,18 +115,18 @@ watch(locationKey, () => {
             v-if="feed.nearby.needsLocation"
             :icon="MapPin"
             title="Indica dónde vives."
-            text="Añade tu ciudad o pueblo a tu perfil para ver lo que publica la gente de tu zona."
+            text="Añade tu ciudad o pueblo a tu perfil para ver qué hace la gente de tu zona."
           >
             <button type="button" class="btn btn--primary" @click="editingLocation = true">Añadir ciudad o pueblo</button>
           </StateMessage>
           <StateMessage
             v-else
             :icon="MapPin"
-            :title="`Nadie ha publicado a menos de ${radiusKm} km.`"
+            :title="`No hay novedades a menos de ${radiusKm} km.`"
             text="Solo aparecen las cuentas públicas de tu zona y las de tus amigos. Prueba con un radio mayor."
           />
         </template>
-      </PostList>
+      </ActivityList>
     </section>
 
     <aside class="home__right" aria-label="Planes y cumpleaños">

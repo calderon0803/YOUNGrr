@@ -132,7 +132,7 @@ export const toPost = (json, urls = {}) => ({
       }
     : null,
   // "Ha subido N fotos al álbum X" items.
-  kind: json.kind ?? 'post',
+  kind: json.kind ?? 'status',
   album: json.album ? { id: json.album.id, title: json.album.title } : null,
   photos: (json.photos ?? []).map((p) => ({ id: p.id, url: urls[p.storage_path] ?? null, width: p.width, height: p.height })),
   photoTotal: json.photo_total ?? 0,
@@ -142,6 +142,28 @@ export const toPost = (json, urls = {}) => ({
   commentCount: json.comment_count,
   comments: json.comments.map(toComment),
 })
+
+/**
+ * activity_block_json() → one person's block in the friends' news.
+ * @param {Record<string, string>} urls signed URLs by Storage path
+ */
+export const toActivityBlock = (json, urls = {}) => ({
+  person: toSummary(json.person),
+  lastActivityAt: json.last_activity_at,
+  status: json.status ? toPost(json.status, urls) : null,
+  uploads: json.uploads.map((p) => toPost(p, urls)),
+  newFriends: json.new_friends.map((f) => ({ person: toSummary(f.person), createdAt: f.created_at })),
+  newFriendsTotal: json.new_friends_total,
+  tagged: json.tagged.map((t) => ({ id: t.id, url: urls[t.storage_path] ?? null, width: t.width, height: t.height })),
+  taggedTotal: json.tagged_total,
+  ...(json.nearby ? { nearby: { city: json.nearby.city ?? null, distanceKm: json.nearby.distance_km ?? null } } : {}),
+})
+
+/** Storage paths of every photo in an activity block. */
+export const blockPhotoPaths = (json) => [
+  ...[json.status, ...json.uploads].filter(Boolean).flatMap((p) => postPhotoPaths(p)),
+  ...json.tagged.map((t) => t.storage_path),
+]
 
 /** Storage paths of every photo a post references (single photo or album upload). */
 export const postPhotoPaths = (json) => [json.photo?.storage_path, ...(json.photos ?? []).map((p) => p.storage_path)]

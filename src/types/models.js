@@ -90,10 +90,15 @@
  */
 
 /**
+ * A status (one short phrase per person) or a "ha subido N fotos al álbum"
+ * item. There are no free posts.
  * @typedef {object} Post
  * @property {string} id
  * @property {string} authorId
- * @property {string} text
+ * @property {'status' | 'album_upload'} kind
+ * @property {string} text  The status; empty for album uploads.
+ * @property {string | null} albumId
+ * @property {string[]} photoIds
  * @property {string | null} photoId
  * @property {string} createdAt
  * @property {string | null} updatedAt
@@ -125,7 +130,23 @@
  *   grrBy: ProfileSummary[],
  *   commentCount: number,
  *   comments: CommentView[],
+ *   album: { id: string, title: string } | null,
+ *   photos: { id: string, url: string, width: number, height: number }[],
+ *   photoTotal: number,
  * }} PostView
+ *
+ * One person in the friends' news (see activity_block_json).
+ * @typedef {{
+ *   person: ProfileSummary,
+ *   lastActivityAt: string,
+ *   status: PostView | null,
+ *   uploads: PostView[],
+ *   newFriends: { person: ProfileSummary, createdAt: string }[],
+ *   newFriendsTotal: number,
+ *   tagged: { id: string, url: string, width: number, height: number }[],
+ *   taggedTotal: number,
+ *   nearby?: { city: string | null, distanceKm: number | null },
+ * }} ActivityBlock
  */
 
 /**

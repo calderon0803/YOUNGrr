@@ -1,23 +1,35 @@
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { canViewCity, canViewDistance, canViewPost, canViewProfile, findOr404, friendIdsOf, profileOf } from '@/services/local/access'
+import { canViewCity, canViewDistance, canViewPhoto, canViewPost, canViewProfile, findOr404, friendIdsOf, profileOf } from '@/services/local/access'
 import { dropNotifications } from '@/services/local/notify'
-import { postView } from '@/services/local/views'
+import { activityBlock, postView } from '@/services/local/views'
 import { ensure, ensureAccess, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { FEED_PAGE_SIZE, NEARBY_DEFAULT_RADIUS_KM, NEARBY_RADII_KM } from '@/config/app'
+import { ACTIVITY_WINDOW_DAYS, FEED_PAGE_SIZE, NEARBY_DEFAULT_RADIUS_KM, NEARBY_RADII_KM } from '@/config/app'
 import { distanceKm, hasLocation } from '@/utils/geo'
 
-const newestFirst = (a, b) => b.createdAt.localeCompare(a.createdAt)
+const DAY_MS = 86_400_000
 
-const paginate = (db, me, posts, before) => {
-  const sorted = posts.sort(newestFirst).filter((p) => !before || p.createdAt < before)
-  return {
-    items: sorted.slice(0, FEED_PAGE_SIZE).map((p) => postView(db, me, p)),
-    hasMore: sorted.length > FEED_PAGE_SIZE,
-  }
+const windowStart = () => new Date(Date.now() - ACTIVITY_WINDOW_DAYS * DAY_MS).toISOString()
+
+/** Latest activity per person, newest first, one page after `before`. */
+const pageOfPeople = (events, before) => {
+  const last = new Map()
+  for (const { person, at } of events) if (!last.has(person) || at > last.get(person)) last.set(person, at)
+  const sorted = [...last.entries()]
+    .filter(([, at]) => !before || at < before)
+    .sort((a, b) => b[1].localeCompare(a[1]))
+  return { people: sorted.slice(0, FEED_PAGE_SIZE), hasMore: sorted.length > FEED_PAGE_SIZE }
+}
+
+const removePost = (db, postId) => {
+  db.posts = db.posts.filter((p) => p.id !== postId)
+  db.comments = db.comments.filter((c) => !(c.targetType === 'post' && c.targetId === postId))
+  db.grrs = db.grrs.filter((g) => !(g.targetType === 'post' && g.targetId === postId))
+  db.hiddenPosts = db.hiddenPosts.filter((h) => h.postId !== postId)
+  dropNotifications(db, (n) => n.targetId === postId)
 }
 
 export const removePhotoCascade = (db, photoId) => {
@@ -31,23 +43,42 @@ export const removePhotoCascade = (db, photoId) => {
   dropNotifications(db, (n) => n.targetId === photoId)
 }
 
-// Posts for the local demo backend. Same interface as posts.supabase.js.
+// Status and friends' activity for the local demo backend. Same interface as
+// posts.supabase.js. There are no free posts: each person has one status (a
+// short phrase) and the rest of the activity comes from photos and friendships.
 export const localPostsService = {
-  /** Friends' activity (and your own), newest first. No strangers, no ranking. */
-  async getFeed({ before = null } = {}) {
+  /** One block per friend with activity in the last days, most recent first. */
+  async getActivity({ before = null } = {}) {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    const circle = new Set([me, ...friendIdsOf(db, me)])
-    const hidden = new Set(db.hiddenPosts.filter((h) => h.userId === me).map((h) => h.postId))
-    return paginate(db, me, db.posts.filter((p) => circle.has(p.authorId) && !hidden.has(p.id) && canViewPost(db, me, p)), before)
+    const since = windowStart()
+    const friends = new Set(friendIdsOf(db, me))
+    const events = [
+      ...db.posts.filter((p) => friends.has(p.authorId) && p.createdAt >= since).map((p) => ({ person: p.authorId, at: p.createdAt })),
+      ...db.friendships
+        .filter((f) => f.createdAt >= since && ![f.userA, f.userB].includes(me))
+        .flatMap((f) => [f.userA, f.userB].filter((id) => friends.has(id)).map((person) => ({ person, at: f.createdAt }))),
+      ...db.photoTags
+        .filter((t) => friends.has(t.userId) && t.createdAt >= since)
+        .filter((t) => {
+          const photo = db.photos.find((p) => p.id === t.photoId)
+          return photo && canViewPhoto(db, me, photo)
+        })
+        .map((t) => ({ person: t.userId, at: t.createdAt })),
+    ]
+    const { people, hasMore } = pageOfPeople(events, before)
+    return {
+      items: people.map(([person, at]) => activityBlock(db, me, person, { since, withSocial: true, lastActivityAt: at })),
+      hasMore,
+    }
   },
 
   /**
-   * "Cerca de ti": posts from people whose town is within `radiusKm`, visible
-   * according to each author's account privacy. Newest first, no ranking.
+   * "Cerca de ti": status and album uploads of people whose town is within
+   * `radiusKm`, if their profile is visible to you.
    */
-  async getNearbyFeed({ before = null, radiusKm = NEARBY_DEFAULT_RADIUS_KM } = {}) {
+  async getNearbyActivity({ before = null, radiusKm = NEARBY_DEFAULT_RADIUS_KM } = {}) {
     validate(NEARBY_RADII_KM.includes(radiusKm) ? null : 'Radio no válido.')
     await latency()
     const db = await getDb()
@@ -58,127 +89,58 @@ export const localPostsService = {
     const here = { lat: origin.cityLat, lng: origin.cityLng }
     const distances = new Map()
     for (const person of db.profiles) {
-      if (person.id === me || !hasLocation(person)) continue
+      if (person.id === me || !hasLocation(person) || !canViewProfile(db, me, person.id)) continue
       const km = distanceKm(here, { lat: person.cityLat, lng: person.cityLng })
       if (km <= radiusKm) distances.set(person.id, km)
     }
-
-    const hidden = new Set(db.hiddenPosts.filter((h) => h.userId === me).map((h) => h.postId))
-    const page = paginate(
-      db,
-      me,
-      db.posts.filter((p) => distances.has(p.authorId) && !hidden.has(p.id) && canViewPost(db, me, p)),
-      before,
-    )
-    // The town if the author allows it; otherwise, the approximate distance if allowed.
-    // Never exact positions.
-    const items = page.items.map((post) => {
-      const showCity = canViewCity(db, me, post.authorId)
+    const since = windowStart()
+    const events = db.posts.filter((p) => distances.has(p.authorId) && p.createdAt >= since).map((p) => ({ person: p.authorId, at: p.createdAt }))
+    const { people, hasMore } = pageOfPeople(events, before)
+    // The town if the person allows it; otherwise, the approximate distance if
+    // allowed. Never exact positions.
+    const items = people.map(([person, at]) => {
+      const showCity = canViewCity(db, me, person)
       return {
-        ...post,
+        ...activityBlock(db, me, person, { since, withSocial: false, lastActivityAt: at }),
         nearby: {
-          city: showCity ? profileOf(db, post.authorId).city : null,
-          distanceKm: !showCity && canViewDistance(db, me, post.authorId) ? Math.round(distances.get(post.authorId)) : null,
+          city: showCity ? profileOf(db, person).city : null,
+          distanceKm: !showCity && canViewDistance(db, me, person) ? Math.round(distances.get(person)) : null,
         },
       }
     })
-    return { ...page, items, needsLocation: false, originCity: origin.city }
-  },
-
-  async getUserPosts(userId, { before = null } = {}) {
-    await latency()
-    const db = await getDb()
-    const me = requireUserId(db)
-    ensure(canViewProfile(db, me, userId), 'forbidden', 'Este perfil es privado.')
-    return paginate(db, me, db.posts.filter((p) => p.authorId === userId && canViewPost(db, me, p)), before)
+    return { items, hasMore, needsLocation: false, originCity: origin.city }
   },
 
   async getPost(postId) {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    const post = findOr404(db.posts, (p) => p.id === postId, 'Esta publicación ya no existe.')
+    const post = findOr404(db.posts, (p) => p.id === postId, 'Esto ya no existe.')
     ensureAccess(canViewPost(db, me, post), post.authorId)
     return postView(db, me, post, { commentPreview: Infinity })
   },
 
-  /** @param {{ text: string, photo?: { dataUrl: string, width: number, height: number } | null }} input */
-  async createPost({ text, photo = null }) {
-    validate(
-      text.trim() || photo ? null : 'Escribe algo o añade una fotografía.',
-      rules.max(text, LIMITS.postText, 'La publicación'),
-    )
-    await latency(200, 450)
+  /** The new status replaces the previous one (with its comments and Grr). */
+  async setStatus(text) {
+    validate(rules.required(text, 'Tu estado'), rules.max(text, LIMITS.status, 'El estado'))
+    await latency(150, 300)
     const db = await getDb()
     const me = requireUserId(db)
-    const createdAt = nowIso()
-    let photoId = null
-
-    if (photo) {
-      const wall = db.albums.find((a) => a.ownerId === me && a.kind === 'wall')
-      ensure(wall, 'not_found', 'No se ha encontrado tu álbum del muro.')
-      photoId = uid('ph')
-      db.photos.push({ id: photoId, ownerId: me, albumId: wall.id, url: photo.dataUrl, width: photo.width, height: photo.height, caption: text.trim().slice(0, LIMITS.caption), createdAt })
-      wall.updatedAt = createdAt
-    }
-
-    const post = { id: uid('p'), authorId: me, text: text.trim(), photoId, createdAt, updatedAt: null }
+    for (const old of db.posts.filter((p) => p.authorId === me && (p.kind ?? 'status') === 'status')) removePost(db, old.id)
+    const post = { id: uid('p'), authorId: me, kind: 'status', text: text.trim(), photoId: null, createdAt: nowIso(), updatedAt: null }
     db.posts.push(post)
     await commit()
     return postView(db, me, post)
   },
 
-  async updatePost(postId, text) {
-    await latency()
-    const db = await getDb()
-    const me = requireUserId(db)
-    const post = findOr404(db.posts, (p) => p.id === postId, 'Esta publicación ya no existe.')
-    ensure(post.authorId === me, 'forbidden', 'Solo puedes editar tus publicaciones.')
-    ensure(post.kind !== 'album_upload', 'forbidden', 'Esta novedad no se puede editar.')
-    validate(
-      text.trim() || post.photoId ? null : 'La publicación no puede quedar vacía.',
-      rules.max(text, LIMITS.postText, 'La publicación'),
-    )
-    post.text = text.trim()
-    post.updatedAt = nowIso()
-    await commit()
-    return postView(db, me, post)
-  },
-
+  /** Removes your status or one of your "ha subido N fotos" items. */
   async deletePost(postId) {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    const post = findOr404(db.posts, (p) => p.id === postId, 'Esta publicación ya no existe.')
-    ensure(post.authorId === me, 'forbidden', 'Solo puedes eliminar tus publicaciones.')
-
-    db.posts = db.posts.filter((p) => p.id !== postId)
-    db.comments = db.comments.filter((c) => !(c.targetType === 'post' && c.targetId === postId))
-    db.grrs = db.grrs.filter((g) => !(g.targetType === 'post' && g.targetId === postId))
-    db.hiddenPosts = db.hiddenPosts.filter((h) => h.postId !== postId)
-    dropNotifications(db, (n) => n.targetId === postId)
-
-    // A photo published from the wall goes away with its post.
-    const photo = post.photoId ? db.photos.find((p) => p.id === post.photoId) : null
-    const album = photo ? db.albums.find((a) => a.id === photo.albumId) : null
-    if (photo && album?.kind === 'wall') removePhotoCascade(db, photo.id)
-    await commit()
-  },
-
-  async hidePost(postId) {
-    await latency(80, 160)
-    const db = await getDb()
-    const me = requireUserId(db)
-    if (!db.hiddenPosts.some((h) => h.userId === me && h.postId === postId)) {
-      db.hiddenPosts.push({ userId: me, postId })
-    }
-    await commit()
-  },
-
-  async unhidePost(postId) {
-    const db = await getDb()
-    const me = requireUserId(db)
-    db.hiddenPosts = db.hiddenPosts.filter((h) => !(h.userId === me && h.postId === postId))
+    const post = findOr404(db.posts, (p) => p.id === postId, 'Esto ya no existe.')
+    ensure(post.authorId === me, 'forbidden', 'Solo puedes eliminar lo tuyo.')
+    removePost(db, postId)
     await commit()
   },
 
@@ -187,7 +149,7 @@ export const localPostsService = {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    findOr404(db.posts, (p) => p.id === postId, 'Esta publicación ya no existe.')
+    findOr404(db.posts, (p) => p.id === postId, 'Esto ya no existe.')
     db.reports.push({ id: uid('r'), reporterId: me, postId, reason, createdAt: nowIso() })
     if (!db.hiddenPosts.some((h) => h.userId === me && h.postId === postId)) db.hiddenPosts.push({ userId: me, postId })
     await commit()

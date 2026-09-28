@@ -11,7 +11,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v13',
+  db: 'youngrr:db:v14',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
 }
@@ -23,6 +23,10 @@ export const FEED_PAGE_SIZE = 8
 export const COMMENT_PREVIEW = 3
 /** Photos shown in a "ha subido N fotos al álbum" news item. */
 export const ALBUM_UPLOAD_PREVIEW = 6
+
+/** Friends' news: activity of the last days, one block per person. */
+export const ACTIVITY_WINDOW_DAYS = 30
+export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000
 export const TOAST_DURATION_MS = 3200
 export const GRR_TOAST_DURATION_MS = 1800
@@ -49,7 +53,8 @@ export const IMAGE = {
 }
 
 export const TEXT_LIMITS = {
-  postText: 2000,
+  // Tuenti's status: one short phrase.
+  status: 140,
   commentText: 500,
   wallText: 500,
   messageText: 2000,

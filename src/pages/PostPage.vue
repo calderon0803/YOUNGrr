@@ -49,10 +49,10 @@ watch(postId, load, { immediate: true })
       <ArrowLeft aria-hidden="true" />
       Volver al inicio
     </RouterLink>
-    <h1 class="visually-hidden">Publicación</h1>
+    <h1 class="visually-hidden">Novedad</h1>
     <AsyncState :status="status" :error="error" :empty="!exists" skeleton="post" :skeleton-count="1" @retry="load">
       <template #empty>
-        <div class="panel"><StateMessage title="Esta publicación ya no existe." text="Puede que la hayan eliminado." /></div>
+        <div class="panel"><StateMessage title="Esto ya no existe." text="Puede que lo hayan eliminado o cambiado por un estado nuevo." /></div>
       </template>
       <div class="panel"><PostCard :post-id="postId" /></div>
     </AsyncState>

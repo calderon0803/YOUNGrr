@@ -21,6 +21,8 @@ export const THEME_COLORS = { light: '#2350a0', dark: '#142a57' }
 
 export const FEED_PAGE_SIZE = 8
 export const COMMENT_PREVIEW = 3
+/** Photos shown in a "ha subido N fotos al álbum" news item. */
+export const ALBUM_UPLOAD_PREVIEW = 6
 export const BADGE_POLL_INTERVAL_MS = 30_000
 export const TOAST_DURATION_MS = 3200
 export const GRR_TOAST_DURATION_MS = 1800

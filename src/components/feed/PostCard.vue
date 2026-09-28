@@ -50,6 +50,16 @@ const OTHER_MENU = [
 // COMPUTED
 const post = computed(() => feed.posts[props.postId])
 const isOwn = computed(() => post.value?.authorId === auth.meId)
+const isAlbumUpload = computed(() => post.value?.kind === 'album_upload')
+// An album upload whose photos were all deleted has nothing left to show.
+const isVisible = computed(() => post.value && (!isAlbumUpload.value || post.value.photos.length > 0))
+const uploadLabel = computed(() => {
+  const n = post.value?.photoTotal ?? 0
+  return n === 1 ? 'ha subido una foto al álbum' : `ha subido ${n} fotos al álbum`
+})
+const hiddenPhotos = computed(() => (post.value?.photoTotal ?? 0) - (post.value?.photos.length ?? 0))
+// Album uploads cannot be edited: they only exist while their photos do.
+const ownMenu = computed(() => (isAlbumUpload.value ? OWN_MENU.filter((i) => i.key !== 'edit') : OWN_MENU))
 const titleId = computed(() => `post-${props.postId}-author`)
 const showComments = computed(() => commenting.value || (post.value?.commentCount ?? 0) > 0)
 
@@ -79,6 +89,12 @@ const onMenu = async (key) => {
 
 const openPhoto = () => photos.openSingle(post.value.photo.id)
 
+const openUploaded = (photoId) =>
+  photos.openSingle(
+    photoId,
+    post.value.photos.map((p) => p.id),
+  )
+
 const comment = async () => {
   commenting.value = true
   await nextTick()
@@ -87,7 +103,7 @@ const comment = async () => {
 </script>
 
 <template>
-  <article v-if="post" class="item" :aria-labelledby="titleId">
+  <article v-if="isVisible" class="item" :aria-labelledby="titleId">
     <RouterLink class="item__avatar" :to="{ name: 'profile', params: { id: post.author.id } }" tabindex="-1" aria-hidden="true">
       <UserAvatar :person="post.author" size="md" />
     </RouterLink>
@@ -95,9 +111,28 @@ const comment = async () => {
     <div class="item__body">
       <p class="item__line">
         <PersonLink :id="titleId" :person="post.author" />
-        <span v-if="post.text" class="item__text user-text">{{ post.text }}</span>
+        <template v-if="isAlbumUpload">
+          <span class="item__action">{{ uploadLabel }}</span>
+          <RouterLink v-if="post.album" class="item__album" :to="{ name: 'album', params: { id: post.album.id } }">
+            {{ post.album.title }}
+          </RouterLink>
+        </template>
+        <span v-else-if="post.text" class="item__text user-text">{{ post.text }}</span>
         <span v-else class="item__action">ha subido una foto</span>
       </p>
+
+      <ul v-if="isAlbumUpload" class="item__strip" aria-label="Fotos subidas">
+        <li v-for="p in post.photos" :key="p.id">
+          <button type="button" class="item__thumb" aria-label="Abrir fotografía" @click="openUploaded(p.id)">
+            <img v-if="p.url" :src="p.url" alt="" loading="lazy" decoding="async" />
+          </button>
+        </li>
+        <li v-if="hiddenPhotos > 0">
+          <RouterLink v-if="post.album" class="item__more" :to="{ name: 'album', params: { id: post.album.id } }">
+            +{{ hiddenPhotos }}
+          </RouterLink>
+        </li>
+      </ul>
 
       <button v-if="post.photo" type="button" class="item__photo" aria-label="Abrir fotografía" @click="openPhoto">
         <img v-if="post.photo.url" :src="post.photo.url" alt="" loading="lazy" decoding="async" />
@@ -133,11 +168,11 @@ const comment = async () => {
     <DropdownMenu
       class="item__menu"
       :label="`Opciones de la publicación de ${fullName(post.author)}`"
-      :items="isOwn ? OWN_MENU : OTHER_MENU"
+      :items="isOwn ? ownMenu : OTHER_MENU"
       @select="onMenu"
     />
 
-    <PostEditDialog v-if="isOwn" :open="editing" :post="post" @close="editing = false" />
+    <PostEditDialog v-if="isOwn && !isAlbumUpload" :open="editing" :post="post" @close="editing = false" />
     <ReportDialog v-if="!isOwn" :open="reporting" :post-id="post.id" @close="reporting = false" />
     <GrrersDialog v-if="showGrrers" :open="showGrrers" target-type="post" :target-id="post.id" @close="showGrrers = false" />
   </article>
@@ -193,6 +228,56 @@ const comment = async () => {
     &:hover {
       border-color: $color-brand;
     }
+  }
+
+  &__album {
+    margin-left: 0.35rem;
+    font-weight: 700;
+  }
+
+  &__strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-1;
+    margin: $space-2 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // Reset first so the shared box below wins.
+  &__thumb {
+    @include reset-button;
+    cursor: zoom-in;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__thumb,
+  &__more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    padding: 2px;
+    background: $color-surface;
+    border: 1px solid $color-border-strong;
+    border-radius: $radius-sm;
+
+    &:hover {
+      border-color: $color-brand;
+      text-decoration: none;
+    }
+  }
+
+  &__more {
+    font-weight: 700;
+    color: $color-link;
+    background: $color-surface-alt;
   }
 
   &__meta {

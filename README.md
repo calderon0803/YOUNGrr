@@ -56,8 +56,10 @@ src/
 ├── layouts/         AppLayout (autenticado) y AuthLayout (público)
 ├── pages/           una página por ruta
 ├── router/
-├── services/        auth, users, friends, posts, interactions, photos,
-│   └── local/       events, messages, notifications, search + backend local
+├── services/        auth, users, friends, posts, interactions, photos, events,
+│   │                messages, notifications, search, wall (selectores)
+│   ├── local/       backend local (IndexedDB)
+│   └── supabase/    backend Supabase
 ├── stores/          auth, user, feed, friends, photos, events, messages,
 │                    notifications, search, ui
 ├── styles/          tokens (abstracts), tema claro/oscuro, base, partials
@@ -120,8 +122,9 @@ privado de Storage para las fotos.
    cambios van en archivos nuevos dentro de `supabase/migrations/`.
 2. Copia `.env.example` a `.env` y rellena `VITE_SUPABASE_URL` y
    `VITE_SUPABASE_ANON_KEY`, y pon `VITE_DATA_SOURCE=supabase`.
-3. Implementa los servicios de `src/services/*.service.js` contra Supabase manteniendo
-   sus firmas; stores y componentes no cambian.
+3. Cada `src/services/*.service.js` elige la implementación local
+   (`services/local/*.local.js`) o la de Supabase (`services/supabase/*.supabase.js`),
+   con las mismas firmas; stores y componentes no cambian.
 
 Estado de la conexión con Supabase (`src/services/supabase/`):
 
@@ -134,8 +137,15 @@ Estado de la conexión con Supabase (`src/services/supabase/`):
 - **Hecho:** publicaciones (inicio de amigos, perfil, «Cerca de ti», crear con foto,
   editar, eliminar, ocultar, reportar), comentarios y Grr. Las fotos de las publicaciones
   van al bucket privado `photos` y se muestran con URLs firmadas.
-- **Pendiente:** álbumes y visor de fotos, eventos, mensajes, búsqueda global y contadores
-  de la portada. Con `VITE_DATA_SOURCE=supabase` esas secciones fallarán hasta migrarlas.
+- **Hecho:** fotos y álbumes (subir, pies de foto, portada, visor, etiquetas, fotos
+  compartidas con invitación y novedades «ha subido N fotos al álbum»), eventos (con
+  imagen privada que solo ven los invitados), mensajes privados, búsqueda global y
+  contadores de Novedades. Los grupos de Novedades se construyen igual en los dos
+  backends (`services/notifications.groups.js`).
+- **Permisos de las funciones:** solo las RPC de la app y las funciones que usan las
+  políticas RLS se pueden ejecutar desde la API, y solo con sesión iniciada. Las
+  funciones internas (las que reciben el usuario como parámetro) no son accesibles, y
+  ninguna función nueva lo es por defecto: cada migración concede las suyas.
 
 En el panel de Supabase, *Authentication > URL Configuration*: pon como *Site URL* la
 dirección de la app y añade `http://localhost:5173/login` a las *Redirect URLs* para

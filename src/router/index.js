@@ -6,7 +6,8 @@ import { BREAKPOINTS } from '@/config/app'
 const app = (path, name, loader, meta = {}) => ({ path, name, component: loader, meta: { auth: true, ...meta } })
 
 const routes = [
-  { path: '/', name: 'landing', component: () => import('@/pages/LandingPage.vue'), meta: { guest: true, layout: 'auth' } },
+  // No home page for visitors: straight to sign in (signed-in users go on to Inicio).
+  { path: '/', redirect: { name: 'login' } },
   { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue'), meta: { guest: true, layout: 'auth', title: 'Entrar' } },
   { path: '/register', name: 'register', component: () => import('@/pages/RegisterPage.vue'), meta: { guest: true, layout: 'auth', title: 'Crear cuenta' } },
 

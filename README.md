@@ -72,8 +72,21 @@ Como en Tuenti, no hay lista de notificaciones ni campana. En Inicio hay un bloq
 amistad", "3 Grr nuevos en tus fotos"...). Cada línea lleva a donde se atiende y
 desaparece al visitarlo o responderlo. El total aparece como contador en *Inicio*.
 
-Cada perfil muestra su **contador de visitas**: cuentan las visitas de otras personas,
-una por persona y día. Nunca se muestra quién ha visitado.
+Debajo de las Novedades está tu **contador de visitas**, que solo ves tú: cuentan las
+visitas de otras personas a tu perfil, una por persona y día. Nunca se muestra quién ha
+visitado.
+
+### Inicio y perfil al estilo Tuenti
+
+- Navegación con pestañas en la barra superior (en móvil, barra inferior).
+- **Inicio** en tres columnas: tu estado ("¿Qué estás haciendo?"), las Novedades y las
+  visitas; en el centro las novedades de tus amigos en formato compacto (miniaturas y
+  "Grr · Comentar" como enlaces); a la derecha, próximos planes, cumpleaños y sugerencias.
+- **Estado**: es tu última publicación de solo texto; se muestra bajo tu nombre en el perfil.
+- **Perfil** sin portada: foto grande, datos y amigos a la izquierda; nombre, estado y
+  pestañas (Tablón, Publicaciones, Fotos, Etiquetas, Álbumes, Amigos) a la derecha.
+- **Tablón**: lo que te escriben tus amigos en tu perfil. Lo lee quien puede ver tu
+  perfil, escriben tú y tus amigos, y lo borra quien lo escribió o tú.
 
 ### Cerca de ti
 

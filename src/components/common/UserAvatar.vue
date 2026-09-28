@@ -5,7 +5,7 @@ import { fullName, initials } from '@/utils/text'
 // PROPS
 const props = defineProps({
   person: { type: Object, default: null },
-  size: { type: String, default: 'md', validator: (v) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(v) },
+  size: { type: String, default: 'md', validator: (v) => ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'].includes(v) },
   /** Avatars next to the name are decorative; standalone ones need alt text. */
   decorative: { type: Boolean, default: true },
 })
@@ -108,6 +108,12 @@ watch(
   &--xl {
     --size: 7rem;
     border-radius: $radius-lg;
+  }
+
+  // Big profile picture in the profile sidebar (Tuenti style).
+  &--xxl {
+    --size: 12rem;
+    border-radius: $radius;
   }
 }
 </style>

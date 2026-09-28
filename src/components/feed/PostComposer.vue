@@ -1,8 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { ImagePlus, X } from 'lucide-vue-next'
-import UserAvatar from '@/components/common/UserAvatar.vue'
-import { useAuthStore } from '@/stores/auth'
+import RelativeTime from '@/components/common/RelativeTime.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useImagePicker } from '@/composables/useImagePicker'
 import { useToast } from '@/composables/useToast'
@@ -10,8 +9,18 @@ import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
 import { LIMITS } from '@/utils/validation'
 
+// Tuenti's status box: one line "¿Qué estás haciendo?". A text-only post becomes
+// your current status; with a photo it is published as a photo.
+
+// PROPS
+defineProps({
+  /** { text, createdAt } of your current status, shown under the box. */
+  status: { type: Object, default: null },
+})
+
+const emit = defineEmits(['published'])
+
 // STORES
-const auth = useAuthStore()
 const feed = useFeedStore()
 const toast = useToast()
 
@@ -33,7 +42,7 @@ const autoGrow = () => {
   const el = textarea.value
   if (!el) return
   el.style.height = 'auto'
-  el.style.height = `${Math.min(el.scrollHeight, 320)}px`
+  el.style.height = `${Math.min(el.scrollHeight, 200)}px`
 }
 
 const pickPhoto = async (event) => {
@@ -52,7 +61,8 @@ const submit = async () => {
   if (!canSubmit.value) return
   submitting.value = true
   try {
-    await feed.createPost({ text: text.value, photo: photo.value })
+    const post = await feed.createPost({ text: text.value, photo: photo.value })
+    emit('published', post)
     reset()
   } catch (error) {
     toast.error(errorMessage(error))
@@ -62,94 +72,87 @@ const submit = async () => {
 }
 
 const onKeydown = (event) => {
-  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) submit()
+  // Enter publishes, like a status box; Shift+Enter adds a line.
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault()
+    submit()
+  }
 }
 </script>
 
 <template>
-  <section class="composer panel" aria-labelledby="composer-title">
-    <form @submit.prevent="submit">
-      <label id="composer-title" class="composer__title" for="composer-text">¿Qué estás haciendo?</label>
-      <div class="composer__row">
-        <UserAvatar class="composer__avatar" :person="auth.me" size="md" />
-        <textarea
-          id="composer-text"
-          ref="textarea"
-          v-model="text"
-          class="composer__input"
-          rows="2"
-          placeholder="Escribe algo..."
-          :maxlength="LIMITS.postText + 200"
-          :aria-invalid="remaining < 0 || undefined"
-          @input="autoGrow"
-          @keydown="onKeydown"
-        />
-      </div>
+  <section class="status-box panel" aria-labelledby="composer-title">
+    <h2 class="panel-title">
+      <label id="composer-title" for="composer-text">¿Qué estás haciendo?</label>
+    </h2>
+    <form class="status-box__form" @submit.prevent="submit">
+      <textarea
+        id="composer-text"
+        ref="textarea"
+        v-model="text"
+        class="status-box__input"
+        rows="1"
+        placeholder="Escribe algo..."
+        :maxlength="LIMITS.postText + 200"
+        :aria-invalid="remaining < 0 || undefined"
+        @input="autoGrow"
+        @keydown="onKeydown"
+      />
 
-      <figure v-if="photo" class="composer__preview">
+      <figure v-if="photo" class="status-box__preview">
         <img :src="photo.dataUrl" alt="Vista previa de la fotografía" />
-        <button type="button" class="composer__remove" aria-label="Quitar fotografía" @click="photo = null">
+        <button type="button" class="status-box__remove" aria-label="Quitar fotografía" @click="photo = null">
           <X aria-hidden="true" />
         </button>
       </figure>
 
-      <div class="composer__actions">
+      <div class="status-box__actions">
         <input ref="fileInput" class="visually-hidden" type="file" :accept="ACCEPTED_IMAGE_TYPES" tabindex="-1" aria-hidden="true" @change="pickPhoto" />
-        <button type="button" class="btn btn--ghost" :disabled="processing || submitting" @click="fileInput?.click()">
+        <button type="button" class="status-box__photo" :disabled="processing || submitting" @click="fileInput?.click()">
           <ImagePlus aria-hidden="true" />
           {{ processing ? 'Preparando…' : photo ? 'Cambiar fotografía' : 'Añadir fotografía' }}
         </button>
-        <span v-if="remaining < 200" class="composer__count" :class="{ 'composer__count--over': remaining < 0 }" aria-live="polite">
+        <span v-if="remaining < 200" class="status-box__count" :class="{ 'status-box__count--over': remaining < 0 }" aria-live="polite">
           {{ remaining }}
         </span>
-        <button v-if="dirty" type="button" class="btn btn--ghost" :disabled="submitting" @click="reset">Cancelar</button>
-        <button type="submit" class="btn btn--primary" :disabled="!canSubmit">
+        <button v-if="dirty" type="button" class="btn btn--ghost btn--sm" :disabled="submitting" @click="reset">Cancelar</button>
+        <button type="submit" class="btn btn--primary btn--sm" :disabled="!canSubmit">
           {{ submitting ? 'Publicando…' : 'Publicar' }}
         </button>
       </div>
     </form>
+    <p v-if="status" class="status-box__current">
+      Tu estado: <span class="user-text">«{{ status.text }}»</span> · <RelativeTime :value="status.createdAt" />
+    </p>
   </section>
 </template>
 
 <style lang="scss" scoped>
-.composer {
-  padding: $space-3 $space-4 $space-3;
-  border-top: 3px solid $color-brand;
+.status-box {
+  overflow: hidden;
 
-  &__title {
-    display: block;
-    margin-bottom: $space-2;
-    font-family: $font-display;
-    font-size: $fs-md;
-    font-weight: 700;
-    color: $color-brand-strong;
-  }
-
-  &__row {
+  &__form {
     display: flex;
-    gap: $space-3;
-  }
-
-  &__avatar {
-    display: none;
+    flex-direction: column;
+    gap: $space-2;
+    padding: $space-3;
   }
 
   &__input {
-    flex: 1;
-    min-height: 3.25rem;
-    padding: $space-2 $space-3;
+    width: 100%;
+    min-height: 2.125rem;
+    padding: $space-2;
     border: 1px solid $color-border-strong;
-    border-radius: $radius;
-    background: $color-surface-alt;
+    border-radius: $radius-sm;
+    background: $color-surface;
     color: $color-text;
-    font-size: $fs-md;
-    line-height: 1.4;
+    font-size: $fs-base;
+    line-height: 1.35;
     resize: none;
 
     &:focus-visible {
       outline: 2px solid $color-focus;
       outline-offset: -1px;
-      background: $color-surface;
     }
   }
 
@@ -157,30 +160,29 @@ const onKeydown = (event) => {
     position: relative;
     width: fit-content;
     max-width: 100%;
-    margin-top: $space-3;
 
     img {
-      max-height: 18rem;
-      border-radius: $radius;
+      max-height: 9rem;
+      border-radius: $radius-sm;
     }
   }
 
   &__remove {
     @include reset-button;
     position: absolute;
-    top: $space-2;
-    right: $space-2;
+    top: $space-1;
+    right: $space-1;
     display: grid;
     place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: $radius;
+    width: 1.625rem;
+    height: 1.625rem;
+    border-radius: $radius-sm;
     background: $color-toast-bg;
     color: $color-toast-text;
 
     svg {
-      width: 1.1rem;
-      height: 1.1rem;
+      width: 0.9rem;
+      height: 0.9rem;
     }
   }
 
@@ -190,11 +192,29 @@ const onKeydown = (event) => {
     align-items: center;
     justify-content: flex-end;
     gap: $space-2;
-    margin-top: $space-3;
+  }
 
-    > .btn:first-of-type {
-      margin-right: auto;
-      padding-left: $space-2;
+  &__photo {
+    @include reset-button;
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+    margin-right: auto;
+    color: $color-link;
+    font-size: $fs-sm;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    &:hover:not(:disabled) {
+      text-decoration: underline;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 
@@ -207,19 +227,12 @@ const onKeydown = (event) => {
       font-weight: 700;
     }
   }
-}
 
-/* Media queries */
-
-@media (min-width: $bp-tablet) {
-  .composer {
-    &__avatar {
-      display: inline-flex;
-    }
-
-    &__actions {
-      padding-left: 3.25rem;
-    }
+  &__current {
+    padding: $space-2 $space-3;
+    border-top: 1px solid $color-border;
+    font-size: $fs-sm;
+    color: $color-text-muted;
   }
 }
 </style>

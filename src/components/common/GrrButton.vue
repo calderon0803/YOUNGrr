@@ -11,6 +11,8 @@ const props = defineProps({
   /** What receives the Grr, for the tooltip: "publicación" or "fotografía". */
   target: { type: String, default: 'publicación' },
   onDark: { type: Boolean, default: false },
+  /** Inline text-link look for compact feed items (Tuenti style). */
+  compact: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['toggle'])
@@ -35,7 +37,7 @@ watch(
   <button
     type="button"
     class="grr"
-    :class="{ 'grr--active': active, 'grr--swipe': swiping, 'grr--on-dark': onDark }"
+    :class="{ 'grr--active': active, 'grr--swipe': swiping, 'grr--on-dark': onDark, 'grr--compact': compact }"
     :aria-pressed="active"
     :disabled="disabled"
     :title="active ? `Quitar tu Grr de esta ${target}` : `Hacer Grr a esta ${target}`"
@@ -126,6 +128,30 @@ watch(
       color: $color-grr-logo;
       background: transparent;
       border-color: $color-grr-logo;
+    }
+  }
+
+  // Compact: a text link inside the item meta line.
+  &--compact {
+    gap: 0.2rem;
+    min-height: 1.5rem;
+    padding: 0 0.3rem;
+    border-radius: $radius-sm;
+    font-size: $fs-sm;
+
+    .grr__icon {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .grr__check {
+      width: 0.7rem;
+      height: 0.7rem;
+    }
+
+    &.grr--active {
+      background: transparent;
+      border-color: transparent;
     }
   }
 

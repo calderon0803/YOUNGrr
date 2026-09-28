@@ -16,6 +16,7 @@ export const useFriendsStore = defineStore('friends', () => {
   const lists = reactive({})
   const requests = reactive({ status: 'idle', error: null, incoming: [], outgoing: [] })
   const suggestions = reactive({ status: 'idle', items: [] })
+  const birthdays = reactive({ status: 'idle', items: [] })
   const people = reactive({ query: '', status: 'idle', error: null, items: [] })
   let peopleSeq = 0
   /** Person ids with an action in flight, to disable their buttons. */
@@ -55,6 +56,16 @@ export const useFriendsStore = defineStore('friends', () => {
       suggestions.status = 'success'
     } catch {
       suggestions.status = 'error'
+    }
+  }
+
+  const loadBirthdays = async () => {
+    birthdays.status = 'loading'
+    try {
+      birthdays.items = await friendsService.upcomingBirthdays()
+      birthdays.status = 'success'
+    } catch {
+      birthdays.status = 'error'
     }
   }
 
@@ -135,12 +146,14 @@ export const useFriendsStore = defineStore('friends', () => {
     lists,
     requests,
     suggestions,
+    birthdays,
     people,
     busy,
     incomingCount,
     loadFriends,
     loadRequests,
     loadSuggestions,
+    loadBirthdays,
     searchPeople,
     send,
     cancel,

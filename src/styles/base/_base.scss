@@ -76,10 +76,18 @@ a {
   @include panel;
 }
 
+// Tuenti-style block header: a tinted bar with a bold title, not a card title.
 .panel-title {
-  @include section-title;
-  padding: $space-3 $space-4;
-  border-bottom: 1px solid $color-border;
+  margin: 0;
+  padding: 0.4rem $space-3;
+  background: $color-brand-tint;
+  border-bottom: 1px solid $color-brand-soft;
+  border-radius: $radius-sm $radius-sm 0 0;
+  font-family: $font-body;
+  font-size: $fs-sm;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: $color-brand-strong;
 }
 
 .muted {

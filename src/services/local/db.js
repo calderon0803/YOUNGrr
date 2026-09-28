@@ -25,6 +25,7 @@ const load = async () => {
   // Tables added after a dataset was saved.
   db.photoOwners ??= []
   db.profileVisits ??= []
+  db.wallMessages ??= []
   if (!stored) {
     await commit()
     await dropOldVersions()

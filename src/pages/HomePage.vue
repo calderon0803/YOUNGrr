@@ -10,11 +10,14 @@ import TabNav from '@/components/common/TabNav.vue'
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
+import BirthdaysWidget from '@/components/friends/BirthdaysWidget.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import UpcomingEventsWidget from '@/components/events/UpcomingEventsWidget.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { fullName } from '@/utils/text'
 
 // STORES
 const route = useRoute()
@@ -31,6 +34,7 @@ const editingLocation = ref(false)
 
 // COMPUTED
 const tab = computed(() => (route.query.feed === 'nearby' ? 'nearby' : 'friends'))
+const myStatus = computed(() => user.profiles[auth.meId]?.data?.status ?? null)
 const hasFriends = computed(() => (user.profiles[auth.meId]?.data?.friendsCount ?? 1) > 0)
 const radiusKm = computed(() => user.settings?.nearby?.radiusKm ?? NEARBY_DEFAULT_RADIUS_KM)
 // Reload "Cerca de ti" when the user changes town.
@@ -46,6 +50,9 @@ const load = () => {
     feed.loadNearby(radiusKm.value)
   }
 }
+
+// A text-only post is your new status.
+const onPublished = () => user.loadProfile(auth.meId, { silent: true })
 
 const changeRadius = async (km) => {
   await user.setNearbyRadius(km)
@@ -66,35 +73,43 @@ watch(locationKey, () => {
 
 <template>
   <div class="home">
-    <div class="home__main">
-      <h1 class="visually-hidden">Inicio</h1>
-      <NotificationSummary class="home__summary" />
-      <PostComposer />
+    <h1 class="visually-hidden">Inicio</h1>
 
-      <div class="panel home__switch">
-        <TabNav label="Qué publicaciones ver" :tabs="TABS" :active="tab" :to="tabRoute" />
-        <NearbyRadius
-          v-if="tab === 'nearby' && !feed.nearby.needsLocation"
-          :model-value="radiusKm"
-          :city="feed.nearby.originCity || auth.me?.city"
-          :disabled="feed.nearby.status === 'loading'"
-          @update:model-value="changeRadius"
-        />
-      </div>
+    <aside class="home__left" aria-label="Tu estado y tus novedades">
+      <RouterLink v-if="auth.me" class="home__me panel" :to="{ name: 'profile', params: { id: auth.meId } }">
+        <UserAvatar :person="auth.me" size="lg" />
+        <span class="home__me-text">
+          <strong>{{ fullName(auth.me) }}</strong>
+          <span>Ver mi perfil</span>
+        </span>
+      </RouterLink>
+      <PostComposer :status="myStatus" @published="onPublished" />
+      <NotificationSummary />
+    </aside>
+
+    <section class="home__center panel" aria-labelledby="feed-title">
+      <h2 id="feed-title" class="panel-title">Novedades de tus amigos</h2>
+      <TabNav class="home__tabs" label="Qué novedades ver" :tabs="TABS" :active="tab" :to="tabRoute" />
+      <NearbyRadius
+        v-if="tab === 'nearby' && !feed.nearby.needsLocation"
+        class="home__radius"
+        :model-value="radiusKm"
+        :city="feed.nearby.originCity || auth.me?.city"
+        :disabled="feed.nearby.status === 'loading'"
+        @update:model-value="changeRadius"
+      />
 
       <PostList v-if="tab === 'friends'" :list="feed.home" @retry="feed.loadFeed()" @more="feed.loadFeed({ more: true })">
         <template #empty>
-          <div class="panel">
-            <StateMessage
-              v-if="!hasFriends"
-              :icon="Users"
-              title="Todavía no tienes amigos."
-              text="Busca personas para empezar. Aquí verás lo que publican."
-            >
-              <RouterLink class="btn btn--primary" :to="{ name: 'friends', query: { tab: 'search' } }">Buscar personas</RouterLink>
-            </StateMessage>
-            <StateMessage v-else title="Todavía no hay publicaciones." text="Cuando tus amigos publiquen algo, aparecerá aquí. Puedes empezar tú." />
-          </div>
+          <StateMessage
+            v-if="!hasFriends"
+            :icon="Users"
+            title="Todavía no tienes amigos."
+            text="Busca personas para empezar. Aquí verás lo que publican."
+          >
+            <RouterLink class="btn btn--primary" :to="{ name: 'friends', query: { tab: 'search' } }">Buscar personas</RouterLink>
+          </StateMessage>
+          <StateMessage v-else title="Todavía no hay novedades." text="Cuando tus amigos publiquen algo, aparecerá aquí. Puedes empezar tú." />
         </template>
       </PostList>
 
@@ -106,94 +121,133 @@ watch(locationKey, () => {
         @more="feed.loadNearby(radiusKm, { more: true })"
       >
         <template #empty>
-          <div class="panel">
-            <StateMessage
-              v-if="feed.nearby.needsLocation"
-              :icon="MapPin"
-              title="Indica dónde vives."
-              text="Añade tu ciudad o pueblo a tu perfil para ver lo que publica la gente de tu zona."
-            >
-              <button type="button" class="btn btn--primary" @click="editingLocation = true">Añadir ciudad o pueblo</button>
-            </StateMessage>
-            <StateMessage
-              v-else
-              :icon="MapPin"
-              :title="`Nadie ha publicado a menos de ${radiusKm} km.`"
-              text="Solo aparecen las cuentas públicas de tu zona y las de tus amigos. Prueba con un radio mayor."
-            />
-          </div>
+          <StateMessage
+            v-if="feed.nearby.needsLocation"
+            :icon="MapPin"
+            title="Indica dónde vives."
+            text="Añade tu ciudad o pueblo a tu perfil para ver lo que publica la gente de tu zona."
+          >
+            <button type="button" class="btn btn--primary" @click="editingLocation = true">Añadir ciudad o pueblo</button>
+          </StateMessage>
+          <StateMessage
+            v-else
+            :icon="MapPin"
+            :title="`Nadie ha publicado a menos de ${radiusKm} km.`"
+            text="Solo aparecen las cuentas públicas de tu zona y las de tus amigos. Prueba con un radio mayor."
+          />
         </template>
       </PostList>
+    </section>
 
-      <ProfileEditDialog v-if="auth.me" :open="editingLocation" :profile="auth.me" @close="editingLocation = false" />
-    </div>
-    <aside class="home__rail" aria-label="Resumen">
-      <NotificationSummary />
+    <aside class="home__right" aria-label="Planes y cumpleaños">
       <UpcomingEventsWidget />
+      <BirthdaysWidget />
       <SuggestionsWidget />
     </aside>
+
+    <ProfileEditDialog v-if="auth.me" :open="editingLocation" :profile="auth.me" @close="editingLocation = false" />
   </div>
 </template>
 
 <style lang="scss" scoped>
 .home {
-  display: grid;
-  gap: $space-4;
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
 
-  &__main {
+  &__left,
+  &__right {
     display: flex;
     flex-direction: column;
     gap: $space-3;
     min-width: 0;
   }
 
-  &__switch {
+  &__me {
+    display: none;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-3;
+    color: $color-text;
+
+    &:hover {
+      text-decoration: none;
+
+      span span {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  &__me-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    strong {
+      color: $color-brand-strong;
+    }
+
+    span {
+      font-size: $fs-sm;
+      color: $color-link;
+    }
+  }
+
+  &__center {
+    min-width: 0;
     overflow: hidden;
     border-radius: 0;
     border-right: 0;
     border-left: 0;
-
-    :deep(.tabs) {
-      border-bottom: 0;
-    }
-
-    :deep(.radius) {
-      border-top: 1px solid $color-border;
-    }
   }
 
-  &__rail {
-    display: none;
+  &__tabs {
+    background: $color-surface-alt;
+  }
+
+  &__radius {
+    border-bottom: 1px solid $color-border;
   }
 }
 
 /* Media queries */
 
 @media (min-width: $bp-tablet) {
-  .home__switch {
-    border-right: 1px solid $color-border;
-    border-left: 1px solid $color-border;
-    border-radius: $radius;
+  .home {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    grid-template-areas:
+      'left center'
+      'right center';
+    align-items: start;
+    gap: $space-4;
+
+    &__left {
+      grid-area: left;
+    }
+
+    &__right {
+      grid-area: right;
+    }
+
+    &__center {
+      grid-area: center;
+      border-right: 1px solid $color-border;
+      border-left: 1px solid $color-border;
+      border-radius: $radius;
+    }
+
+    &__me {
+      display: flex;
+    }
   }
 }
 
 @media (min-width: $bp-desktop) {
   .home {
-    grid-template-columns: minmax(0, 1fr) 18.5rem;
-    align-items: start;
-    gap: $space-6;
-
-    &__summary {
-      display: none;
-    }
-
-    &__rail {
-      position: sticky;
-      top: calc(#{$header-height} + #{$space-5});
-      display: flex;
-      flex-direction: column;
-      gap: $space-4;
-    }
+    grid-template-columns: 15rem minmax(0, 1fr) 14.5rem;
+    grid-template-areas: 'left center right';
   }
 }
 </style>

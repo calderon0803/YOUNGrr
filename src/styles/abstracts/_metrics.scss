@@ -1,10 +1,10 @@
 $font-body: 'Source Sans 3 Variable', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
 $font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', $font-body;
 
-$fs-xs: 0.75rem;
-$fs-sm: 0.8125rem;
-$fs-base: 0.9375rem;
-$fs-md: 1.0625rem;
+$fs-xs: 0.71875rem;
+$fs-sm: 0.78125rem;
+$fs-base: 0.875rem;
+$fs-md: 0.9375rem;
 $fs-lg: 1.25rem;
 $fs-xl: 1.625rem;
 $fs-xxl: 2.125rem;
@@ -23,9 +23,9 @@ $radius: 5px;
 $radius-lg: 8px;
 $radius-pill: 999px;
 
-$header-height: 3.25rem;
+$header-height: 2.875rem;
 $bottom-nav-height: 3.5rem;
-$content-max: 72rem;
+$content-max: 66rem;
 
 $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 $ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);

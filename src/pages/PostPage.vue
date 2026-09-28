@@ -54,7 +54,7 @@ watch(postId, load, { immediate: true })
       <template #empty>
         <div class="panel"><StateMessage title="Esta publicación ya no existe." text="Puede que la hayan eliminado." /></div>
       </template>
-      <PostCard :post-id="postId" />
+      <div class="panel"><PostCard :post-id="postId" /></div>
     </AsyncState>
   </div>
 </template>

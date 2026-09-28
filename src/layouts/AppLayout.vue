@@ -2,7 +2,6 @@
 import { defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/layout/AppHeader.vue'
-import SideNav from '@/components/layout/SideNav.vue'
 import BottomNav from '@/components/layout/BottomNav.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useMessagesStore } from '@/stores/messages'
@@ -59,54 +58,27 @@ watch(() => route.fullPath, refreshBadges)
 <template>
   <a class="skip-link" href="#main">Saltar al contenido</a>
   <AppHeader />
-  <div class="shell">
-    <aside class="shell__nav">
-      <SideNav />
-    </aside>
-    <main id="main" class="shell__main" tabindex="-1">
-      <slot />
-    </main>
-  </div>
+  <main id="main" class="shell" tabindex="-1">
+    <slot />
+  </main>
   <BottomNav />
   <PhotoViewer v-if="photos.viewer.open" />
 </template>
 
 <style lang="scss" scoped>
 .shell {
+  display: block;
   max-width: $content-max;
   margin: 0 auto;
   padding: $space-3 0 calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$space-6});
-
-  &__nav {
-    display: none;
-  }
-
-  &__main {
-    min-width: 0;
-    outline: none;
-  }
+  outline: none;
 }
 
 /* Media queries */
 
 @media (min-width: $bp-tablet) {
   .shell {
-    display: grid;
-    grid-template-columns: 11.5rem minmax(0, 1fr);
-    align-items: start;
-    gap: $space-5;
-    padding: $space-5 $space-5 $space-10;
-
-    &__nav {
-      display: block;
-    }
-  }
-}
-
-@media (min-width: $bp-desktop) {
-  .shell {
-    grid-template-columns: 13.5rem minmax(0, 1fr);
-    gap: $space-6;
+    padding: $space-4 $space-4 $space-10;
   }
 }
 </style>

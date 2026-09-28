@@ -1,6 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { MessageSquare } from 'lucide-vue-next'
+import { computed, nextTick, ref } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
@@ -17,6 +16,9 @@ import { useConfirm } from '@/composables/useConfirm'
 import { fullName } from '@/utils/text'
 import { formatDistance } from '@/utils/geo'
 
+// One line of "Novedades de tus amigos", Tuenti style: who, what, a small photo
+// and discreet text actions. Not a big card.
+
 // PROPS
 const props = defineProps({
   postId: { type: String, required: true },
@@ -32,6 +34,7 @@ const { confirm } = useConfirm()
 
 // DATA
 const comments = ref(null)
+const commenting = ref(false)
 const editing = ref(false)
 const reporting = ref(false)
 const showGrrers = ref(false)
@@ -48,25 +51,7 @@ const OTHER_MENU = [
 const post = computed(() => feed.posts[props.postId])
 const isOwn = computed(() => post.value?.authorId === auth.meId)
 const titleId = computed(() => `post-${props.postId}-author`)
-
-// "Tú, Ana y 3 más han hecho Grr"
-const grrSummary = computed(() => {
-  const p = post.value
-  if (!p || p.grrCount === 0) return ''
-  if (p.hasGrr && p.grrCount === 1) return 'Has hecho Grr'
-  const names = [...(p.hasGrr ? ['Tú'] : []), ...p.grrBy.map((person) => person.firstName)].slice(0, 2)
-  const rest = p.grrCount - names.length
-  const list = rest > 0 ? `${names.join(', ')} y ${rest} más` : names.join(' y ')
-  const verb = p.hasGrr ? 'habéis' : p.grrCount === 1 ? 'ha' : 'han'
-  return `${list} ${verb} hecho Grr`
-})
-
-const photoRatio = computed(() => {
-  const photo = post.value?.photo
-  if (!photo) return null
-  // Clamp very tall photos so a single post never takes several screens.
-  return Math.max(photo.width / photo.height, 0.8)
-})
+const showComments = computed(() => commenting.value || (post.value?.commentCount ?? 0) > 0)
 
 // The town; the distance only replaces it when the author hides the town.
 const placeLabel = computed(() => {
@@ -93,58 +78,64 @@ const onMenu = async (key) => {
 }
 
 const openPhoto = () => photos.openSingle(post.value.photo.id)
+
+const comment = async () => {
+  commenting.value = true
+  await nextTick()
+  comments.value?.focus()
+}
 </script>
 
 <template>
-  <article v-if="post" class="post panel" :aria-labelledby="titleId">
-    <header class="post__header">
-      <RouterLink :to="{ name: 'profile', params: { id: post.author.id } }" tabindex="-1" aria-hidden="true">
-        <UserAvatar :person="post.author" size="md" />
-      </RouterLink>
-      <div class="post__who">
+  <article v-if="post" class="item" :aria-labelledby="titleId">
+    <RouterLink class="item__avatar" :to="{ name: 'profile', params: { id: post.author.id } }" tabindex="-1" aria-hidden="true">
+      <UserAvatar :person="post.author" size="md" />
+    </RouterLink>
+
+    <div class="item__body">
+      <p class="item__line">
         <PersonLink :id="titleId" :person="post.author" />
-        <p class="post__meta">
-          <RouterLink class="post__time" :to="{ name: 'post', params: { id: post.id } }">
-            <RelativeTime :value="post.createdAt" />
-          </RouterLink>
-          <span v-if="post.updatedAt"> · editado</span>
-          <span v-if="placeLabel" class="post__place"> · {{ placeLabel }}</span>
-        </p>
-      </div>
-      <DropdownMenu
-        class="post__menu"
-        :label="`Opciones de la publicación de ${fullName(post.author)}`"
-        :items="isOwn ? OWN_MENU : OTHER_MENU"
-        @select="onMenu"
-      />
-    </header>
+        <span v-if="post.text" class="item__text user-text">{{ post.text }}</span>
+        <span v-else class="item__action">ha subido una foto</span>
+      </p>
 
-    <p v-if="post.text" class="post__text user-text">{{ post.text }}</p>
-
-    <button v-if="post.photo" type="button" class="post__photo" :style="{ aspectRatio: photoRatio }" aria-label="Abrir fotografía" @click="openPhoto">
-      <img :src="post.photo.url" alt="" loading="lazy" decoding="async" />
-    </button>
-
-    <button v-if="grrSummary" type="button" class="post__grr-line" @click="showGrrers = true">
-      {{ grrSummary }}
-    </button>
-
-    <footer class="post__actions">
-      <GrrButton
-        :active="post.hasGrr"
-        :count="post.grrCount"
-        :disabled="feed.grrPending.has(post.id)"
-        target="publicación"
-        @toggle="feed.toggleGrr(post.id)"
-      />
-      <button type="button" class="post__comment-btn" @click="comments?.focus()">
-        <MessageSquare aria-hidden="true" />
-        Comentarios
-        <span v-if="post.commentCount" class="post__count">{{ post.commentCount }}</span>
+      <button v-if="post.photo" type="button" class="item__photo" aria-label="Abrir fotografía" @click="openPhoto">
+        <img v-if="post.photo.url" :src="post.photo.url" alt="" loading="lazy" decoding="async" />
       </button>
-    </footer>
 
-    <PostComments ref="comments" :post="post" />
+      <p class="item__meta">
+        <RouterLink class="item__time" :to="{ name: 'post', params: { id: post.id } }">
+          <RelativeTime :value="post.createdAt" />
+        </RouterLink>
+        <span v-if="post.updatedAt" class="item__sep">editado</span>
+        <span v-if="placeLabel" class="item__sep">{{ placeLabel }}</span>
+        <span class="item__sep">
+          <GrrButton
+            compact
+            :active="post.hasGrr"
+            :count="post.grrCount"
+            :disabled="feed.grrPending.has(post.id)"
+            target="publicación"
+            @toggle="feed.toggleGrr(post.id)"
+          />
+          <button v-if="post.grrCount" type="button" class="item__link" @click="showGrrers = true">quién</button>
+        </span>
+        <span class="item__sep">
+          <button type="button" class="item__link" :aria-expanded="showComments" @click="comment">
+            Comentar<template v-if="post.commentCount"> ({{ post.commentCount }})</template>
+          </button>
+        </span>
+      </p>
+
+      <PostComments v-if="showComments" ref="comments" :post="post" :show-form="commenting" />
+    </div>
+
+    <DropdownMenu
+      class="item__menu"
+      :label="`Opciones de la publicación de ${fullName(post.author)}`"
+      :items="isOwn ? OWN_MENU : OTHER_MENU"
+      @select="onMenu"
+    />
 
     <PostEditDialog v-if="isOwn" :open="editing" :post="post" @close="editing = false" />
     <ReportDialog v-if="!isOwn" :open="reporting" :post-id="post.id" @close="reporting = false" />
@@ -153,23 +144,63 @@ const openPhoto = () => photos.openSingle(post.value.photo.id)
 </template>
 
 <style lang="scss" scoped>
-.post {
-  overflow: hidden;
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-3;
+  padding: $space-3;
 
-  &__header {
-    display: flex;
-    align-items: flex-start;
-    gap: $space-3;
-    padding: $space-3 $space-2 0 $space-4;
+  &__avatar {
+    flex-shrink: 0;
   }
 
-  &__who {
+  &__body {
     flex: 1;
     min-width: 0;
-    padding-top: 0.1rem;
+  }
+
+  &__line {
+    line-height: 1.4;
+
+    :deep(.person-link) {
+      margin-right: 0.35rem;
+    }
+  }
+
+  &__action {
+    color: $color-text-muted;
+  }
+
+  &__photo {
+    @include reset-button;
+    display: block;
+    width: fit-content;
+    max-width: min(100%, 17rem);
+    margin-top: $space-2;
+    padding: 3px;
+    background: $color-surface;
+    border: 1px solid $color-border-strong;
+    border-radius: $radius-sm;
+    cursor: zoom-in;
+
+    img {
+      display: block;
+      max-width: 100%;
+      max-height: 13rem;
+      object-fit: cover;
+    }
+
+    &:hover {
+      border-color: $color-brand;
+    }
   }
 
   &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 $space-1;
+    margin-top: $space-1;
     font-size: $fs-sm;
     color: $color-text-muted;
   }
@@ -178,77 +209,35 @@ const openPhoto = () => photos.openSingle(post.value.photo.id)
     color: inherit;
   }
 
-  &__menu {
-    margin-top: -$space-1;
-  }
+  // "·" between meta items.
+  &__sep {
+    display: inline-flex;
+    align-items: center;
 
-  &__text {
-    padding: $space-2 $space-4 0;
-    font-size: $fs-md;
-    line-height: 1.45;
-  }
-
-  &__photo {
-    @include reset-button;
-    display: block;
-    width: 100%;
-    max-height: 36rem;
-    margin-top: $space-3;
-    overflow: hidden;
-    background: $color-skeleton;
-    cursor: zoom-in;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    &::before {
+      content: '·';
+      margin-right: $space-1;
     }
   }
 
-  &__grr-line {
+  &__link {
     @include reset-button;
-    display: block;
-    padding: $space-2 $space-4 0;
+    color: $color-link;
     font-size: $fs-sm;
-    color: $color-text-muted;
 
     &:hover {
-      color: $color-grr-strong;
       text-decoration: underline;
     }
   }
 
-  &__actions {
-    display: flex;
-    align-items: center;
-    gap: $space-1;
-    padding: $space-2 $space-3;
-  }
+  &__menu {
+    flex-shrink: 0;
+    margin: -0.25rem -0.25rem 0 0;
 
-  &__comment-btn {
-    @include reset-button;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-height: 2.25rem;
-    padding: 0 $space-3 0 $space-2;
-    border-radius: $radius;
-    color: $color-text-muted;
-    font-weight: 600;
-
-    svg {
-      width: 1.15rem;
-      height: 1.15rem;
+    :deep(.dropdown__trigger) {
+      width: 1.875rem;
+      min-height: 1.875rem;
     }
-
-    &:hover {
-      background: $color-surface-hover;
-      color: $color-text;
-    }
-  }
-
-  &__count {
-    font-variant-numeric: tabular-nums;
   }
 }
 </style>

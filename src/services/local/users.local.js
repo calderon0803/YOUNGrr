@@ -24,6 +24,14 @@ const REQUEST_POLICIES = ['everyone', 'friends_of_friends', 'nobody']
 const THEMES = ['system', 'light', 'dark']
 
 // Profiles and settings for the local demo backend. Same interface as users.supabase.js.
+/** The status is the latest text-only post (Tuenti's "¿Qué estás haciendo?"). */
+const currentStatus = (db, userId) => {
+  const latest = db.posts
+    .filter((p) => p.authorId === userId && !p.photoId && p.text.trim())
+    .reduce((last, p) => (!last || p.createdAt > last.createdAt ? p : last), null)
+  return latest ? { postId: latest.id, text: latest.text, createdAt: latest.createdAt } : null
+}
+
 export const localUsersService = {
   async getProfile(userId) {
     await latency()
@@ -54,6 +62,7 @@ export const localUsersService = {
       photosCount: visible ? db.photos.filter((p) => p.ownerId === userId).length : 0,
       canViewProfile: visible,
       canSendRequest: canSendRequest(db, me, userId),
+      status: visible ? currentStatus(db, userId) : null,
     }
   },
 

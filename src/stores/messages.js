@@ -6,6 +6,7 @@ import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
+import { BREAKPOINTS, CHAT_MAX_WINDOWS, STORAGE_KEYS } from '@/config/app'
 
 export const useMessagesStore = defineStore('messages', () => {
   const toast = useToast()
@@ -35,9 +36,12 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   }
 
-  const loadThread = async (conversationId) => {
+  /** @param {{ markRead?: boolean }} options false for minimized chat windows */
+  const loadThread = async (conversationId, { markRead = true } = {}) => {
     threads[conversationId] ??= { status: 'idle', error: null, conversation: null, messages: [] }
     const state = threads[conversationId]
+    // Do not overwrite a message that is still being sent.
+    if (state.messages.some((m) => m.pending)) return
     state.status = state.conversation ? 'success' : 'loading'
     state.error = null
     try {
@@ -45,7 +49,10 @@ export const useMessagesStore = defineStore('messages', () => {
       state.conversation = result.conversation
       state.messages = result.messages
       state.status = 'success'
+      // Polling: only write when there is something new to mark.
+      if (!markRead || !result.conversation.unreadCount) return
       await messagesService.markRead(conversationId)
+      state.conversation.unreadCount = 0
       const item = inbox.items.find((c) => c.id === conversationId)
       if (item) item.unreadCount = 0
       refreshUnread()
@@ -86,5 +93,88 @@ export const useMessagesStore = defineStore('messages', () => {
     return id
   }
 
-  return { inbox, threads, unreadTotal, loadConversations, refreshUnread, loadThread, send, discardFailed, openWith }
+  // ---- Chat dock (tablet and desktop) ---------------------------------------
+  // A panel at the bottom right and the open chat windows to its left,
+  // nearest first. Minimized windows keep their unread messages.
+
+  // focusId: the window the user just opened, to type in it at once.
+  const dock = reactive({ open: false, windows: [], focusId: null })
+
+  const dockKey = () => `${STORAGE_KEYS.chatDock}:${useAuthStore().meId}`
+
+  const maxWindows = () =>
+    window.matchMedia(`(min-width: ${BREAKPOINTS.desktop}px)`).matches ? CHAT_MAX_WINDOWS.desktop : CHAT_MAX_WINDOWS.tablet
+
+  const saveDock = () => {
+    try {
+      localStorage.setItem(dockKey(), JSON.stringify(dock.windows))
+    } catch {
+      // Only a convenience.
+    }
+  }
+
+  const restoreDock = () => {
+    let saved = []
+    try {
+      saved = JSON.parse(localStorage.getItem(dockKey()) ?? '[]')
+    } catch {
+      saved = []
+    }
+    dock.windows = (Array.isArray(saved) ? saved : [])
+      .filter((w) => typeof w?.id === 'string')
+      .slice(0, maxWindows())
+      .map((w) => ({ id: w.id, minimized: !!w.minimized }))
+    dock.windows.forEach((w) => loadThread(w.id, { markRead: !w.minimized }))
+  }
+
+  const openWindow = (conversationId) => {
+    dock.windows = [{ id: conversationId, minimized: false }, ...dock.windows.filter((w) => w.id !== conversationId)].slice(0, maxWindows())
+    dock.focusId = conversationId
+    saveDock()
+    loadThread(conversationId)
+  }
+
+  const closeWindow = (conversationId) => {
+    dock.windows = dock.windows.filter((w) => w.id !== conversationId)
+    saveDock()
+  }
+
+  const toggleWindow = (conversationId) => {
+    const win = dock.windows.find((w) => w.id === conversationId)
+    if (!win) return
+    win.minimized = !win.minimized
+    dock.focusId = win.minimized ? null : conversationId
+    saveDock()
+    if (!win.minimized) loadThread(conversationId)
+  }
+
+  const toggleDock = (open = !dock.open) => {
+    dock.open = open
+    if (open) loadConversations()
+  }
+
+  /** New messages in the open windows (there is no push channel yet). */
+  const refreshDock = () => {
+    dock.windows.forEach((w) => loadThread(w.id, { markRead: !w.minimized }))
+    if (dock.open) loadConversations()
+  }
+
+  return {
+    inbox,
+    threads,
+    unreadTotal,
+    loadConversations,
+    refreshUnread,
+    loadThread,
+    send,
+    discardFailed,
+    openWith,
+    dock,
+    restoreDock,
+    openWindow,
+    closeWindow,
+    toggleWindow,
+    toggleDock,
+    refreshDock,
+  }
 })

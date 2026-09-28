@@ -8,17 +8,16 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import NavBadge from '@/components/layout/NavBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
-import { useMessagesStore } from '@/stores/messages'
 import { useFriendsStore } from '@/stores/friends'
 import { useEventsStore } from '@/stores/events'
 
-// Tuenti-style top bar: logo, section tabs and search. On mobile the tabs move
-// to the bottom navigation.
+// Tuenti-style top bar: logo, section tabs and search. Your profile is the
+// avatar; messages are the chat dock. On mobile the tabs move to the bottom
+// navigation.
 
 // STORES
 const auth = useAuthStore()
 const notifications = useNotificationsStore()
-const messages = useMessagesStore()
 const friends = useFriendsStore()
 const events = useEventsStore()
 const route = useRoute()
@@ -34,16 +33,13 @@ const ACCOUNT_MENU = [
 // COMPUTED
 const tabs = computed(() => [
   { to: { name: 'home' }, label: 'Inicio', count: notifications.total, badge: 'novedades', match: ['home'] },
-  { to: { name: 'profile', params: { id: auth.meId } }, label: 'Perfil', match: ['profile'], own: true },
   { to: { name: 'friends' }, label: 'Amigos', count: friends.incomingCount, badge: 'solicitudes pendientes', match: ['friends'] },
   { to: { name: 'photos' }, label: 'Fotos', match: ['photos', 'album', 'photo'] },
   { to: { name: 'events' }, label: 'Eventos', count: events.pendingCount, badge: 'invitaciones pendientes', match: ['events', 'event'] },
-  { to: { name: 'messages' }, label: 'Mensajes', count: messages.unreadTotal, badge: 'conversaciones sin leer', match: ['messages', 'conversation'] },
 ])
 
 // METHODS
-// "Perfil" is only active on your own profile.
-const isActive = (tab) => tab.match.includes(route.name) && (!tab.own || route.params.id === auth.meId)
+const isActive = (tab) => tab.match.includes(route.name)
 
 const submitSearch = () => {
   router.push({ name: 'search', query: query.value.trim() ? { q: query.value.trim() } : {} })

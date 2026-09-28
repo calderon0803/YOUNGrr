@@ -43,10 +43,10 @@ watch(
 </script>
 
 <template>
-  <BaseModal :open="open" title="Reportar publicación" size="sm" :busy="sending" @close="emit('close')">
+  <BaseModal :open="open" title="Reportar" size="sm" :busy="sending" @close="emit('close')">
     <form id="report-form" @submit.prevent="send">
       <fieldset class="report">
-        <legend class="report__legend">¿Qué ocurre con esta publicación?</legend>
+        <legend class="report__legend">¿Qué ocurre con esto?</legend>
         <label v-for="option in REPORT_REASONS" :key="option" class="check report__option">
           <input v-model="reason" type="radio" name="report-reason" :value="option" />
           {{ option }}

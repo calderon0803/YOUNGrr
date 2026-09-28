@@ -58,9 +58,10 @@ const CITY_COORDS = {
 
 const FRIENDS = [
   ['carlos', 'ana', 900], ['carlos', 'pablo', 1400], ['carlos', 'laura', 700], ['carlos', 'javi', 7], ['carlos', 'sara', 400],
-  ['ana', 'laura', 800], ['ana', 'sara', 1000], ['ana', 'pablo', 600], ['ana', 'irene', 200],
-  ['pablo', 'javi', 300], ['laura', 'sara', 500], ['laura', 'lucia', 150],
+  ['ana', 'laura', 800], ['ana', 'sara', 1000], ['ana', 'pablo', 600], ['ana', 'irene', 3],
+  ['pablo', 'javi', 300], ['laura', 'sara', 500], ['laura', 'lucia', 5],
   ['javi', 'miguel', 250], ['sara', 'miguel', 350], ['miguel', 'diego', 90],
+  ['pablo', 'hugo', 420], ['sara', 'nerea', 380],
   ['lucia', 'marta', 120], ['diego', 'alvaro', 60], ['marta', 'irene', 40],
 ]
 
@@ -192,55 +193,38 @@ export const buildSeed = () => {
   albums.find((a) => a.id === verano).coverPhotoId = 'ph_verano-3'
   albums.find((a) => a.id === cumple).coverPhotoId = 'ph_cumple-5'
 
-  // Wall photos used by posts
-  const wp = {
-    viernes: photo('wall-viernes', 'carlos', wall.carlos, '', ago({ h: 2 })),
-    lisboa: photo('wall-lisboa', 'ana', wall.ana, '', ago({ m: 25 })),
-    fuegos: photo('wall-fuegos', 'laura', wall.laura, '', ago({ h: 6 }), [900, 1200]),
-    carrera: photo('wall-carrera', 'javi', wall.javi, '', ago({ d: 1, h: 3 })),
-    playa: photo('wall-playa', 'carlos', wall.carlos, '', ago({ d: 2 })),
-    verano: photo('wall-verano', 'ana', wall.ana, '', ago({ d: 3 })),
-    paella: photo('wall-paella', 'pablo', wall.pablo, '', ago({ d: 5 })),
-    concierto: photo('wall-concierto', 'miguel', wall.miguel, '', ago({ d: 2, h: 5 })),
-    madrid: photo('wall-madrid', 'sara', wall.sara, '', ago({ d: 6 }), [900, 1200]),
-    pombo: photo('wall-pombo', 'nerea', wall.nerea, '', ago({ h: 1 })),
-    laredo: photo('wall-laredo', 'hugo', wall.hugo, '', ago({ h: 5 })),
-    campoo: photo('wall-campoo', 'ruben', wall.ruben, '', ago({ h: 4 })),
-    bea: photo('wall-bea', 'bea', wall.bea, '', ago({ h: 3 })),
-  }
-
   for (const album of albums) {
     const newest = photos.filter((p) => p.albumId === album.id).reduce((max, p) => (p.createdAt > max ? p.createdAt : max), album.createdAt)
     album.updatedAt = newest
   }
 
-  // ---- Posts --------------------------------------------------------------
+  // ---- Statuses and album uploads ------------------------------------------
+  // No free posts: each person has one status (a short phrase) and uploading
+  // photos to an album shows up in the friends' news.
 
-  const P = (key, author, text, createdAt, photoId = null) => ({ id: `p_${key}`, authorId: id(author), text, photoId, createdAt, updatedAt: null })
+  const S = (author, text, createdAt) => ({ id: `p_estado-${author}`, authorId: id(author), kind: 'status', text, photoId: null, createdAt, updatedAt: null })
+  const U = (key, author, albumId, photoIds, createdAt) => ({
+    id: `p_up-${key}`, authorId: id(author), kind: 'album_upload', albumId, photoIds, text: '', photoId: null, createdAt, updatedAt: null,
+  })
+  const range = (prefix, n) => Array.from({ length: n }, (_, i) => `ph_${prefix}-${i + 1}`)
 
   const posts = [
-    P('estado-ana', 'ana', 'Contando las horas para Lisboa ✈️', ago({ h: 7 })),
-    P('estado-laura', 'laura', 'Modo exámenes activado. No me habléis hasta el viernes', ago({ d: 1, h: 6 })),
-    P('lisboa', 'ana', 'Nos vamos de viaje!!! ✈️ Lisboa allá vamos, que alguien riegue mis plantas', ago({ m: 25 }), wp.lisboa),
-    P('viernes', 'carlos', 'Por fin viernes 😂', ago({ h: 2 }), wp.viernes),
-    P('partido', 'pablo', 'Mañana partido a las 11 en La Albericia. Nos faltan dos, ¿quién se apunta?', ago({ h: 4 })),
-    P('fuegos', 'laura', 'Semana Grande 2026. Qué noche 🎆', ago({ h: 6 }), wp.fuegos),
-    P('cumple', 'sara', 'Ya queda menos para mi cumple. Guardad el sábado, que os quiero a todos en casa', ago({ d: 1, h: 1 })),
-    P('carrera', 'javi', 'Nuevo récord en el Sardinero: 10 km en 48 minutos. Mañana no me puedo mover', ago({ d: 1, h: 3 }), wp.carrera),
-    P('playa', 'carlos', 'Menudo día. Examen fuera y directo a la playa.', ago({ d: 2 }), wp.playa),
-    P('concierto', 'miguel', 'Tocamos el viernes en el Kafe Antzokia. Venid!!', ago({ d: 2, h: 5 }), wp.concierto),
-    P('verano', 'ana', 'Echo de menos este verano ☀️', ago({ d: 3 }), wp.verano),
-    P('apuntes', 'laura', '¿Alguien tiene los apuntes de Estadística del martes? Prometo invitar a café', ago({ d: 4 })),
-    P('paella', 'pablo', 'La mejor paella de la historia. Gracias, abuela', ago({ d: 5 }), wp.paella),
-    P('madrid', 'sara', 'Primer día en el trabajo nuevo. Nervios!! Madrid me recibe con este cielo', ago({ d: 6 }), wp.madrid),
-    P('cena', 'carlos', 'Cena de fin de verano el viernes. Os he mandado invitación, no me falléis', ago({ d: 6, h: 4 })),
-    P('pombo', 'nerea', 'Mercadillo de segunda mano el sábado en la plaza de Pombo. Si alguien se anima a montar puesto, avisad', ago({ h: 1 }), wp.pombo),
-    P('laredo', 'hugo', 'Atardecer en la playa de Laredo. No hay filtro que mejore esto 🌅', ago({ h: 5 }), wp.laredo),
-    P('coro', 'claudia', 'Buscamos voces para el coro de Comillas. Ensayamos los jueves a las 20:00, no hace falta experiencia', ago({ d: 1, h: 2 })),
-    P('padel', 'oscar', '¿Alguien de Castro que juegue al pádel? Nos falta uno para el domingo por la mañana', ago({ d: 2, h: 3 })),
-    P('privado', 'bea', 'Esto solo lo ven mis amigos', ago({ h: 3 }), wp.bea),
-    P('campoo', 'ruben', 'Primera nevada en Alto Campoo ❄️', ago({ h: 4 }), wp.campoo),
-    P('bici', 'javi', 'Vendo bici de carretera, talla M, casi sin uso. Precio de amigo', ago({ d: 8 })),
+    S('carlos', 'Cena de fin de verano el viernes. Os he mandado invitación, no me falléis', ago({ d: 6, h: 4 })),
+    S('ana', 'Contando las horas para Lisboa ✈️', ago({ h: 7 })),
+    S('pablo', 'Mañana partido a las 11 en La Albericia. Nos faltan dos, ¿quién se apunta?', ago({ h: 4 })),
+    S('laura', 'Modo exámenes activado. No me habléis hasta el viernes', ago({ d: 1, h: 6 })),
+    S('sara', 'Ya queda menos para mi cumple. Guardad el sábado, que os quiero a todos en casa', ago({ d: 1, h: 1 })),
+    S('javi', 'Nuevo récord en el Sardinero: 10 km en 48 minutos. Mañana no me puedo mover', ago({ d: 1, h: 3 })),
+    S('miguel', 'Tocamos el viernes en el Kafe Antzokia. Venid!!', ago({ d: 2, h: 5 })),
+    S('nerea', 'Mercadillo de segunda mano el sábado en la plaza de Pombo. ¿Alguien se anima a montar puesto?', ago({ h: 1 })),
+    S('hugo', 'Atardecer en la playa de Laredo. No hay filtro que mejore esto 🌅', ago({ h: 5 })),
+    S('claudia', 'Buscamos voces para el coro de Comillas. Ensayamos los jueves a las 20:00', ago({ d: 1, h: 2 })),
+    S('oscar', '¿Alguien de Castro que juegue al pádel? Nos falta uno para el domingo', ago({ d: 2, h: 3 })),
+    S('bea', 'Esto solo lo ven mis amigos', ago({ h: 3 })),
+    S('ruben', 'Primera nevada en Alto Campoo ❄️', ago({ h: 4 })),
+    U('lisboa', 'ana', lisboa, range('lisboa', 6), ago({ h: 20 })),
+    U('piso', 'sara', piso, range('piso', 3), ago({ d: 4, h: 1 })),
+    U('cumple', 'carlos', cumple, range('cumple', 6), ago({ d: 20 })),
   ]
 
   // ---- Comments -----------------------------------------------------------
@@ -250,31 +234,23 @@ export const buildSeed = () => {
   const C = (targetType, targetId, author, text, createdAt) =>
     comments.push({ id: `c_${++commentSeq}`, targetType, targetId, authorId: id(author), text, createdAt })
 
-  C('post', 'p_lisboa', 'laura', 'Traedme pastéis de nata o no volváis', ago({ m: 20 }))
-  C('post', 'p_lisboa', 'sara', 'Qué envidia!! Pasadlo genial', ago({ m: 12 }))
-  C('post', 'p_viernes', 'pablo', 'Por fin. Esta semana ha sido eterna', ago({ m: 30 }))
-  C('post', 'p_viernes', 'ana', 'Qué fotaza.', ago({ m: 50 }))
-  C('post', 'p_viernes', 'javi', 'Tenemos que repetirlo.', ago({ h: 1 }))
-  C('post', 'p_partido', 'javi', 'Cuenta conmigo', ago({ h: 3, m: 40 }))
-  C('post', 'p_partido', 'carlos', 'Yo voy, pero de defensa que la última vez...', ago({ h: 3 }))
-  C('post', 'p_fuegos', 'ana', 'Me encanta.', ago({ h: 5 }))
-  C('post', 'p_fuegos', 'carlos', 'Desde Puertochico se ven mejor que desde ningún sitio', ago({ h: 4 }))
-  C('post', 'p_cumple', 'laura', 'Ahí estaremos!!', ago({ d: 1 }))
-  C('post', 'p_carrera', 'carlos', 'Máquina. El año que viene la media maratón', ago({ d: 1, h: 2 }))
-  C('post', 'p_playa', 'laura', '¿Qué tal te salió al final?', ago({ d: 1, h: 20 }))
-  C('post', 'p_playa', 'carlos', 'Creo que bien, ya veremos', ago({ d: 1, h: 19 }))
-  C('post', 'p_verano', 'carlos', 'El año que viene repetimos Comillas', ago({ d: 2, h: 22 }))
-  C('post', 'p_apuntes', 'carlos', 'Te los paso luego por mensaje', ago({ d: 3, h: 23 }))
-  C('post', 'p_paella', 'ana', 'Invita a la próxima!!', ago({ d: 4, h: 20 }))
-  C('post', 'p_madrid', 'ana', 'Te va a ir genial', ago({ d: 5, h: 22 }))
-  C('post', 'p_madrid', 'laura', 'Mucha suerte Sara', ago({ d: 5, h: 21 }))
-  C('post', 'p_pombo', 'laura', 'Yo llevo discos, guardadme sitio', ago({ m: 40 }))
-  C('post', 'p_laredo', 'hugo', 'Mañana a la misma hora, quien quiera venir', ago({ h: 4 }))
+  C('post', 'p_estado-carlos', 'ana', 'Ahí estaré!!', ago({ d: 5 }))
+  C('post', 'p_estado-carlos', 'pablo', 'Llevo yo el postre', ago({ m: 30 }))
+  C('post', 'p_estado-pablo', 'javi', 'Cuenta conmigo', ago({ h: 3, m: 40 }))
+  C('post', 'p_estado-pablo', 'carlos', 'Yo voy, pero de defensa que la última vez...', ago({ h: 3 }))
+  C('post', 'p_estado-sara', 'laura', 'Ahí estaremos!!', ago({ d: 1 }))
+  C('post', 'p_estado-javi', 'carlos', 'Máquina. El año que viene la media maratón', ago({ d: 1, h: 2 }))
+  C('post', 'p_estado-nerea', 'laura', 'Yo llevo discos, guardadme sitio', ago({ m: 40 }))
+  C('post', 'p_estado-hugo', 'hugo', 'Mañana a la misma hora, quien quiera venir', ago({ h: 4 }))
   C('photo', 'ph_verano-3', 'laura', 'Esta foto es de postal', ago({ d: 35 }))
   C('photo', 'ph_verano-3', 'ana', 'Fondo de pantalla ya', ago({ d: 34 }))
+  C('photo', 'ph_verano-3', 'laura', 'Qué recuerdos!!', ago({ h: 3 }))
+  C('photo', 'ph_verano-3', 'pablo', 'Repetimos el año que viene', ago({ h: 2 }))
   C('photo', 'ph_cumple-5', 'ana', 'Os quiero mucho 🥹', ago({ d: 19 }))
   C('photo', 'ph_cumple-2', 'pablo', 'La tarta más buena del mundo', ago({ d: 19 }))
   C('photo', 'ph_lisboa-3', 'carlos', 'Qué luz', ago({ d: 4 }))
+  C('photo', 'ph_lisboa-1', 'laura', 'Traedme pastéis de nata o no volváis', ago({ h: 18 }))
+  C('photo', 'ph_piso-1', 'ana', 'Qué piso más bonito', ago({ d: 3, h: 22 }))
 
   // ---- Grrs ---------------------------------------------------------------
 
@@ -283,21 +259,14 @@ export const buildSeed = () => {
   const G = (targetType, targetId, users, createdAt) =>
     users.forEach((u) => grrs.push({ id: `g_${++grrSeq}`, userId: id(u), targetType, targetId, createdAt }))
 
-  G('post', 'p_lisboa', ['carlos', 'laura', 'sara', 'irene'], ago({ m: 15 }))
-  G('post', 'p_viernes', ['ana', 'pablo', 'javi', 'laura', 'sara'], ago({ m: 10 }))
-  G('post', 'p_partido', ['javi'], ago({ h: 3 }))
-  G('post', 'p_fuegos', ['carlos', 'ana', 'sara', 'lucia'], ago({ h: 4 }))
-  G('post', 'p_cumple', ['ana', 'laura', 'miguel'], ago({ d: 1 }))
-  G('post', 'p_carrera', ['pablo', 'miguel'], ago({ d: 1 }))
-  G('post', 'p_playa', ['ana', 'laura', 'sara'], ago({ d: 1, h: 12 }))
-  G('post', 'p_concierto', ['javi', 'sara', 'diego'], ago({ d: 2 }))
-  G('post', 'p_verano', ['carlos', 'laura', 'sara', 'pablo'], ago({ d: 2, h: 20 }))
-  G('post', 'p_paella', ['carlos', 'ana', 'javi'], ago({ d: 4 }))
-  G('post', 'p_madrid', ['ana', 'laura', 'carlos', 'miguel'], ago({ d: 5 }))
-  G('post', 'p_cena', ['ana', 'laura'], ago({ d: 6 }))
-  G('post', 'p_pombo', ['laura', 'bea'], ago({ m: 30 }))
-  G('post', 'p_laredo', ['claudia', 'oscar', 'nerea'], ago({ h: 3 }))
-  G('post', 'p_coro', ['nerea'], ago({ d: 1 }))
+  G('post', 'p_estado-carlos', ['ana', 'pablo', 'laura'], ago({ m: 10 }))
+  G('post', 'p_estado-pablo', ['javi'], ago({ h: 3 }))
+  G('post', 'p_estado-sara', ['ana', 'laura', 'miguel'], ago({ d: 1 }))
+  G('post', 'p_estado-javi', ['pablo', 'miguel'], ago({ d: 1 }))
+  G('post', 'p_estado-miguel', ['javi', 'sara', 'diego'], ago({ d: 2 }))
+  G('post', 'p_estado-nerea', ['laura', 'bea'], ago({ m: 30 }))
+  G('post', 'p_estado-hugo', ['claudia', 'oscar', 'nerea'], ago({ h: 3 }))
+  G('post', 'p_estado-claudia', ['nerea'], ago({ d: 1 }))
   G('photo', 'ph_verano-3', ['laura', 'ana', 'pablo'], ago({ d: 1 }))
   G('photo', 'ph_cumple-5', ['ana', 'sara'], ago({ d: 19 }))
   G('photo', 'ph_lisboa-3', ['carlos', 'sara'], ago({ d: 4 }))
@@ -423,15 +392,19 @@ export const buildSeed = () => {
   })
 
   const notifications = [
-    N('grr_post', 'ana', 'p_viernes', ago({ m: 10 })),
+    N('grr_post', 'ana', 'p_estado-carlos', ago({ m: 10 })),
     N('wall_message', 'ana', id('carlos'), ago({ h: 1, m: 20 })),
-    N('comment_post', 'pablo', 'p_viernes', ago({ m: 30 })),
-    N('grr_post', 'pablo', 'p_viernes', ago({ m: 12 })),
+    N('comment_post', 'pablo', 'p_estado-carlos', ago({ m: 30 })),
+    N('grr_post', 'pablo', 'p_estado-carlos', ago({ m: 12 })),
     N('comment_photo', 'ana', 'ph_cumple-5', ago({ h: 5 })),
+    N('comment_photo', 'laura', 'ph_verano-3', ago({ h: 3 })),
+    N('comment_photo', 'pablo', 'ph_verano-3', ago({ h: 2 })),
+    N('grr_photo', 'sara', 'ph_cumple-5', ago({ h: 6 })),
+    N('grr_photo', 'pablo', 'ph_verano-3', ago({ h: 8 })),
     N('grr_photo', 'laura', 'ph_verano-3', ago({ d: 1 }), true),
     N('photo_tag', 'ana', 'ph_lisboa-4', ago({ d: 2 }), true),
     N('photo_tag', 'sara', 'ph_piso-2', ago({ d: 3 })),
-    N('comment_post', 'laura', 'p_playa', ago({ d: 1, h: 20 }), true),
+    N('comment_post', 'ana', 'p_estado-carlos', ago({ d: 5 }), true),
     N('friend_accepted', 'javi', id('javi'), ago({ d: 7 }), true),
   ]
 
@@ -459,6 +432,11 @@ export const buildSeed = () => {
     wallMessages,
     hiddenPosts: [],
     reports: [],
+    // Carlos invited Javi (now friends) and has one invitation still pending.
+    invitations: [
+      { id: 'inv_javi', token: 'demo-javi', inviterId: id('carlos'), email: 'javi@demo.youngrr.app', createdAt: ago({ d: 8 }), expiresAt: ago({ d: -22 }), usedBy: id('javi'), usedAt: ago({ d: 7 }) },
+      { id: 'inv_marina', token: 'demo-marina', inviterId: id('carlos'), email: 'marina@example.com', createdAt: ago({ d: 1 }), expiresAt: ago({ d: -29 }), usedBy: null, usedAt: null },
+    ],
   }
 }
 

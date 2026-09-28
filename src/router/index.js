@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useMessagesStore } from '@/stores/messages'
+import { BREAKPOINTS } from '@/config/app'
 
 const app = (path, name, loader, meta = {}) => ({ path, name, component: loader, meta: { auth: true, ...meta } })
 
@@ -11,9 +13,10 @@ const routes = [
   app('/home', 'home', () => import('@/pages/HomePage.vue'), { title: 'Inicio' }),
   app('/profile', 'my-profile', () => import('@/pages/ProfilePage.vue'), { title: 'Perfil' }),
   app('/profile/:id', 'profile', () => import('@/pages/ProfilePage.vue'), { title: 'Perfil' }),
-  app('/post/:id', 'post', () => import('@/pages/PostPage.vue'), { title: 'Publicación' }),
+  app('/post/:id', 'post', () => import('@/pages/PostPage.vue'), { title: 'Novedad' }),
   app('/friends', 'friends', () => import('@/pages/FriendsPage.vue'), { title: 'Amigos' }),
   app('/photos', 'photos', () => import('@/pages/PhotosPage.vue'), { title: 'Fotos' }),
+  app('/photos/news', 'photo-news', () => import('@/pages/PhotoNewsPage.vue'), { title: 'Novedades de tus fotos' }),
   app('/photo/:id', 'photo', () => import('@/pages/PhotoPage.vue'), { title: 'Fotografía' }),
   app('/albums/:id', 'album', () => import('@/pages/AlbumPage.vue'), { title: 'Álbum' }),
   app('/events', 'events', () => import('@/pages/EventsPage.vue'), { title: 'Eventos' }),
@@ -40,15 +43,24 @@ export const router = createRouter({
   },
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   const auth = useAuthStore()
   await auth.restore()
   if (to.meta.auth && !auth.isAuthenticated) return { name: 'login', query: to.fullPath !== '/home' ? { next: to.fullPath } : {} }
   if (to.meta.guest && auth.isAuthenticated) return { name: 'home' }
   if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId } }
+  // From tablet up, messages live in the chat dock instead of a page.
+  if ((to.name === 'messages' || to.name === 'conversation') && window.matchMedia(`(min-width: ${BREAKPOINTS.tablet}px)`).matches) {
+    const messages = useMessagesStore()
+    if (to.name === 'conversation') messages.openWindow(String(to.params.id))
+    else messages.toggleDock(true)
+    return from.matched.length ? false : { name: 'home' }
+  }
   return true
 })
 
-router.afterEach((to) => {
+router.afterEach((to, from, failure) => {
+  // Cancelled navigations (e.g. a chat opened in the dock) keep the title.
+  if (failure) return
   document.title = to.meta.title ? `${to.meta.title} · YOUNGrr` : 'YOUNGrr'
 })

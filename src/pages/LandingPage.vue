@@ -48,8 +48,7 @@ const MOSAIC = [
       <h2 id="access-title" class="landing__access-title">Entra en YOUNGrr</h2>
       <LoginForm />
       <p class="landing__register">
-        ¿Todavía no tienes cuenta?
-        <RouterLink :to="{ name: 'register' }">Créala en un minuto</RouterLink>
+        ¿Todavía no tienes cuenta? YOUNGrr es solo por invitación: pide a un amigo que te invite.
       </p>
       <DemoAccounts class="landing__demo" />
     </section>

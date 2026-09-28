@@ -154,7 +154,7 @@ watch(
     <p v-else-if="photo.caption" class="details__caption user-text">{{ photo.caption }}</p>
 
     <div class="details__actions">
-      <GrrButton :active="photo.hasGrr" :count="photo.grrCount" :disabled="photos.grrPending.has(photo.id)" target="fotografía" @toggle="photos.toggleGrr(photo.id)" />
+      <GrrButton :active="photo.hasGrr" :count="photo.grrCount" :disabled="photos.grrPending.has(photo.id)" target="esta fotografía" @toggle="photos.toggleGrr(photo.id)" />
       <button v-if="photo.grrCount" type="button" class="details__link" @click="showGrrers = true">Ver quién</button>
       <button v-if="isOwner" type="button" class="btn btn--ghost btn--sm details__tag-btn" :aria-pressed="tagging" @click="emit('toggle-tagging')">
         <Tag aria-hidden="true" />

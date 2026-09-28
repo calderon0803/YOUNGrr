@@ -12,8 +12,10 @@ import { nowIso } from '@/utils/time'
 /** Checks the target exists and the user can see it; returns its owner ids. */
 const resolveTarget = (db, me, targetType, targetId) => {
   if (targetType === 'post') {
-    const post = findOr404(db.posts, (p) => p.id === targetId, 'Esta publicación ya no existe.')
-    ensure(canViewPost(db, me, post), 'forbidden', 'No puedes ver esta publicación.')
+    const post = findOr404(db.posts, (p) => p.id === targetId, 'Este estado ya no existe.')
+    ensure(canViewPost(db, me, post), 'forbidden', 'No puedes ver este estado.')
+    // "Ha subido N fotos" items are information only; each photo has its own.
+    ensure((post.kind ?? 'status') === 'status', 'forbidden', 'Solo los estados admiten Grr y comentarios.')
     return [post.authorId]
   }
   const photo = findOr404(db.photos, (p) => p.id === targetId, 'Esta fotografía ya no existe.')

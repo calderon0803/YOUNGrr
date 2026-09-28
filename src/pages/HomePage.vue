@@ -2,22 +2,20 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { MapPin, Users } from 'lucide-vue-next'
-import PostComposer from '@/components/feed/PostComposer.vue'
-import PostList from '@/components/feed/PostList.vue'
+import ActivityList from '@/components/feed/ActivityList.vue'
+import StatusLine from '@/components/feed/StatusLine.vue'
 import NearbyRadius from '@/components/feed/NearbyRadius.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import TabNav from '@/components/common/TabNav.vue'
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
-import BirthdaysWidget from '@/components/friends/BirthdaysWidget.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
-import UpcomingEventsWidget from '@/components/events/UpcomingEventsWidget.vue'
+import CalendarWidget from '@/components/events/CalendarWidget.vue'
+import InviteWidget from '@/components/friends/InviteWidget.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
-import { fullName } from '@/utils/text'
 
 // STORES
 const route = useRoute()
@@ -34,7 +32,6 @@ const editingLocation = ref(false)
 
 // COMPUTED
 const tab = computed(() => (route.query.feed === 'nearby' ? 'nearby' : 'friends'))
-const myStatus = computed(() => user.profiles[auth.meId]?.data?.status ?? null)
 const hasFriends = computed(() => (user.profiles[auth.meId]?.data?.friendsCount ?? 1) > 0)
 const radiusKm = computed(() => user.settings?.nearby?.radiusKm ?? NEARBY_DEFAULT_RADIUS_KM)
 // Reload "Cerca de ti" when the user changes town.
@@ -45,14 +42,11 @@ const tabRoute = (key) => ({ query: key === 'friends' ? {} : { feed: key } })
 
 const load = () => {
   if (tab.value === 'friends') {
-    if (feed.home.status !== 'success' || feed.home.stale) feed.loadFeed()
+    if (feed.home.status !== 'success' || feed.home.stale) feed.loadActivity()
   } else if (feed.nearby.status !== 'success' || feed.nearby.stale || feed.nearby.radiusKm !== radiusKm.value) {
     feed.loadNearby(radiusKm.value)
   }
 }
-
-// A text-only post is your new status.
-const onPublished = () => user.loadProfile(auth.meId, { silent: true })
 
 const changeRadius = async (km) => {
   await user.setNearbyRadius(km)
@@ -75,20 +69,15 @@ watch(locationKey, () => {
   <div class="home">
     <h1 class="visually-hidden">Inicio</h1>
 
-    <aside class="home__left" aria-label="Tu estado y tus novedades">
-      <RouterLink v-if="auth.me" class="home__me panel" :to="{ name: 'profile', params: { id: auth.meId } }">
-        <UserAvatar :person="auth.me" size="lg" />
-        <span class="home__me-text">
-          <strong>{{ fullName(auth.me) }}</strong>
-          <span>Ver mi perfil</span>
-        </span>
-      </RouterLink>
-      <PostComposer :status="myStatus" @published="onPublished" />
+    <aside class="home__left" aria-label="Tus novedades, invitaciones y calendario">
       <NotificationSummary />
+      <InviteWidget />
+      <CalendarWidget />
     </aside>
 
     <section class="home__center panel" aria-labelledby="feed-title">
       <h2 id="feed-title" class="panel-title">Novedades de tus amigos</h2>
+      <StatusLine />
       <TabNav class="home__tabs" label="Qué novedades ver" :tabs="TABS" :active="tab" :to="tabRoute" />
       <NearbyRadius
         v-if="tab === 'nearby' && !feed.nearby.needsLocation"
@@ -99,24 +88,27 @@ watch(locationKey, () => {
         @update:model-value="changeRadius"
       />
 
-      <PostList v-if="tab === 'friends'" :list="feed.home" @retry="feed.loadFeed()" @more="feed.loadFeed({ more: true })">
+      <ActivityList v-if="tab === 'friends'" :list="feed.home" @retry="feed.loadActivity()" @more="feed.loadActivity({ more: true })">
         <template #empty>
           <StateMessage
             v-if="!hasFriends"
             :icon="Users"
             title="Todavía no tienes amigos."
-            text="Busca personas para empezar. Aquí verás lo que publican."
+            text="Busca personas para empezar. Aquí verás lo que hacen."
           >
             <RouterLink class="btn btn--primary" :to="{ name: 'friends', query: { tab: 'search' } }">Buscar personas</RouterLink>
           </StateMessage>
-          <StateMessage v-else title="Todavía no hay novedades." text="Cuando tus amigos publiquen algo, aparecerá aquí. Puedes empezar tú." />
+          <StateMessage
+            v-else
+            title="Tus amigos no han hecho nada estos días."
+            text="Cuando cambien su estado, suban fotos o hagan nuevos amigos, aparecerá aquí."
+          />
         </template>
-      </PostList>
+      </ActivityList>
 
-      <PostList
+      <ActivityList
         v-else
         :list="feed.nearby"
-        :meta="feed.nearby.meta"
         @retry="feed.loadNearby(radiusKm)"
         @more="feed.loadNearby(radiusKm, { more: true })"
       >
@@ -125,23 +117,21 @@ watch(locationKey, () => {
             v-if="feed.nearby.needsLocation"
             :icon="MapPin"
             title="Indica dónde vives."
-            text="Añade tu ciudad o pueblo a tu perfil para ver lo que publica la gente de tu zona."
+            text="Añade tu ciudad o pueblo a tu perfil para ver qué hace la gente de tu zona."
           >
             <button type="button" class="btn btn--primary" @click="editingLocation = true">Añadir ciudad o pueblo</button>
           </StateMessage>
           <StateMessage
             v-else
             :icon="MapPin"
-            :title="`Nadie ha publicado a menos de ${radiusKm} km.`"
+            :title="`No hay novedades a menos de ${radiusKm} km.`"
             text="Solo aparecen las cuentas públicas de tu zona y las de tus amigos. Prueba con un radio mayor."
           />
         </template>
-      </PostList>
+      </ActivityList>
     </section>
 
-    <aside class="home__right" aria-label="Planes y cumpleaños">
-      <UpcomingEventsWidget />
-      <BirthdaysWidget />
+    <aside class="home__right" aria-label="Personas que quizá conozcas">
       <SuggestionsWidget />
     </aside>
 
@@ -161,37 +151,6 @@ watch(locationKey, () => {
     flex-direction: column;
     gap: $space-3;
     min-width: 0;
-  }
-
-  &__me {
-    display: none;
-    align-items: center;
-    gap: $space-3;
-    padding: $space-3;
-    color: $color-text;
-
-    &:hover {
-      text-decoration: none;
-
-      span span {
-        text-decoration: underline;
-      }
-    }
-  }
-
-  &__me-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-
-    strong {
-      color: $color-brand-strong;
-    }
-
-    span {
-      font-size: $fs-sm;
-      color: $color-link;
-    }
   }
 
   &__center {
@@ -217,6 +176,9 @@ watch(locationKey, () => {
   .home {
     display: grid;
     grid-template-columns: 15rem minmax(0, 1fr);
+    // The first row fits the left column; the second takes the rest of the
+    // feed's height, so the right column sits just below instead of far down.
+    grid-template-rows: auto 1fr;
     grid-template-areas:
       'left center'
       'right center';
@@ -237,16 +199,13 @@ watch(locationKey, () => {
       border-left: 1px solid $color-border;
       border-radius: $radius;
     }
-
-    &__me {
-      display: flex;
-    }
   }
 }
 
 @media (min-width: $bp-desktop) {
   .home {
     grid-template-columns: 15rem minmax(0, 1fr) 14.5rem;
+    grid-template-rows: auto;
     grid-template-areas: 'left center right';
   }
 }

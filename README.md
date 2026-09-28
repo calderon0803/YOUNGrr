@@ -1,12 +1,12 @@
 # YOUNGrr
 
 Una red social para ver qué están haciendo tus amigos. **Amigos, no seguidores.**
-Publicaciones, fotos, álbumes, eventos y mensajes con la gente que conoces, sin
+Tu estado, fotos, álbumes, eventos y mensajes con la gente que conoces, sin
 algoritmos, tendencias ni contenido de desconocidos.
 
 La interacción propia de YOUNGrr es **Grr**: el equivalente a "me gusta", con más actitud.
 Es binaria (haces Grr o lo quitas), única por persona y contenido, y funciona en
-publicaciones y fotografías.
+estados y fotografías. Los avisos de «ha subido N fotos» son solo informativos.
 
 ## Arrancar
 
@@ -67,12 +67,28 @@ src/
 └── utils/
 ```
 
+### Solo por invitación
+
+Como Tuenti, no hay registro abierto. En Inicio, **Invitar a tus amigos** muestra tus
+invitaciones disponibles (5 por persona al registrarse): escribes el correo de tu amigo y la app te da
+un enlace personal (`/register?invite=…`) para mandárselo por donde quieras. La cuenta
+solo se puede crear con ese correo, el enlace caduca a los 30 días y al registrarse os
+hacéis amigos automáticamente. Las invitaciones pendientes se pueden cancelar y se
+recuperan.
+
+La base de datos lo impone: un trigger rechaza cualquier alta en `auth.users` sin una
+invitación válida para ese correo, aunque se llame a la API directamente. Las altas
+hechas desde el panel de Supabase (*Invite user*) no pasan por esa comprobación.
+
 ### Novedades y visitas
 
 Como en Tuenti, no hay lista de notificaciones ni campana. En Inicio hay un bloque de
 **Novedades** con contadores agrupados ("2 mensajes privados nuevos", "1 petición de
 amistad", "3 Grr nuevos en tus fotos"...). Cada línea lleva a donde se atiende y
 desaparece al visitarlo o responderlo. El total aparece como contador en *Inicio*.
+Si hay una sola, lleva directamente a ella. Si hay varias sobre fotos (comentarios, Grr,
+etiquetas, invitaciones para compartir), abre una lista con exactamente esas fotos y quién
+ha hecho qué; al abrir cada foto se marca como vista solo esa.
 
 Debajo de las Novedades está tu **contador de visitas**, que solo ves tú: cuentan las
 visitas de otras personas a tu perfil, una por persona y día. Nunca se muestra quién ha
@@ -84,20 +100,32 @@ visitado.
 - **Inicio** en tres columnas: tu estado ("¿Qué estás haciendo?"), las Novedades y las
   visitas; en el centro las novedades de tus amigos en formato compacto (miniaturas y
   "Grr · Comentar" como enlaces); a la derecha, próximos planes, cumpleaños y sugerencias.
-- **Estado**: es tu última publicación de solo texto; se muestra bajo tu nombre en el perfil.
+- **Novedades de tus amigos** no es un muro de publicaciones: es la actividad de tus
+  amigos, un bloque por persona (como en Tuenti) con su estado y lo que han hecho en los
+  últimos 30 días: fotos subidas a un álbum, nuevas amistades y fotos en las que les han
+  etiquetado. Los bloques se ordenan por la actividad más reciente.
+- **Estado**: una frase breve (140 caracteres) y solo uno a la vez. Se cambia en la línea
+  de la portada; el nuevo sustituye al anterior (con sus comentarios y Grr) y dejarla vacía
+  lo borra. Admite comentarios y Grr, y se muestra bajo tu nombre en el perfil.
+- No hay publicaciones libres: las fotos se suben siempre a un álbum.
 - **Perfil** sin portada: foto grande, datos y amigos a la izquierda; nombre, estado y
-  pestañas (Tablón, Publicaciones, Fotos, Etiquetas, Álbumes, Amigos) a la derecha.
+  pestañas (Tablón, Fotos, Etiquetas, Álbumes, Amigos) a la derecha.
+- **Chat** abajo a la derecha (tablet y escritorio): un panel plegable con tus
+  conversaciones; cada chat que abres se coloca a su izquierda y se puede minimizar o
+  cerrar. Los chats abiertos se recuerdan en el navegador. En móvil, Mensajes sigue
+  siendo una página de la barra inferior.
+- Tu perfil se abre desde tu nombre en la portada o desde tu foto en la barra superior.
 - **Tablón**: lo que te escriben tus amigos en tu perfil. Lo lee quien puede ver tu
   perfil, escriben tú y tus amigos, y lo borra quien lo escribió o tú.
 
 ### Cerca de ti
 
 El inicio tiene dos pestañas: **Amigos** y **Cerca de ti**. La segunda muestra
-publicaciones de gente a menos de 10, 25 o 50 km (lo elige cada usuario) de su ciudad
+el estado y las fotos subidas de gente a menos de 10, 25 o 50 km (lo elige cada usuario) de su ciudad
 o pueblo, que se indica al registrarse con un buscador de OpenStreetMap (Nominatim).
 
 - Quién aparece lo decide **Quién puede ver mi perfil** (cualquier persona o solo mis
-  amigos): cuenta y perfil comparten la privacidad, y las publicaciones y las fotos la
+  amigos): cuenta y perfil comparten la privacidad, y el estado y las fotos la
   siguen. Las fotos no tienen permisos propios.
 - **Quién puede ver mi ciudad o pueblo** y **Quién puede ver a qué distancia estoy**
   son permisos separados. Si se ve el pueblo, no se muestra la distancia; la distancia
@@ -134,9 +162,8 @@ Estado de la conexión con Supabase (`src/services/supabase/`):
 - **Hecho:** perfiles (ver, editar, avatar y portada en el bucket público `avatars`,
   visitas), ajustes y amigos (lista, solicitudes, buscar personas, sugerencias). La
   privacidad se calcula en funciones de la base de datos como el usuario que consulta.
-- **Hecho:** publicaciones (inicio de amigos, perfil, «Cerca de ti», crear con foto,
-  editar, eliminar, ocultar, reportar), comentarios y Grr. Las fotos de las publicaciones
-  van al bucket privado `photos` y se muestran con URLs firmadas.
+- **Hecho:** estado, novedades de amigos por bloques y «Cerca de ti», comentarios y Grr.
+  Las fotos van al bucket privado `photos` y se muestran con URLs firmadas.
 - **Hecho:** fotos y álbumes (subir, pies de foto, portada, visor, etiquetas, fotos
   compartidas con invitación y novedades «ha subido N fotos al álbum»), eventos (con
   imagen privada que solo ven los invitados), mensajes privados, búsqueda global y

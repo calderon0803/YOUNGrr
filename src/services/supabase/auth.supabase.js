@@ -52,7 +52,8 @@ export const supabaseAuthService = {
    * no session yet: the user has to open the link sent by email first.
    * @returns {Promise<{ profile: object | null, needsConfirmation: boolean }>}
    */
-  async register({ firstName, lastName, email, password, location }) {
+  /** Only with a pending invitation for that email (checked by the database). */
+  async register({ firstName, lastName, email, password, location, inviteToken }) {
     validate(
       rules.required(firstName, 'El nombre'),
       rules.max(firstName, LIMITS.name, 'El nombre'),
@@ -62,6 +63,7 @@ export const supabaseAuthService = {
       rules.password(password),
       rules.location(location),
       rules.max(location?.name, LIMITS.city, 'La ciudad'),
+      inviteToken ? null : 'YOUNGrr es solo por invitación.',
     )
     ensureOnline()
     const { data, error } = await getSupabase().auth.signUp({
@@ -75,9 +77,14 @@ export const supabaseAuthService = {
           city: location.name.trim(),
           city_lat: String(location.lat),
           city_lng: String(location.lng),
+          invite_token: inviteToken,
         },
       },
     })
+    // The database rejects sign ups without a valid invitation for that email.
+    if (error && /database error saving new user/i.test(error.message ?? '')) {
+      throw new ApiError('forbidden', 'La invitación no es válida para ese correo o ya se ha usado.')
+    }
     if (error) throw authError(error)
     // With confirmation on, an existing email comes back as a user without identities.
     if (data.user && data.user.identities?.length === 0) throw new ApiError('conflict', 'Ya existe una cuenta con ese correo.')

@@ -1,16 +1,23 @@
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { MailCheck } from 'lucide-vue-next'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { MailCheck, MailQuestionMark } from 'lucide-vue-next'
 import CityPicker from '@/components/common/CityPicker.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import { useAuthStore } from '@/stores/auth'
+import { invitationsService } from '@/services/invitations.service'
 import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
 import { LIMITS, firstError, rules } from '@/utils/validation'
+import { fullName } from '@/utils/text'
+
+// Sign up is by invitation only: the page needs the personal link (?invite=)
+// a registered friend sent, and the account is created with that email.
 
 // STORES
 const auth = useAuthStore()
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
@@ -21,6 +28,12 @@ const serverError = ref('')
 const submitting = ref(false)
 /** Set when Supabase asks the user to confirm their email first. */
 const confirmEmail = ref('')
+/** 'checking' | 'valid' | 'invalid' | 'none' */
+const inviteStatus = ref('checking')
+const invitation = ref(null)
+
+// COMPUTED
+const inviteToken = computed(() => (typeof route.query.invite === 'string' ? route.query.invite : ''))
 
 // METHODS
 const validateForm = () => {
@@ -37,19 +50,37 @@ const submit = async () => {
   if (!validateForm()) return
   submitting.value = true
   try {
-    const { needsConfirmation } = await auth.register({ ...form })
+    const { needsConfirmation } = await auth.register({ ...form, email: invitation.value.email, inviteToken: inviteToken.value })
     if (needsConfirmation) {
       confirmEmail.value = form.email.trim().toLowerCase()
       return
     }
-    toast.success('Bienvenido a YOUNGrr. Busca a tus amigos para empezar.')
-    router.replace({ name: 'friends', query: { tab: 'search' } })
+    toast.success(`Bienvenido a YOUNGrr. Ya eres amigo de ${invitation.value.inviter.firstName}.`)
+    router.replace({ name: 'home' })
   } catch (e) {
     serverError.value = errorMessage(e)
   } finally {
     submitting.value = false
   }
 }
+
+const checkInvitation = async (token) => {
+  if (!token) {
+    inviteStatus.value = 'none'
+    return
+  }
+  inviteStatus.value = 'checking'
+  try {
+    invitation.value = await invitationsService.checkInvitation(token)
+    inviteStatus.value = invitation.value ? 'valid' : 'invalid'
+    if (invitation.value) form.email = invitation.value.email
+  } catch {
+    inviteStatus.value = 'invalid'
+  }
+}
+
+// WATCHERS
+watch(inviteToken, checkInvitation, { immediate: true })
 </script>
 
 <template>
@@ -63,8 +94,30 @@ const submit = async () => {
       <RouterLink class="btn btn--primary" :to="{ name: 'login' }">Ir a entrar</RouterLink>
     </StateMessage>
   </div>
+  <div v-else-if="inviteStatus === 'checking'" class="register panel" aria-busy="true">
+    <h1 class="visually-hidden">Crear cuenta</h1>
+    <p class="register__lead">Comprobando tu invitación…</p>
+  </div>
+  <div v-else-if="inviteStatus !== 'valid'" class="register panel">
+    <h1 class="visually-hidden">Crear cuenta</h1>
+    <StateMessage
+      :icon="MailQuestionMark"
+      :title="inviteStatus === 'none' ? 'YOUNGrr es solo por invitación' : 'Esta invitación no es válida'"
+      :text="
+        inviteStatus === 'none'
+          ? 'Para crear una cuenta necesitas que un amigo que ya esté en YOUNGrr te invite. Te enviará un enlace personal.'
+          : 'Puede que ya se haya usado, que haya caducado o que la hayan cancelado. Pide a tu amigo que te invite de nuevo.'
+      "
+    >
+      <RouterLink class="btn btn--primary" :to="{ name: 'login' }">Ya tengo cuenta</RouterLink>
+    </StateMessage>
+  </div>
   <div v-else class="register panel">
     <h1 class="register__title">Crear cuenta</h1>
+    <p class="register__invited">
+      <UserAvatar :person="invitation.inviter" size="sm" />
+      <span><strong>{{ fullName(invitation.inviter) }}</strong> te ha invitado a YOUNGrr.</span>
+    </p>
     <p class="register__lead">YOUNGrr es para tus amigos de verdad. Usa tu nombre real para que te encuentren.</p>
 
     <form class="form-grid" novalidate @submit.prevent="submit">
@@ -82,7 +135,8 @@ const submit = async () => {
       </div>
       <div class="field">
         <label class="field__label" for="reg-email">Correo electrónico</label>
-        <input id="reg-email" v-model="form.email" class="input" type="email" inputmode="email" autocomplete="email" :aria-invalid="!!errors.email || undefined" aria-describedby="reg-email-error" />
+        <input id="reg-email" v-model="form.email" class="input" type="email" autocomplete="email" readonly aria-describedby="reg-email-hint reg-email-error" />
+        <p id="reg-email-hint" class="field__hint">Es el correo al que te han invitado.</p>
         <p id="reg-email-error" class="field__error">{{ errors.email }}</p>
       </div>
       <div class="field">
@@ -129,6 +183,13 @@ const submit = async () => {
 
   &__lead {
     margin-top: -$space-3;
+  }
+
+  &__invited {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin-top: -$space-2;
   }
 
   &__row {

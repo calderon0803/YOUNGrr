@@ -11,14 +11,25 @@
 /** Stored notification groups, in display order. `list` is where visiting clears them. */
 export const STORED_GROUPS = [
   { key: 'wall', types: ['wall_message'], pref: 'comments', one: 'mensaje nuevo en tu tablón', many: 'mensajes nuevos en tu tablón', single: 'wall', list: 'wall' },
-  { key: 'comments_posts', types: ['comment_post'], pref: 'comments', one: 'comentario nuevo en tus publicaciones', many: 'comentarios nuevos en tus publicaciones', single: 'post', list: 'posts' },
+  { key: 'comments_posts', types: ['comment_post'], pref: 'comments', one: 'comentario nuevo en tu estado', many: 'comentarios nuevos en tu estado', single: 'post', list: 'posts' },
   { key: 'comments_photos', types: ['comment_photo'], pref: 'comments', one: 'comentario nuevo en tus fotos', many: 'comentarios nuevos en tus fotos', single: 'photo', list: 'photos' },
-  { key: 'grr_posts', types: ['grr_post'], pref: 'grr', one: 'Grr nuevo en tus publicaciones', many: 'Grr nuevos en tus publicaciones', single: 'post', list: 'posts' },
+  { key: 'grr_posts', types: ['grr_post'], pref: 'grr', one: 'Grr nuevo en tu estado', many: 'Grr nuevos en tu estado', single: 'post', list: 'posts' },
   { key: 'grr_photos', types: ['grr_photo'], pref: 'grr', one: 'Grr nuevo en tus fotos', many: 'Grr nuevos en tus fotos', single: 'photo', list: 'photos' },
   { key: 'tags', types: ['photo_tag'], pref: 'tags', one: 'etiqueta nueva en fotos', many: 'etiquetas nuevas en fotos', single: 'photo', list: 'tagged' },
   { key: 'owners_accepted', types: ['photo_owner_accepted'], pref: 'tags', one: 'amigo ha aceptado compartir tu foto', many: 'amigos han aceptado compartir tus fotos', single: 'photo', list: 'photos' },
   { key: 'friends_accepted', types: ['friend_accepted'], pref: 'friendRequests', one: 'petición de amistad aceptada', many: 'peticiones de amistad aceptadas', single: 'friends', list: 'friends' },
 ]
+
+/** Photo groups that, when there are several, open the list of those photos. */
+const PHOTO_NEWS = {
+  ...Object.fromEntries(STORED_GROUPS.filter((g) => g.single === 'photo').map((g) => [g.key, g.types])),
+  shares: ['photo_owner_invite'],
+}
+
+/** Types shown in the photo news list for a group key (null if it has none). */
+export const photoNewsTypes = (key) => PHOTO_NEWS[key] ?? null
+
+const photoNewsLink = (key) => `/photos/news?grupo=${key}`
 
 /** Notification types a visited place clears (all of them without a list). */
 export const typesSeenAt = (list) =>
@@ -29,7 +40,7 @@ const pick = (n, one, many) => (n === 1 ? one : many)
 
 const listLink = (me, list) => {
   if (list === 'friends') return '/friends'
-  if (list === 'wall' || list === 'posts') return `/profile/${me}`
+  if (list === 'wall') return `/profile/${me}`
   return `/profile/${me}?tab=${list}`
 }
 
@@ -67,9 +78,17 @@ const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, shar
     pref: 'tags',
     count: sharePhotoIds.length,
     label: pick(sharePhotoIds.length, 'invitación para compartir una foto', 'invitaciones para compartir fotos'),
-    link: `/photo/${sharePhotoIds[0]}`,
+    link: sharePhotoIds.length === 1 ? `/photo/${sharePhotoIds[0]}` : photoNewsLink('shares'),
   },
 ]
+
+const linkFor = (me, group, targets) => {
+  // Your status has no list page: go to the newest one.
+  if (targets.length === 1 || group.single === 'post') return singleLink(me, group.single, targets[0])
+  // Several photos: a list of exactly those, with who did what.
+  if (group.single === 'photo') return photoNewsLink(group.key)
+  return listLink(me, group.list)
+}
 
 const storedGroups = (me, unread) =>
   STORED_GROUPS.map((group) => {
@@ -80,7 +99,7 @@ const storedGroups = (me, unread) =>
       pref: group.pref,
       count: items.length,
       label: pick(items.length, group.one, group.many),
-      link: targets.length === 1 ? singleLink(me, group.single, targets[0]) : listLink(me, group.list),
+      link: linkFor(me, group, targets),
     }
   })
 

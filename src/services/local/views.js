@@ -1,6 +1,6 @@
 // Builds the view models the UI consumes (joins + counters), as a SQL view would.
 import { canViewPhoto, canViewProfile, friendIdsOf, pendingOwnerInvite, photoOwnerIds, summaryOf } from '@/services/local/access'
-import { ALBUM_UPLOAD_PREVIEW, COMMENT_PREVIEW } from '@/config/app'
+import { ACTIVITY_LIMITS, ALBUM_UPLOAD_PREVIEW, COMMENT_PREVIEW } from '@/config/app'
 
 const byDateAsc = (a, b) => a.createdAt.localeCompare(b.createdAt)
 
@@ -34,7 +34,7 @@ export const postView = (db, me, post, { commentPreview = COMMENT_PREVIEW } = {}
 
   return {
     ...post,
-    kind: post.kind ?? 'post',
+    kind: post.kind ?? 'status',
     album: album ? { id: album.id, title: album.title } : null,
     photos: uploaded.slice(0, ALBUM_UPLOAD_PREVIEW).map((p) => ({ id: p.id, url: p.url, width: p.width, height: p.height })),
     photoTotal: uploaded.length,
@@ -47,6 +47,42 @@ export const postView = (db, me, post, { commentPreview = COMMENT_PREVIEW } = {}
     grrBy,
     commentCount: comments.length,
     comments: commentPreview === Infinity ? comments : comments.slice(-commentPreview),
+  }
+}
+
+/**
+ * One person's block in the friends' news: current status, recent album
+ * uploads and, for friends, new friendships and photos where they were tagged
+ * (that the viewer can see). Same shape as activity_block_json().
+ */
+export const activityBlock = (db, me, personId, { since, withSocial, lastActivityAt }) => {
+  const newest = (a, b) => b.createdAt.localeCompare(a.createdAt)
+  const status = db.posts.find((p) => p.authorId === personId && (p.kind ?? 'status') === 'status')
+  const uploads = db.posts.filter((p) => p.authorId === personId && p.kind === 'album_upload' && p.createdAt >= since).sort(newest)
+  const friendships = withSocial
+    ? db.friendships
+        .filter((f) => [f.userA, f.userB].includes(personId) && ![f.userA, f.userB].includes(me) && f.createdAt >= since)
+        .sort(newest)
+    : []
+  const tags = withSocial
+    ? db.photoTags
+        .filter((t) => t.userId === personId && t.createdAt >= since)
+        .map((t) => ({ tag: t, photo: db.photos.find((p) => p.id === t.photoId) }))
+        .filter(({ photo }) => photo && canViewPhoto(db, me, photo))
+        .sort((a, b) => newest(a.tag, b.tag))
+    : []
+  return {
+    person: summaryOf(db, personId),
+    lastActivityAt,
+    status: status ? postView(db, me, status) : null,
+    uploads: uploads.slice(0, ACTIVITY_LIMITS.uploads).map((p) => postView(db, me, p)),
+    newFriends: friendships.slice(0, ACTIVITY_LIMITS.newFriends).map((f) => ({
+      person: summaryOf(db, f.userA === personId ? f.userB : f.userA),
+      createdAt: f.createdAt,
+    })),
+    newFriendsTotal: friendships.length,
+    tagged: tags.slice(0, ACTIVITY_LIMITS.tagged).map(({ photo }) => ({ id: photo.id, url: photo.url, width: photo.width, height: photo.height })),
+    taggedTotal: tags.length,
   }
 }
 

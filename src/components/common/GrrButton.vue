@@ -9,7 +9,8 @@ const props = defineProps({
   count: { type: Number, default: 0 },
   disabled: { type: Boolean, default: false },
   /** What receives the Grr, for the tooltip: "publicación" or "fotografía". */
-  target: { type: String, default: 'publicación' },
+  /** What the Grr is for, with its article: "esta foto", "este estado". */
+  target: { type: String, default: 'esta publicación' },
   onDark: { type: Boolean, default: false },
   /** Inline text-link look for compact feed items (Tuenti style). */
   compact: { type: Boolean, default: false },
@@ -40,7 +41,7 @@ watch(
     :class="{ 'grr--active': active, 'grr--swipe': swiping, 'grr--on-dark': onDark, 'grr--compact': compact }"
     :aria-pressed="active"
     :disabled="disabled"
-    :title="active ? `Quitar tu Grr de esta ${target}` : `Hacer Grr a esta ${target}`"
+    :title="active ? `Quitar tu Grr de ${target}` : `Hacer Grr a ${target}`"
     @click="emit('toggle')"
     @animationend="swiping = false"
   >

@@ -44,7 +44,7 @@ const QUESTIONS = [
 
 // METHODS
 const update = (key, value) => {
-  const next = structuredClone(user.settings)
+  const next = user.draftSettings()
   next.privacy[key] = value
   user.updateSettings(next, 'Privacidad actualizada.')
 }

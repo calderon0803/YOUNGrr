@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive, ref, toRaw } from 'vue'
 import { usersService } from '@/services/users.service'
 import { geoService } from '@/services/geo.service'
 import { errorMessage } from '@/services/errors'
@@ -89,6 +89,9 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /** Editable copy of the settings (structuredClone cannot copy Vue proxies). */
+  const draftSettings = () => structuredClone(toRaw(settings.value))
+
   /** Counts your visit to someone else's profile and refreshes its counter. */
   const registerVisit = async (userId) => {
     try {
@@ -105,12 +108,12 @@ export const useUserStore = defineStore('user', () => {
   /** Radius of the "Cerca de ti" feed, saved with the rest of the settings. */
   const setNearbyRadius = async (radiusKm) => {
     if (!settings.value || settings.value.nearby?.radiusKm === radiusKm) return
-    const next = structuredClone(settings.value)
+    const next = draftSettings()
     next.nearby = { radiusKm }
     await updateSettings(next, `Mostrando gente a menos de ${radiusKm} km.`)
   }
 
-  return { profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit }
+  return { profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit, draftSettings }
 })
 
 // Follow OS changes while the preference is "system".

@@ -16,7 +16,7 @@ const OPTIONS = [
 
 // METHODS
 const toggle = (key, value) => {
-  const next = structuredClone(user.settings)
+  const next = user.draftSettings()
   next.notifications[key] = value
   user.updateSettings(next, 'Preferencias guardadas.')
 }

@@ -13,7 +13,7 @@ const THEMES = [
 
 // METHODS
 const choose = (value) => {
-  const next = structuredClone(user.settings)
+  const next = user.draftSettings()
   next.appearance.theme = value
   user.updateSettings(next, 'Tema cambiado.')
 }

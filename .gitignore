@@ -7,3 +7,6 @@ dev-dist
 !.env.example
 *.tsbuildinfo
 .DS_Store
+
+# Local Claude Code config (dev server launch settings)
+.claude/

@@ -1,7 +1,7 @@
 /**
  * Error returned by the service layer. `code` is stable for the UI, `message`
  * is already written for the user.
- * @typedef {'validation' | 'unauthorized' | 'forbidden' | 'not_found' | 'conflict' | 'network'} ApiErrorCode
+ * @typedef {'validation' | 'unauthorized' | 'forbidden' | 'not_found' | 'conflict' | 'network' | 'not_available'} ApiErrorCode
  */
 export class ApiError extends Error {
   /**

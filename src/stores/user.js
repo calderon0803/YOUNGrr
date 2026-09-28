@@ -92,11 +92,10 @@ export const useUserStore = defineStore('user', () => {
   /** Editable copy of the settings (structuredClone cannot copy Vue proxies). */
   const draftSettings = () => structuredClone(toRaw(settings.value))
 
-  /** Counts your visit to someone else's profile and refreshes its counter. */
+  /** Counts your visit to someone else's profile. Its total stays private to its owner. */
   const registerVisit = async (userId) => {
     try {
-      const visits = await usersService.registerVisit(userId)
-      if (profiles[userId]?.data) profiles[userId].data.visits = visits
+      await usersService.registerVisit(userId)
     } catch {
       // The counter is not worth an error message.
     }

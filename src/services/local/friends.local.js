@@ -31,7 +31,8 @@ const makeFriends = (db, a, b) => {
   db.friendships.push({ userA, userB, createdAt: nowIso() })
 }
 
-export const friendsService = {
+// Friends for the local demo backend. Same interface as friends.supabase.js.
+export const localFriendsService = {
   async listFriends(userId) {
     await latency()
     const db = await getDb()

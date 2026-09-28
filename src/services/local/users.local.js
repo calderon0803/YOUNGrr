@@ -23,7 +23,8 @@ const VISIBILITIES = ['everyone', 'friends', 'only_me']
 const REQUEST_POLICIES = ['everyone', 'friends_of_friends', 'nobody']
 const THEMES = ['system', 'light', 'dark']
 
-export const usersService = {
+// Profiles and settings for the local demo backend. Same interface as users.supabase.js.
+export const localUsersService = {
   async getProfile(userId) {
     await latency()
     const db = await getDb()

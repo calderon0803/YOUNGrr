@@ -1,16 +1,19 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { ImagePlus, X } from 'lucide-vue-next'
+import { ImagePlus, Pencil, X } from 'lucide-vue-next'
 import RelativeTime from '@/components/common/RelativeTime.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useFeedStore } from '@/stores/feed'
+import { useAuthStore } from '@/stores/auth'
 import { useImagePicker } from '@/composables/useImagePicker'
 import { useToast } from '@/composables/useToast'
 import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
 import { LIMITS } from '@/utils/validation'
 
-// Tuenti's status box: one line "¿Qué estás haciendo?". A text-only post becomes
-// your current status; with a photo it is published as a photo.
+// Tuenti's status box: your photo and one line "¿Qué estás haciendo?", with your
+// current status and how long ago you set it. A text-only post becomes your new
+// status; with a photo it is published as a photo.
 
 // PROPS
 defineProps({
@@ -22,6 +25,7 @@ const emit = defineEmits(['published'])
 
 // STORES
 const feed = useFeedStore()
+const auth = useAuthStore()
 const toast = useToast()
 
 // DATA
@@ -81,23 +85,32 @@ const onKeydown = (event) => {
 </script>
 
 <template>
-  <section class="status-box panel" aria-labelledby="composer-title">
-    <h2 class="panel-title">
-      <label id="composer-title" for="composer-text">¿Qué estás haciendo?</label>
-    </h2>
+  <section class="status-box panel" aria-label="Tu estado">
     <form class="status-box__form" @submit.prevent="submit">
-      <textarea
-        id="composer-text"
-        ref="textarea"
-        v-model="text"
-        class="status-box__input"
-        rows="1"
-        placeholder="Escribe algo..."
-        :maxlength="LIMITS.postText + 200"
-        :aria-invalid="remaining < 0 || undefined"
-        @input="autoGrow"
-        @keydown="onKeydown"
-      />
+      <div class="status-box__row">
+        <UserAvatar v-if="auth.me" :person="auth.me" size="sm" />
+        <div class="status-box__field">
+          <label class="visually-hidden" for="composer-text">¿Qué estás haciendo?</label>
+          <textarea
+            id="composer-text"
+            ref="textarea"
+            v-model="text"
+            class="status-box__input"
+            rows="1"
+            placeholder="¿Qué estás haciendo?"
+            :maxlength="LIMITS.postText + 200"
+            :aria-invalid="remaining < 0 || undefined"
+            @input="autoGrow"
+            @keydown="onKeydown"
+          />
+          <Pencil class="status-box__pencil" aria-hidden="true" />
+        </div>
+      </div>
+
+      <p v-if="status && !dirty" class="status-box__current">
+        <span class="visually-hidden">Tu estado: </span>
+        <span class="user-text">«{{ status.text }}»</span> · <RelativeTime :value="status.createdAt" />
+      </p>
 
       <figure v-if="photo" class="status-box__preview">
         <img :src="photo.dataUrl" alt="Vista previa de la fotografía" />
@@ -110,20 +123,19 @@ const onKeydown = (event) => {
         <input ref="fileInput" class="visually-hidden" type="file" :accept="ACCEPTED_IMAGE_TYPES" tabindex="-1" aria-hidden="true" @change="pickPhoto" />
         <button type="button" class="status-box__photo" :disabled="processing || submitting" @click="fileInput?.click()">
           <ImagePlus aria-hidden="true" />
-          {{ processing ? 'Preparando…' : photo ? 'Cambiar fotografía' : 'Añadir fotografía' }}
+          {{ processing ? 'Preparando…' : photo ? 'Cambiar foto' : 'Añadir foto' }}
         </button>
         <span v-if="remaining < 200" class="status-box__count" :class="{ 'status-box__count--over': remaining < 0 }" aria-live="polite">
           {{ remaining }}
         </span>
-        <button v-if="dirty" type="button" class="btn btn--ghost btn--sm" :disabled="submitting" @click="reset">Cancelar</button>
-        <button type="submit" class="btn btn--primary btn--sm" :disabled="!canSubmit">
-          {{ submitting ? 'Publicando…' : 'Publicar' }}
-        </button>
+        <template v-if="dirty">
+          <button type="button" class="btn btn--ghost btn--sm" :disabled="submitting" @click="reset">Cancelar</button>
+          <button type="submit" class="btn btn--primary btn--sm" :disabled="!canSubmit">
+            {{ submitting ? 'Publicando…' : 'Publicar' }}
+          </button>
+        </template>
       </div>
     </form>
-    <p v-if="status" class="status-box__current">
-      Tu estado: <span class="user-text">«{{ status.text }}»</span> · <RelativeTime :value="status.createdAt" />
-    </p>
   </section>
 </template>
 
@@ -138,10 +150,33 @@ const onKeydown = (event) => {
     padding: $space-3;
   }
 
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-2;
+  }
+
+  &__field {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__pencil {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.5rem;
+    width: 0.85rem;
+    height: 0.85rem;
+    color: $color-text-muted;
+    pointer-events: none;
+  }
+
   &__input {
+    display: block;
     width: 100%;
     min-height: 2.125rem;
-    padding: $space-2;
+    padding: $space-2 1.75rem $space-2 $space-2;
     border: 1px solid $color-border-strong;
     border-radius: $radius-sm;
     background: $color-surface;
@@ -229,9 +264,8 @@ const onKeydown = (event) => {
   }
 
   &__current {
-    padding: $space-2 $space-3;
-    border-top: 1px solid $color-border;
     font-size: $fs-sm;
+    line-height: 1.35;
     color: $color-text-muted;
   }
 }

@@ -11,13 +11,11 @@ import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
 import BirthdaysWidget from '@/components/friends/BirthdaysWidget.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
 import UpcomingEventsWidget from '@/components/events/UpcomingEventsWidget.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
-import { fullName } from '@/utils/text'
 
 // STORES
 const route = useRoute()
@@ -76,13 +74,6 @@ watch(locationKey, () => {
     <h1 class="visually-hidden">Inicio</h1>
 
     <aside class="home__left" aria-label="Tu estado y tus novedades">
-      <RouterLink v-if="auth.me" class="home__me panel" :to="{ name: 'profile', params: { id: auth.meId } }">
-        <UserAvatar :person="auth.me" size="lg" />
-        <span class="home__me-text">
-          <strong>{{ fullName(auth.me) }}</strong>
-          <span>Ver mi perfil</span>
-        </span>
-      </RouterLink>
       <PostComposer :status="myStatus" @published="onPublished" />
       <NotificationSummary />
     </aside>
@@ -163,37 +154,6 @@ watch(locationKey, () => {
     min-width: 0;
   }
 
-  &__me {
-    display: none;
-    align-items: center;
-    gap: $space-3;
-    padding: $space-3;
-    color: $color-text;
-
-    &:hover {
-      text-decoration: none;
-
-      span span {
-        text-decoration: underline;
-      }
-    }
-  }
-
-  &__me-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-
-    strong {
-      color: $color-brand-strong;
-    }
-
-    span {
-      font-size: $fs-sm;
-      color: $color-link;
-    }
-  }
-
   &__center {
     min-width: 0;
     overflow: hidden;
@@ -236,10 +196,6 @@ watch(locationKey, () => {
       border-right: 1px solid $color-border;
       border-left: 1px solid $color-border;
       border-radius: $radius;
-    }
-
-    &__me {
-      display: flex;
     }
   }
 }

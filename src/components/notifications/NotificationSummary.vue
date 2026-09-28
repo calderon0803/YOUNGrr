@@ -1,14 +1,16 @@
 <script setup>
 import { computed, markRaw, useId } from 'vue'
-import { CalendarDays, Eye, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus } from 'lucide-vue-next'
+import { ChartNoAxesColumn, CalendarDays, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus } from 'lucide-vue-next'
 import GrrIcon from '@/components/common/GrrIcon.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
+import { fullName } from '@/utils/text'
 
-// Home-page counters, grouped by kind. Each line takes you to where it is dealt
-// with; once visited (or answered) it disappears. Below them, the private visit
-// counter of your profile (only you see it).
+// Your box on the home page, as in Tuenti: your name, the private visit counter
+// of your profile (only you see it) and the counters of what is new, grouped by
+// kind. Each line takes you to where it is dealt with; once visited (or
+// answered) it disappears.
 
 // STORES
 const notifications = useNotificationsStore()
@@ -40,7 +42,14 @@ const visitsLabel = computed(() => new Intl.NumberFormat('es-ES', { useGrouping:
 
 <template>
   <section class="panel summary" :aria-labelledby="titleId">
-    <h2 :id="titleId" class="panel-title">Novedades</h2>
+    <h2 :id="titleId" class="summary__name">
+      <RouterLink v-if="auth.me" :to="{ name: 'profile', params: { id: auth.meId } }">{{ fullName(auth.me) }}</RouterLink>
+      <span class="visually-hidden">: tus novedades</span>
+    </h2>
+    <p class="summary__visits">
+      <ChartNoAxesColumn class="summary__icon summary__icon--visits" aria-hidden="true" />
+      <span><strong>{{ visitsLabel }}</strong> {{ visits === 1 ? 'visita' : 'visitas' }} a tu perfil</span>
+    </p>
     <ul v-if="notifications.summary.groups.length" class="summary__list" role="list">
       <li v-for="group in notifications.summary.groups" :key="group.key">
         <RouterLink class="summary__item" :to="group.link">
@@ -51,34 +60,58 @@ const visitsLabel = computed(() => new Intl.NumberFormat('es-ES', { useGrouping:
             v-bind="GRR_KEYS.includes(group.key) ? { active: true } : {}"
             aria-hidden="true"
           />
-          <span><strong class="summary__count">{{ group.count }}</strong> {{ group.label }}</span>
+          <span>{{ group.count }} {{ group.label }}</span>
         </RouterLink>
       </li>
     </ul>
     <p v-else-if="notifications.summary.status === 'success'" class="summary__empty">No tienes novedades.</p>
-    <p class="summary__visits">
-      <Eye class="summary__icon" aria-hidden="true" />
-      <span>Visitas a tu perfil: <strong class="summary__count">{{ visitsLabel }}</strong></span>
-    </p>
   </section>
 </template>
 
 <style lang="scss" scoped>
 .summary {
-  &__list {
-    margin: 0;
-    padding: $space-1 0;
+  padding: $space-3 0 $space-2;
+
+  &__name {
+    padding: 0 $space-3;
+    font-family: $font-body;
+    font-size: $fs-md;
+    font-weight: 700;
+
+    a {
+      color: $color-link;
+    }
   }
 
+  &__visits {
+    display: flex;
+    align-items: center;
+    gap: $space-1;
+    padding: $space-1 $space-3 $space-2;
+    font-size: $fs-sm;
+    color: $color-text-muted;
+
+    strong {
+      color: $color-text;
+    }
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+  }
+
+  // Tuenti's green news lines.
   &__item {
     display: flex;
     align-items: center;
-    gap: $space-3;
-    padding: $space-2 $space-4;
-    color: $color-text;
+    gap: $space-2;
+    padding: 0.2rem $space-3;
+    font-size: $fs-sm;
+    font-weight: 600;
+    color: $color-success;
 
     &:hover {
-      background: $color-surface-hover;
       text-decoration: none;
 
       span {
@@ -89,31 +122,21 @@ const visitsLabel = computed(() => new Intl.NumberFormat('es-ES', { useGrouping:
 
   &__icon {
     flex-shrink: 0;
-    width: 1.1rem;
-    height: 1.1rem;
-    color: $color-brand;
+    width: 0.95rem;
+    height: 0.95rem;
+    color: $color-success;
 
     &--grr {
       color: $color-grr;
     }
-  }
 
-  &__count {
-    color: $color-brand-strong;
-  }
-
-  &__visits {
-    display: flex;
-    align-items: center;
-    gap: $space-3;
-    padding: $space-2 $space-4 $space-3;
-    border-top: 1px solid $color-border;
-    font-size: $fs-sm;
-    color: $color-text-muted;
+    &--visits {
+      color: $color-brand;
+    }
   }
 
   &__empty {
-    padding: $space-3 $space-4;
+    padding: 0.2rem $space-3;
     font-size: $fs-sm;
     color: $color-text-muted;
   }

@@ -27,7 +27,7 @@ const props = defineProps({
   nearby: { type: Object, default: null },
   /** Without avatar and name (inside an activity block). */
   bare: { type: Boolean, default: false },
-  /** One compact line: comments open on the item's own page. */
+  /** Information only (activity lines): no Grr, comments or menu. */
   compact: { type: Boolean, default: false },
 })
 
@@ -130,11 +130,12 @@ const comment = async () => {
       />
 
       <p class="item__meta">
-        <RouterLink class="item__time" :to="{ name: 'post', params: { id: post.id } }">
+        <RelativeTime v-if="compact" :value="post.createdAt" />
+        <RouterLink v-else class="item__time" :to="{ name: 'post', params: { id: post.id } }">
           <RelativeTime :value="post.createdAt" />
         </RouterLink>
         <span v-if="placeLabel" class="item__sep">{{ placeLabel }}</span>
-        <span class="item__sep">
+        <span v-if="!compact" class="item__sep">
           <GrrButton
             compact
             :active="post.hasGrr"
@@ -145,11 +146,8 @@ const comment = async () => {
           />
           <button v-if="post.grrCount" type="button" class="item__link" @click="showGrrers = true">quién</button>
         </span>
-        <span class="item__sep">
-          <RouterLink v-if="compact" class="item__link" :to="{ name: 'post', params: { id: post.id } }">
-            Comentar<template v-if="post.commentCount"> ({{ post.commentCount }})</template>
-          </RouterLink>
-          <button v-else type="button" class="item__link" :aria-expanded="showComments" @click="comment">
+        <span v-if="!compact" class="item__sep">
+          <button type="button" class="item__link" :aria-expanded="showComments" @click="comment">
             Comentar<template v-if="post.commentCount"> ({{ post.commentCount }})</template>
           </button>
         </span>
@@ -159,6 +157,7 @@ const comment = async () => {
     </div>
 
     <DropdownMenu
+      v-if="!compact"
       class="item__menu"
       :label="`Opciones de ${what} de ${fullName(post.author)}`"
       :items="isOwn ? OWN_MENU : OTHER_MENU"

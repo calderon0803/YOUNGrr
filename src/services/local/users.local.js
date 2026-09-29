@@ -85,6 +85,31 @@ export const localUsersService = {
     }
   },
 
+  /** First sign in of an account created by hand: name and town, then it is ready. */
+  async completeSetup({ firstName, lastName, location }) {
+    validate(
+      rules.required(firstName, 'El nombre'),
+      rules.max(firstName, LIMITS.name, 'El nombre'),
+      rules.required(lastName, 'El apellido'),
+      rules.max(lastName, LIMITS.name, 'El apellido'),
+      rules.location(location),
+      rules.max(location?.name, LIMITS.city, 'La ciudad'),
+    )
+    await latency()
+    const db = await getDb()
+    const profile = profileOf(db, requireUserId(db))
+    Object.assign(profile, {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      city: location.name.trim(),
+      cityLat: location.lat,
+      cityLng: location.lng,
+      needsSetup: false,
+    })
+    await commit()
+    return { ...profile }
+  },
+
   async updateProfile(update) {
     validate(
       rules.required(update.firstName, 'El nombre'),

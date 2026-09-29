@@ -15,6 +15,8 @@ export const toProfile = (row) => ({
   studies: row.studies ?? '',
   work: row.work ?? '',
   visitCount: row.visit_count ?? 0,
+  // Accounts created by hand must complete their profile first.
+  needsSetup: !!row.needs_setup,
   createdAt: row.created_at,
 })
 

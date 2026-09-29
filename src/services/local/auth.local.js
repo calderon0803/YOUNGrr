@@ -148,6 +148,18 @@ export const localAuthService = {
     await commit()
   },
 
+  /** A new password without asking for the current one (first sign in, temporary password). */
+  async setPassword(next) {
+    validate(rules.password(next))
+    await latency()
+    const db = await getDb()
+    const account = db.users.find((u) => u.id === getSessionUserId())
+    ensure(account, 'unauthorized', 'Tu sesión ha caducado. Vuelve a entrar.')
+    account.salt = randomSalt()
+    account.passwordHash = await hash(account.salt, next)
+    await commit()
+  },
+
   async getEmail() {
     const db = await getDb()
     return db.users.find((u) => u.id === getSessionUserId())?.email ?? ''

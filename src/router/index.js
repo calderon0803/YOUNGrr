@@ -11,6 +11,7 @@ const routes = [
   { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue'), meta: { guest: true, layout: 'auth', title: 'Entrar' } },
   { path: '/register', name: 'register', component: () => import('@/pages/RegisterPage.vue'), meta: { guest: true, layout: 'auth', title: 'Crear cuenta' } },
 
+  app('/setup', 'setup', () => import('@/pages/SetupPage.vue'), { layout: 'auth', title: 'Completa tu perfil' }),
   app('/home', 'home', () => import('@/pages/HomePage.vue'), { title: 'Inicio' }),
   app('/profile', 'my-profile', () => import('@/pages/ProfilePage.vue'), { title: 'Perfil' }),
   app('/profile/:id', 'profile', () => import('@/pages/ProfilePage.vue'), { title: 'Perfil' }),
@@ -49,6 +50,9 @@ router.beforeEach(async (to, from) => {
   await auth.restore()
   if (to.meta.auth && !auth.isAuthenticated) return { name: 'login', query: to.fullPath !== '/home' ? { next: to.fullPath } : {} }
   if (to.meta.guest && auth.isAuthenticated) return { name: 'home' }
+  // Accounts created by hand complete their profile before anything else.
+  if (auth.needsSetup && to.name !== 'setup') return { name: 'setup' }
+  if (to.name === 'setup' && !auth.needsSetup) return { name: 'home' }
   if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId } }
   // From tablet up, messages live in the chat dock instead of a page.
   if ((to.name === 'messages' || to.name === 'conversation') && window.matchMedia(`(min-width: ${BREAKPOINTS.tablet}px)`).matches) {

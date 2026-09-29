@@ -9,6 +9,8 @@ export const useAuthStore = defineStore('auth', () => {
   const ready = ref(false)
 
   const isAuthenticated = computed(() => me.value !== null)
+  /** Account created by hand that has not completed its profile yet. */
+  const needsSetup = computed(() => !!me.value?.needsSetup)
   const meId = computed(() => me.value?.id ?? null)
 
   const restore = async () => {
@@ -25,6 +27,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (email, password) => {
     me.value = await authService.login(email, password)
+  }
+
+  /** First sign in: a new password, then name and town. */
+  const completeSetup = async ({ password, ...profile }) => {
+    await authService.setPassword(password)
+    me.value = await usersService.completeSetup(profile)
   }
 
   /** @returns {Promise<{ needsConfirmation: boolean }>} */
@@ -65,9 +73,11 @@ export const useAuthStore = defineStore('auth', () => {
     meId,
     ready,
     isAuthenticated,
+    needsSetup,
     isLocalBackend,
     restore,
     login,
+    completeSetup,
     register,
     loginDemo,
     logout,

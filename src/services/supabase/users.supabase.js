@@ -31,6 +31,24 @@ export const supabaseUsersService = {
     await rpc('register_visit', { profile: userId })
   },
 
+  /** First sign in of an account created by hand: name and town, then it is ready. */
+  async completeSetup({ firstName, lastName, location }) {
+    validate(
+      rules.required(firstName, 'El nombre'),
+      rules.max(firstName, LIMITS.name, 'El nombre'),
+      rules.required(lastName, 'El apellido'),
+      rules.max(lastName, LIMITS.name, 'El apellido'),
+      rules.location(location),
+      rules.max(location?.name, LIMITS.city, 'La ciudad'),
+    )
+    const row = await rpc(
+      'complete_profile_setup',
+      { first_name: firstName, last_name: lastName, city: location.name, city_lat: location.lat, city_lng: location.lng },
+      'No se ha podido guardar tu perfil.',
+    )
+    return toProfile(row)
+  },
+
   async updateProfile(update) {
     validate(
       rules.required(update.firstName, 'El nombre'),

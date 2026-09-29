@@ -117,6 +117,14 @@ export const supabaseAuthService = {
     if (error) throw authError(error)
   },
 
+  /** A new password without asking for the current one (first sign in, temporary password). */
+  async setPassword(next) {
+    validate(rules.password(next))
+    ensureOnline()
+    const { error } = await getSupabase().auth.updateUser({ password: next })
+    if (error) throw authError(error)
+  },
+
   async getEmail() {
     const { data } = await getSupabase().auth.getUser()
     return data?.user?.email ?? ''

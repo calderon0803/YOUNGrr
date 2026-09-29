@@ -81,7 +81,6 @@ export const usePhotosStore = defineStore('photos', () => {
 
   const loadUserPhotos = (userId) => loadList(`user:${userId}`, () => photosService.listUserPhotos(userId))
   const loadTaggedPhotos = (userId) => loadList(`tagged:${userId}`, () => photosService.listTaggedPhotos(userId))
-  const loadFriendsPhotos = () => loadList('friends', () => photosService.listFriendsPhotos())
 
   const refreshAlbum = (album) => {
     albums[album.id] = album
@@ -305,7 +304,6 @@ export const usePhotosStore = defineStore('photos', () => {
     loadAlbum,
     loadUserPhotos,
     loadTaggedPhotos,
-    loadFriendsPhotos,
     createAlbum,
     updateAlbum,
     deleteAlbum,

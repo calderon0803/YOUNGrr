@@ -59,12 +59,16 @@ onMounted(load)
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-right: $space-3;
-    border-bottom: 1px solid $color-border;
+    gap: $space-3;
+    padding: $space-3 $space-4 0;
   }
 
+  // Same light subheading as the other profile tabs, next to its button.
   &__title {
-    border-bottom: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: $color-text-muted;
   }
 }
 </style>

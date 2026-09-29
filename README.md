@@ -269,7 +269,7 @@ la política de privacidad: si cambias uno, cambia también el otro.
   pulsado y desactivado, y una microinteracción breve al hacer Grr.
 - Sin emojis en la interfaz: solo pueden aparecer en el contenido de los usuarios.
 - Mobile-first con breakpoints en 768 px (tablet) y 1200 px (escritorio). En móvil:
-  navegación inferior de cinco accesos; en tablet y escritorio: barra lateral.
+  navegación inferior de cuatro accesos (Inicio, Amigos, Mensajes y Más; las fotos están en los perfiles); en tablet y escritorio: barra lateral.
 
 ## PWA
 

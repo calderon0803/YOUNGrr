@@ -117,10 +117,6 @@ export const supabasePhotosService = {
     return photosWithUrls(await rpc('list_tagged_photos', { target: userId }, 'No se han podido cargar las fotografías.'))
   },
 
-  async listFriendsPhotos({ limit = 24 } = {}) {
-    return photosWithUrls(await rpc('list_friends_photos', { max_results: limit }, 'No se han podido cargar las fotografías.'))
-  },
-
   async addTag(photoId, userId, x, y) {
     const t = await rpc('add_photo_tag', { target: photoId, person: userId, x, y }, 'No se ha podido añadir la etiqueta.')
     return {

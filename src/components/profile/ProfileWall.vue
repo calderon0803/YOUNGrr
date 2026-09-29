@@ -119,7 +119,7 @@ onMounted(() => wall.loadWall(profileId.value))
     display: flex;
     flex-direction: column;
     gap: $space-2;
-    padding: $space-3;
+    padding: $space-3 $space-4;
     background: $color-surface-alt;
     border-bottom: 1px solid $color-border;
   }
@@ -141,7 +141,7 @@ onMounted(() => wall.loadWall(profileId.value))
   &__message {
     display: flex;
     gap: $space-3;
-    padding: $space-3;
+    padding: $space-3 $space-4;
 
     & + & {
       border-top: 1px solid $color-border;

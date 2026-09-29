@@ -175,7 +175,7 @@ watch(() => route.query.photo, openFromQuery)
 
   &__photos {
     overflow: hidden;
-    padding: 0;
+    padding: $space-3;
   }
 }
 

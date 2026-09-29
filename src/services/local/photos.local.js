@@ -5,7 +5,6 @@ import {
   canViewPhoto,
   canViewProfile,
   findOr404,
-  friendIdsOf,
   isPhotoOwner,
   pendingOwnerInvite,
   photoOwnerIds,
@@ -304,18 +303,6 @@ export const localPhotosService = {
   },
 
   /** Latest photos from friends, for the Photos page. */
-  async listFriendsPhotos({ limit = 24 } = {}) {
-    await latency()
-    const db = await getDb()
-    const me = requireUserId(db)
-    const friends = new Set(friendIdsOf(db, me))
-    return db.photos
-      .filter((p) => photoOwnerIds(db, p).some((id) => friends.has(id)) && !isPhotoOwner(db, me, p) && canViewPhoto(db, me, p))
-      .sort(byDateDesc)
-      .slice(0, limit)
-      .map((p) => photoView(db, me, p))
-  },
-
   /** Only the photo's owners can tag, each one themselves or their own friends. */
   async addTag(photoId, userId, x, y) {
     await latency()

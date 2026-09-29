@@ -3,19 +3,26 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// A published build must use Supabase: without its variables the app would fall
-// back to the local demo backend (data only in each browser, demo accounts).
-const checkPublishedBuild = (env) => {
-  if (process.env.NETLIFY !== 'true') return
-  const missing = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].filter((key) => !env[key])
-  if (env.VITE_DATA_SOURCE !== 'supabase') missing.unshift('VITE_DATA_SOURCE=supabase')
-  if (missing.length) {
-    throw new Error(`Faltan variables de entorno en Netlify: ${missing.join(', ')}. Sin ellas la web usaría el modo demo.`)
+// A production build never falls back to the demo backend by accident:
+// - no VITE_DATA_SOURCE → error (it must be chosen explicitly);
+// - "supabase" without its URL or key → error;
+// - "local" (demo) is only allowed outside Netlify, and only when asked for.
+const checkBuildConfig = (command, env) => {
+  if (command !== 'build') return
+  const where = process.env.NETLIFY === 'true' ? 'Netlify' : 'el entorno'
+  if (!env.VITE_DATA_SOURCE) {
+    throw new Error(`Falta VITE_DATA_SOURCE en ${where}: pon "supabase" (o "local" solo para una build de demostración).`)
+  }
+  if (env.VITE_DATA_SOURCE === 'supabase') {
+    const missing = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].filter((key) => !env[key])
+    if (missing.length) throw new Error(`Faltan variables de Supabase en ${where}: ${missing.join(', ')}.`)
+  } else if (process.env.NETLIFY === 'true') {
+    throw new Error('En Netlify VITE_DATA_SOURCE tiene que ser "supabase": la web no puede publicarse en modo demostración.')
   }
 }
 
-export default defineConfig(({ mode }) => {
-  checkPublishedBuild(loadEnv(mode, process.cwd(), 'VITE_'))
+export default defineConfig(({ command, mode }) => {
+  checkBuildConfig(command, loadEnv(mode, process.cwd(), 'VITE_'))
   return {
     plugins: [
       vue(),

@@ -1,8 +1,12 @@
 <script setup>
+import { onMounted } from 'vue'
+import PersonLink from '@/components/common/PersonLink.vue'
 import { useUserStore } from '@/stores/user'
+import { useFriendsStore } from '@/stores/friends'
 
 // STORES
 const user = useUserStore()
+const friends = useFriendsStore()
 
 // DATA
 const VISIBILITY = [
@@ -48,6 +52,9 @@ const update = (key, value) => {
   next.privacy[key] = value
   user.updateSettings(next, 'Privacidad actualizada.')
 }
+
+// LIFECYCLE
+onMounted(() => friends.loadBlocked())
 </script>
 
 <template>
@@ -68,9 +75,36 @@ const update = (key, value) => {
         </label>
       </fieldset>
     </section>
+
+    <section class="settings-section__block" aria-labelledby="privacy-blocked">
+      <h2 id="privacy-blocked" class="settings-section__title">Personas bloqueadas</h2>
+      <p class="settings-section__option-hint">
+        No podéis veros el contenido, escribiros ni enviaros solicitudes. No se les avisa de que las has bloqueado.
+      </p>
+      <p v-if="!friends.blocked.items.length" class="muted">No has bloqueado a nadie.</p>
+      <ul v-else class="blocked" role="list">
+        <li v-for="b in friends.blocked.items" :key="b.person.id" class="blocked__item">
+          <PersonLink :person="b.person" />
+          <button type="button" class="btn btn--ghost btn--sm" @click="friends.unblock(b.person)">Desbloquear</button>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <style lang="scss" scoped>
 @use '@/styles/partials/settings';
+
+.blocked {
+  margin: 0;
+  padding: 0;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-2;
+    padding: $space-1 0;
+  }
+}
 </style>

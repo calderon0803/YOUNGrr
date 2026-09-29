@@ -6,17 +6,23 @@ export const toProfile = (row) => ({
   firstName: row.first_name,
   lastName: row.last_name,
   avatarUrl: row.avatar_url ?? null,
-  coverUrl: row.cover_url ?? null,
+  // Private bucket: signed when the profile page is loaded.
+  coverPath: row.cover_path ?? null,
   city: row.city ?? '',
   cityLat: row.city_lat ?? null,
   cityLng: row.city_lng ?? null,
   bio: row.bio ?? '',
+  // Full date only for its owner; others get the day and month ("MM-DD").
   birthday: row.birthday ?? null,
+  birthdayDay: row.birthday_day ?? (row.birthday ? row.birthday.slice(5) : null),
   studies: row.studies ?? '',
   work: row.work ?? '',
   visitCount: row.visit_count ?? 0,
   // Accounts created by hand must complete their profile first.
   needsSetup: !!row.needs_setup,
+  mustChangePassword: !!row.must_change_password,
+  // Accounts from before the age check confirm it at their next sign in.
+  adultConfirmed: row.adult_confirmed_at !== null && row.adult_confirmed_at !== undefined,
   createdAt: row.created_at,
 })
 

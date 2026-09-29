@@ -83,6 +83,18 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   }
 
+  const deleteMessage = async (conversationId, messageId) => {
+    try {
+      const deleted = await messagesService.deleteMessage(messageId)
+      const state = threads[conversationId]
+      if (state) state.messages = state.messages.map((m) => (m.id === messageId ? deleted : m))
+      const item = inbox.items.find((c) => c.id === conversationId)
+      if (item?.lastMessage?.id === messageId) item.lastMessage = deleted
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
   const discardFailed = (conversationId, messageId) => {
     const state = threads[conversationId]
     if (state) state.messages = state.messages.filter((m) => m.id !== messageId)
@@ -168,6 +180,7 @@ export const useMessagesStore = defineStore('messages', () => {
     loadThread,
     send,
     discardFailed,
+    deleteMessage,
     openWith,
     dock,
     restoreDock,

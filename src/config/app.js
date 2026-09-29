@@ -1,4 +1,7 @@
-export const DATA_SOURCE = import.meta.env.VITE_DATA_SOURCE ?? 'local'
+// The demo backend (data in this browser) is only the default while developing.
+// A production build without the variable uses Supabase (and the build refuses
+// to run without its configuration, see vite.config.js), never the demo.
+export const DATA_SOURCE = import.meta.env.VITE_DATA_SOURCE ?? (import.meta.env.PROD ? 'supabase' : 'local')
 
 /** Public Supabase settings: the anon key is safe in the browser, RLS protects the data. */
 export const SUPABASE = {
@@ -58,6 +61,8 @@ export const GEOCODER = {
   url: 'https://nominatim.openstreetmap.org/search',
   minIntervalMs: 1100,
   debounceMs: 450,
+  // Fewer requests (and less of what you type) go to Nominatim.
+  minQueryLength: 3,
   limit: 6,
 }
 
@@ -86,6 +91,8 @@ export const TEXT_LIMITS = {
   eventDescription: 1500,
   eventLocation: 120,
   passwordMin: 8,
+  // YOUNGrr is only for adults (also checked by the database at sign up).
+  minAge: 18,
 }
 
 export const REPORT_REASONS = [

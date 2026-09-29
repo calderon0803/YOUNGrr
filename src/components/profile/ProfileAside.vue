@@ -4,11 +4,13 @@ import { useRouter } from 'vue-router'
 import { Camera, MessageCircle, Pencil } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import FriendshipButton from '@/components/friends/FriendshipButton.vue'
+import ReportDialog from '@/components/feed/ReportDialog.vue'
 import { useUserStore } from '@/stores/user'
 import { useMessagesStore } from '@/stores/messages'
 import { useFriendsStore } from '@/stores/friends'
 import { useImagePicker } from '@/composables/useImagePicker'
 import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
 import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
 import { IMAGE } from '@/config/app'
@@ -34,6 +36,8 @@ const toast = useToast()
 // DATA
 const avatarInput = ref(null)
 const opening = ref(false)
+const reporting = ref(false)
+const { confirm } = useConfirm()
 const infoId = useId()
 const friendsId = useId()
 const { processing, read } = useImagePicker()
@@ -45,10 +49,11 @@ const isSelf = computed(() => props.view.friendship === 'self')
 const person = computed(() => ({ ...profile.value, friendship: props.view.friendship, canSendRequest: props.view.canSendRequest }))
 const friendList = computed(() => friends.lists[profile.value.id]?.items ?? [])
 
+// Day and month only: other people never get the year.
 const birthday = computed(() => {
-  if (!profile.value.birthday) return ''
-  const [y, m, d] = profile.value.birthday.split('-').map(Number)
-  return dayMonth.format(new Date(y, m - 1, d))
+  if (!profile.value.birthdayDay) return ''
+  const [m, d] = profile.value.birthdayDay.split('-').map(Number)
+  return dayMonth.format(new Date(2000, m - 1, d))
 })
 
 const details = computed(() =>
@@ -66,6 +71,17 @@ const pickAvatar = async (event) => {
   const [image] = await read([...event.target.files].slice(0, 1), { maxSide: IMAGE.avatarMaxSide })
   event.target.value = ''
   if (image) await user.updateImage('avatarUrl', image.dataUrl)
+}
+
+// Blocking works both ways and removes the friendship; the other person is not told.
+const block = async () => {
+  const ok = await confirm({
+    title: `Bloquear a ${fullName(profile.value)}`,
+    message: 'Dejaréis de ser amigos y no podréis veros el contenido, escribiros ni enviaros solicitudes. No se le avisa. Puedes desbloquear cuando quieras.',
+    confirmLabel: 'Bloquear',
+    danger: true,
+  })
+  if (ok) await friends.block(profile.value)
 }
 
 const sendMessage = async () => {
@@ -106,11 +122,15 @@ onMounted(() => {
           Editar perfil
         </button>
         <template v-else>
-          <FriendshipButton :person="person" size="sm" />
+          <FriendshipButton v-if="!friends.isBlocked(profile.id)" :person="person" size="sm" />
           <button v-if="view.friendship === 'friends'" type="button" class="btn btn--secondary btn--sm" :disabled="opening" @click="sendMessage">
             <MessageCircle aria-hidden="true" />
             Enviar mensaje
           </button>
+          <button type="button" class="aside__report" @click="reporting = true">Reportar perfil</button>
+          <button v-if="friends.isBlocked(profile.id)" type="button" class="aside__report" @click="friends.unblock(profile)">Desbloquear</button>
+          <button v-else type="button" class="aside__report" @click="block">Bloquear</button>
+          <ReportDialog :open="reporting" kind="profile" :target-id="profile.id" @close="reporting = false" />
         </template>
       </div>
     </div>
@@ -196,6 +216,18 @@ onMounted(() => {
     justify-content: center;
     gap: $space-2;
     width: 100%;
+  }
+
+  &__report {
+    @include reset-button;
+    width: 100%;
+    font-size: $fs-xs;
+    color: $color-text-muted;
+
+    &:hover {
+      color: $color-danger;
+      text-decoration: underline;
+    }
   }
 
   &__info {

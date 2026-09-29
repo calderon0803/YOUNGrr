@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useMessagesStore } from '@/stores/messages'
+import { useModerationStore } from '@/stores/moderation'
 import { BREAKPOINTS } from '@/config/app'
 
 const app = (path, name, loader, meta = {}) => ({ path, name, component: loader, meta: { auth: true, ...meta } })
@@ -9,6 +10,9 @@ const routes = [
   // No home page for visitors: straight to sign in (signed-in users go on to Inicio).
   { path: '/', redirect: { name: 'login' } },
   { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue'), meta: { guest: true, layout: 'auth', title: 'Entrar' } },
+  { path: '/forgot-password', name: 'forgot-password', component: () => import('@/pages/ForgotPasswordPage.vue'), meta: { guest: true, layout: 'auth', title: 'Recuperar contraseña' } },
+  // Opened from the email link: Supabase signs the person in for the change.
+  { path: '/reset-password', name: 'reset-password', component: () => import('@/pages/ResetPasswordPage.vue'), meta: { layout: 'auth', title: 'Nueva contraseña' } },
   { path: '/register', name: 'register', component: () => import('@/pages/RegisterPage.vue'), meta: { guest: true, layout: 'auth', title: 'Crear cuenta' } },
 
   app('/setup', 'setup', () => import('@/pages/SetupPage.vue'), { layout: 'auth', title: 'Completa tu perfil' }),
@@ -29,6 +33,7 @@ const routes = [
   { path: '/notifications', redirect: { name: 'home' } },
   app('/search', 'search', () => import('@/pages/SearchPage.vue'), { title: 'Buscar' }),
   app('/settings/:section(account|privacy|notifications|appearance)?', 'settings', () => import('@/pages/SettingsPage.vue'), { title: 'Configuración' }),
+  app('/moderation', 'moderation', () => import('@/pages/ModerationPage.vue'), { title: 'Moderación', moderator: true }),
   app('/more', 'more', () => import('@/pages/MorePage.vue'), { title: 'Más' }),
 
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/pages/NotFoundPage.vue'), meta: { title: 'Página no encontrada' } },
@@ -50,10 +55,12 @@ router.beforeEach(async (to, from) => {
   await auth.restore()
   if (to.meta.auth && !auth.isAuthenticated) return { name: 'login', query: to.fullPath !== '/home' ? { next: to.fullPath } : {} }
   if (to.meta.guest && auth.isAuthenticated) return { name: 'home' }
-  // Accounts created by hand complete their profile before anything else.
-  if (auth.needsSetup && to.name !== 'setup') return { name: 'setup' }
+  // Pending age, password or profile: first things first (the recovery page
+  // sets a new password too).
+  if (auth.needsSetup && to.name !== 'setup' && to.name !== 'reset-password') return { name: 'setup' }
   if (to.name === 'setup' && !auth.needsSetup) return { name: 'home' }
   if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId } }
+  if (to.meta.moderator && !(await useModerationStore().checkModerator())) return { name: 'home' }
   // From tablet up, messages live in the chat dock instead of a page.
   if ((to.name === 'messages' || to.name === 'conversation') && window.matchMedia(`(min-width: ${BREAKPOINTS.tablet}px)`).matches) {
     const messages = useMessagesStore()

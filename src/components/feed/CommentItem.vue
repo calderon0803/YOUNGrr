@@ -1,16 +1,28 @@
 <script setup>
+import { computed, ref } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
+import ReportDialog from '@/components/feed/ReportDialog.vue'
+import { useAuthStore } from '@/stores/auth'
 
 // PROPS
-defineProps({
+const props = defineProps({
   comment: { type: Object, required: true },
   canDelete: { type: Boolean, default: false },
   onDark: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['delete'])
+
+// STORES
+const auth = useAuthStore()
+
+// DATA
+const reporting = ref(false)
+
+// COMPUTED
+const canReport = computed(() => props.comment.authorId !== auth.meId)
 </script>
 
 <template>
@@ -27,8 +39,13 @@ const emit = defineEmits(['delete'])
           <span aria-hidden="true">·</span>
           <button type="button" class="comment__delete" @click="emit('delete', comment.id)">Eliminar</button>
         </template>
+        <template v-if="canReport">
+          <span aria-hidden="true">·</span>
+          <button type="button" class="comment__delete" @click="reporting = true">Reportar</button>
+        </template>
       </p>
     </div>
+    <ReportDialog v-if="canReport" :open="reporting" kind="comment" :target-id="comment.id" @close="reporting = false" />
   </li>
 </template>
 

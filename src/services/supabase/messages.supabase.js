@@ -10,6 +10,8 @@ const toMessage = (json) => ({
   senderId: json.sender_id,
   text: json.text,
   createdAt: json.created_at,
+  // Deleted by its sender: the text is gone for both people.
+  deleted: !!json.deleted,
 })
 
 const toConversation = (json) => ({
@@ -38,6 +40,11 @@ export const supabaseMessagesService = {
   async sendMessage(conversationId, text) {
     validate(rules.required(text, 'El mensaje'), rules.max(text, LIMITS.messageText, 'El mensaje'))
     return toMessage(await rpc('send_message', { target: conversationId, body: text }, 'No se ha podido enviar el mensaje.'))
+  },
+
+  /** Only your own messages; the text is erased for both people. */
+  async deleteMessage(messageId) {
+    return toMessage(await rpc('delete_message', { target: messageId }, 'No se ha podido eliminar el mensaje.'))
   },
 
   async markRead(conversationId) {

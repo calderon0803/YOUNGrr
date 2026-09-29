@@ -9,6 +9,7 @@ import { useFriendsStore } from '@/stores/friends'
 import { useEventsStore } from '@/stores/events'
 import { usePhotosStore } from '@/stores/photos'
 import { useUserStore } from '@/stores/user'
+import { useModerationStore } from '@/stores/moderation'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import { BADGE_POLL_INTERVAL_MS, BREAKPOINTS } from '@/config/app'
 
@@ -23,6 +24,7 @@ const friends = useFriendsStore()
 const events = useEventsStore()
 const photos = usePhotosStore()
 const user = useUserStore()
+const moderation = useModerationStore()
 
 // DATA
 // On mobile, messages keep their own page (bottom navigation).
@@ -45,6 +47,9 @@ onMounted(() => {
   friends.loadRequests()
   events.loadEvents()
   user.loadSettings().catch(() => {})
+  moderation.checkModerator()
+  friends.loadBlocked()
+  user.cleanOldProfileImages()
   poll = setInterval(refreshBadges, BADGE_POLL_INTERVAL_MS)
   document.addEventListener('visibilitychange', onVisibility)
 })

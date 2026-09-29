@@ -4,6 +4,7 @@ import { clearSession, getSessionUserId, setSessionUserId } from '@/services/loc
 import { pairKey, profileOf, summaryOf } from '@/services/local/access'
 import { notify } from '@/services/local/notify'
 import { findPendingInvitation } from '@/services/local/invitations.local'
+import { buildLocalExport, purgeLocalUser } from '@/services/local/account.local'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
@@ -52,7 +53,7 @@ export const localAuthService = {
   },
 
   /** Only with a pending invitation for that email. */
-  async register({ firstName, lastName, email, password, location, inviteToken }) {
+  async register({ firstName, lastName, email, password, location, birthDate, inviteToken }) {
     validate(
       rules.required(firstName, 'El nombre'),
       rules.max(firstName, LIMITS.name, 'El nombre'),
@@ -60,7 +61,8 @@ export const localAuthService = {
       rules.max(lastName, LIMITS.name, 'El apellido'),
       rules.email(email),
       rules.password(password),
-      rules.location(location),
+      rules.adult(birthDate),
+      rules.optionalLocation(location),
       rules.max(location?.name, LIMITS.city, 'La ciudad'),
     )
     await latency()
@@ -79,10 +81,12 @@ export const localAuthService = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       avatarUrl: null,
-      coverUrl: null,
-      city: location.name.trim(),
-      cityLat: location.lat,
-      cityLng: location.lng,
+      coverPath: null,
+      city: location?.name.trim() ?? '',
+      cityLat: location?.lat ?? null,
+      cityLng: location?.lng ?? null,
+      // Only the confirmation is kept, not the birth date.
+      adultConfirmed: true,
       bio: '',
       birthday: null,
       studies: '',
@@ -158,6 +162,57 @@ export const localAuthService = {
     account.salt = randomSalt()
     account.passwordHash = await hash(account.salt, next)
     await commit()
+  },
+
+  /** Demo backend: there are no emails; same neutral answer as with Supabase. */
+  async requestPasswordReset(email) {
+    validate(rules.email(email))
+    await latency()
+  },
+
+  async hasRecoverySession() {
+    return false
+  },
+
+  async completePasswordReset(next) {
+    await this.setPassword(next)
+    const db = await getDb()
+    return { ...profileOf(db, getSessionUserId()) }
+  },
+
+  async changeEmail(password, nextEmail) {
+    validate(rules.email(nextEmail))
+    await latency()
+    const db = await getDb()
+    const account = db.users.find((u) => u.id === getSessionUserId())
+    ensure(account, 'unauthorized', 'Tu sesión ha caducado. Vuelve a entrar.')
+    if (account.passwordHash) {
+      ensure((await hash(account.salt, password)) === account.passwordHash, 'validation', 'La contraseña no es correcta.')
+    }
+    const address = nextEmail.trim().toLowerCase()
+    // Same neutral answer when the email is taken.
+    if (!db.users.some((u) => u.email === address)) account.email = address
+    await commit()
+  },
+
+  async exportData() {
+    const db = await getDb()
+    const me = getSessionUserId()
+    ensure(me, 'unauthorized', 'Tu sesión ha caducado. Vuelve a entrar.')
+    return buildLocalExport(db, me)
+  },
+
+  async deleteAccount(password) {
+    await latency()
+    const db = await getDb()
+    const account = db.users.find((u) => u.id === getSessionUserId())
+    ensure(account, 'unauthorized', 'Tu sesión ha caducado. Vuelve a entrar.')
+    if (account.passwordHash) {
+      ensure((await hash(account.salt, password)) === account.passwordHash, 'validation', 'La contraseña no es correcta.')
+    }
+    purgeLocalUser(db, account.id)
+    await commit()
+    clearSession()
   },
 
   async getEmail() {

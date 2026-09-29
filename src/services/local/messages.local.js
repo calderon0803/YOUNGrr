@@ -1,6 +1,6 @@
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { areFriends, findOr404, profileOf, summaryOf } from '@/services/local/access'
+import { areFriends, findOr404, isBlockedBetween, profileOf, summaryOf } from '@/services/local/access'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
@@ -66,6 +66,7 @@ export const localMessagesService = {
     const existing = db.conversations.find(
       (c) => c.memberIds.length === 2 && c.memberIds.includes(me) && c.memberIds.includes(userId),
     )
+    ensure(!isBlockedBetween(db, me, userId), 'forbidden', 'No puedes escribir a esta persona.')
     if (existing) return existing.id
     ensure(areFriends(db, me, userId), 'forbidden', 'Solo puedes escribir a tus amigos.')
 
@@ -84,6 +85,7 @@ export const localMessagesService = {
     const db = await getDb()
     const me = requireUserId(db)
     const conversation = membership(db, me, conversationId)
+    ensure(!conversation.memberIds.some((id) => id !== me && isBlockedBetween(db, me, id)), 'forbidden', 'No puedes escribir a esta persona.')
     const message = { id: uid('m'), conversationId, senderId: me, text: text.trim(), createdAt: nowIso() }
     db.messages.push(message)
     conversation.updatedAt = message.createdAt
@@ -91,6 +93,21 @@ export const localMessagesService = {
     if (self) self.lastReadAt = message.createdAt
     await commit()
     return message
+  },
+
+  /** Only your own messages; the text is erased for both people. */
+  async deleteMessage(messageId) {
+    await latency(80, 160)
+    const db = await getDb()
+    const me = requireUserId(db)
+    const message = db.messages.find((m) => m.id === messageId)
+    ensure(message && db.conversations.find((c) => c.id === message.conversationId)?.memberIds.includes(me), 'not_found', 'Este mensaje ya no existe.')
+    ensure(message.senderId === me, 'forbidden', 'Solo puedes eliminar tus mensajes.')
+    message.text = ''
+    message.deleted = true
+    message.deletedAt ??= nowIso()
+    await commit()
+    return { ...message }
   },
 
   async markRead(conversationId) {

@@ -24,7 +24,9 @@ const load = async () => {
   db = stored ?? buildSeed()
   // Tables added after a dataset was saved.
   db.photoOwners ??= []
-  db.profileVisits ??= []
+  delete db.profileVisits
+  db.moderators ??= []
+  db.blocks ??= []
   db.wallMessages ??= []
   if (!stored) {
     await commit()

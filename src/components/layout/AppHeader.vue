@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useFriendsStore } from '@/stores/friends'
 import { useEventsStore } from '@/stores/events'
+import { useModerationStore } from '@/stores/moderation'
 
 // Tuenti-style top bar: logo, section tabs and search. Your profile is the
 // avatar; messages are the chat dock. On mobile the tabs move to the bottom
@@ -20,15 +21,18 @@ const auth = useAuthStore()
 const notifications = useNotificationsStore()
 const friends = useFriendsStore()
 const events = useEventsStore()
+const moderation = useModerationStore()
 const route = useRoute()
 const router = useRouter()
 
 // DATA
 const query = ref('')
-const ACCOUNT_MENU = [
+// "Moderación" only for moderators (the page and the data are protected anyway).
+const accountMenu = computed(() => [
   { key: 'settings', label: 'Configuración' },
+  ...(moderation.isModerator ? [{ key: 'moderation', label: 'Moderación' }] : []),
   { key: 'logout', label: 'Salir' },
-]
+])
 
 // COMPUTED
 const tabs = computed(() => [
@@ -47,6 +51,7 @@ const submitSearch = () => {
 
 const onAccountMenu = (key) => {
   if (key === 'settings') router.push({ name: 'settings' })
+  else if (key === 'moderation') router.push({ name: 'moderation' })
   else auth.logout()
 }
 
@@ -94,7 +99,7 @@ watch(
         <RouterLink v-if="auth.me" class="header__me" :to="{ name: 'profile', params: { id: auth.meId } }" :aria-label="`Tu perfil, ${auth.me.firstName}`">
           <UserAvatar :person="auth.me" size="xs" />
         </RouterLink>
-        <DropdownMenu class="header__menu" on-dark label="Menú de la cuenta" :items="ACCOUNT_MENU" @select="onAccountMenu" />
+        <DropdownMenu class="header__menu" on-dark label="Menú de la cuenta" :items="accountMenu" @select="onAccountMenu" />
       </div>
     </div>
   </header>

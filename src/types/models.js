@@ -28,15 +28,19 @@
  * @property {string} id
  * @property {string} firstName
  * @property {string} lastName
- * @property {string | null} avatarUrl
- * @property {string | null} coverUrl
- * @property {string} city
- * @property {number | null} cityLat   town-level coordinates; only ever sent to their owner
+ * @property {string | null} avatarUrl   public bucket (basic identification)
+ * @property {string | null} coverPath   private bucket; coverUrl is a signed URL when visible
+ * @property {string} city               optional (only for "Cerca de ti")
+ * @property {number | null} cityLat     town-level coordinates; only ever sent to their owner
  * @property {number | null} cityLng
  * @property {string} bio
- * @property {string | null} birthday  YYYY-MM-DD
+ * @property {string | null} birthday    YYYY-MM-DD, only for its owner
+ * @property {string | null} birthdayDay MM-DD, what other people get
  * @property {string} studies
  * @property {string} work
+ * @property {boolean} needsSetup        account created by hand, profile pending
+ * @property {boolean} mustChangePassword temporary password not changed yet
+ * @property {boolean} adultConfirmed    confirmed 18+ (the birth date is not stored)
  * @property {string} createdAt
  */
 

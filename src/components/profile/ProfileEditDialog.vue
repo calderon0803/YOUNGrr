@@ -69,10 +69,11 @@ watch(
         <p class="field__hint">{{ LIMITS.bio - form.bio.length }} caracteres disponibles</p>
       </div>
       <div class="profile-form__row">
-        <CityPicker v-model="form.location" hint="Sin ciudad no verás «Cerca de ti»." />
+        <CityPicker v-model="form.location" label="Ciudad o pueblo (opcional)" hint="Sin ciudad no verás «Cerca de ti». Bórrala para quitarla." />
         <div class="field">
-          <label class="field__label" for="pf-birthday">Cumpleaños</label>
-          <input id="pf-birthday" v-model="form.birthday" class="input" type="date" />
+          <label class="field__label" for="pf-birthday">Cumpleaños (opcional)</label>
+          <input id="pf-birthday" v-model="form.birthday" class="input" type="date" aria-describedby="pf-birthday-hint" />
+          <p id="pf-birthday-hint" class="field__hint">Los demás solo ven el día y el mes, nunca el año.</p>
         </div>
       </div>
       <div class="field">

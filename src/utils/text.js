@@ -20,3 +20,7 @@ export const matches = (haystack, query) => {
   const q = normalize(query)
   return q.length > 0 && normalize(haystack).includes(q)
 }
+
+/** Where to go after signing in: only paths inside the app (never another site). */
+export const safeNext = (value) =>
+  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\') ? value : { name: 'home' }

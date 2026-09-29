@@ -10,12 +10,12 @@ import {
   personView,
   profileOf,
   visibleCity,
+  isBlockedBetween,
 } from '@/services/local/access'
 import { validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { matches } from '@/utils/text'
 import { NEARBY_RADII_KM } from '@/config/app'
-import { toDateInput } from '@/utils/time'
 
 // Friends always see your profile, so it only has two levels.
 const PROFILE_VISIBILITIES = ['everyone', 'friends']
@@ -43,9 +43,12 @@ export const localUsersService = {
     // A hidden profile only exposes what's needed to send a friend request.
     const exposed = visible
       ? { ...profile }
-      : { ...profile, bio: '', birthday: null, studies: '', work: '', coverUrl: null }
+      : { ...profile, bio: '', birthday: null, studies: '', work: '', coverPath: null }
     exposed.city = visibleCity(db, me, profile)
     if (userId !== me) {
+      // Others get the birthday without the year.
+      exposed.birthdayDay = visible && profile.birthday ? profile.birthday.slice(5) : null
+      exposed.birthday = null
       delete exposed.cityLat
       delete exposed.cityLng
       delete exposed.visitCount
@@ -76,13 +79,9 @@ export const localUsersService = {
     const me = requireUserId(db)
     const profile = profileOf(db, userId)
     if (userId === me || !canViewProfile(db, me, userId)) return
-    const day = toDateInput(new Date())
-    const already = db.profileVisits.some((v) => v.profileId === userId && v.visitorId === me && v.day === day)
-    if (!already) {
-      db.profileVisits.push({ profileId: userId, visitorId: me, day })
-      profile.visitCount = (profile.visitCount ?? 0) + 1
-      await commit()
-    }
+    // Only the counter: who visited, when or how often is not stored.
+    profile.visitCount = (profile.visitCount ?? 0) + 1
+    await commit()
   },
 
   /** First sign in of an account created by hand: name and town, then it is ready. */
@@ -92,7 +91,7 @@ export const localUsersService = {
       rules.max(firstName, LIMITS.name, 'El nombre'),
       rules.required(lastName, 'El apellido'),
       rules.max(lastName, LIMITS.name, 'El apellido'),
-      rules.location(location),
+      rules.optionalLocation(location),
       rules.max(location?.name, LIMITS.city, 'La ciudad'),
     )
     await latency()
@@ -101,11 +100,22 @@ export const localUsersService = {
     Object.assign(profile, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      city: location.name.trim(),
-      cityLat: location.lat,
-      cityLng: location.lng,
+      city: location?.name.trim() ?? '',
+      cityLat: location?.lat ?? null,
+      cityLng: location?.lng ?? null,
       needsSetup: false,
     })
+    await commit()
+    return { ...profile }
+  },
+
+  /** Accounts that did not confirm their age at sign up. Only the confirmation is stored. */
+  async confirmAdult(birthDate) {
+    validate(rules.adult(birthDate))
+    await latency()
+    const db = await getDb()
+    const profile = profileOf(db, requireUserId(db))
+    profile.adultConfirmed = true
     await commit()
     return { ...profile }
   },
@@ -116,8 +126,8 @@ export const localUsersService = {
       rules.max(update.firstName, LIMITS.name, 'El nombre'),
       rules.required(update.lastName, 'El apellido'),
       rules.max(update.lastName, LIMITS.name, 'El apellido'),
-      update.location ? rules.location(update.location) : null,
-      update.location ? rules.max(update.location.name, LIMITS.city, 'La ciudad') : null,
+      rules.optionalLocation(update.location),
+      rules.max(update.location?.name, LIMITS.city, 'La ciudad'),
       rules.max(update.bio, LIMITS.bio, 'La biografía'),
       rules.max(update.studies, LIMITS.about, 'Estudios'),
       rules.max(update.work, LIMITS.about, 'Trabajo'),
@@ -152,6 +162,9 @@ export const localUsersService = {
     return { ...profile }
   },
 
+  /** Demo backend: images live in the data itself, nothing to clean up. */
+  async cleanOldProfileImages() {},
+
   async getSettings() {
     const db = await getDb()
     return structuredClone(db.settings[requireUserId(db)])
@@ -179,7 +192,7 @@ export const localUsersService = {
     const db = await getDb()
     const me = requireUserId(db)
     return db.profiles
-      .filter((p) => p.id !== me && matches(`${p.firstName} ${p.lastName} ${visibleCity(db, me, p)}`, query))
+      .filter((p) => p.id !== me && !isBlockedBetween(db, me, p.id) && matches(`${p.firstName} ${p.lastName} ${visibleCity(db, me, p)}`, query))
       .slice(0, limit)
       .map((p) => personView(db, me, p.id))
       .sort((a, b) => b.mutualFriends - a.mutualFriends)

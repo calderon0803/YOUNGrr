@@ -22,6 +22,7 @@ export const applyTheme = (preference) => {
 }
 
 export const useUserStore = defineStore('user', () => {
+  const visitedThisSession = new Set()
   const toast = useToast()
   const auth = useAuthStore()
 
@@ -92,12 +93,28 @@ export const useUserStore = defineStore('user', () => {
   /** Editable copy of the settings (structuredClone cannot copy Vue proxies). */
   const draftSettings = () => structuredClone(toRaw(settings.value))
 
-  /** Counts your visit to someone else's profile. Its total stays private to its owner. */
+  /**
+   * Counts your visit to someone else's profile. Its total stays private to its
+   * owner, and nobody stores who visited: to avoid inflating it by reloading,
+   * the app counts each profile once while it stays open (kept in memory only).
+   */
   const registerVisit = async (userId) => {
+    if (visitedThisSession.has(userId)) return
+    visitedThisSession.add(userId)
     try {
       await usersService.registerVisit(userId)
     } catch {
       // The counter is not worth an error message.
+    }
+  }
+
+  /** Once per session: avatars and covers the profile no longer uses. */
+  const cleanOldProfileImages = async () => {
+    if (!auth.me) return
+    try {
+      await usersService.cleanOldProfileImages(auth.me)
+    } catch {
+      // Housekeeping only; it will be tried again next session.
     }
   }
 
@@ -112,7 +129,7 @@ export const useUserStore = defineStore('user', () => {
     await updateSettings(next, `Mostrando gente a menos de ${radiusKm} km.`)
   }
 
-  return { profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit, draftSettings }
+  return { cleanOldProfileImages, profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit, draftSettings }
 })
 
 // Follow OS changes while the preference is "system".

@@ -70,7 +70,7 @@ src/
 ### Solo por invitación
 
 Como Tuenti, no hay registro abierto. En Inicio, **Invitar a tus amigos** muestra tus
-invitaciones disponibles (5 por persona al registrarse): escribes el correo de tu amigo y la app te da
+invitaciones disponibles (5 por persona): escribes el correo de tu amigo y la app te da
 un enlace personal (`/register?invite=…`) para mandárselo por donde quieras. La cuenta
 solo se puede crear con ese correo, el enlace caduca a los 30 días y al registrarse os
 hacéis amigos automáticamente. Las invitaciones pendientes se pueden cancelar y se
@@ -90,9 +90,9 @@ Si hay una sola, lleva directamente a ella. Si hay varias sobre fotos (comentari
 etiquetas, invitaciones para compartir), abre una lista con exactamente esas fotos y quién
 ha hecho qué; al abrir cada foto se marca como vista solo esa.
 
-Debajo de las Novedades está tu **contador de visitas**, que solo ves tú: cuentan las
-visitas de otras personas a tu perfil, una por persona y día. Nunca se muestra quién ha
-visitado.
+Debajo de las Novedades está tu **contador de visitas**, que solo ves tú. YOUNGrr solo
+guarda el número: no sabe ni conserva quién visitó, cuándo ni cuántas veces. Cada visitante
+cuenta una vez por perfil mientras tiene la app abierta (se recuerda solo en memoria).
 
 ### Inicio y perfil al estilo Tuenti
 
@@ -122,7 +122,9 @@ visitado.
 
 El inicio tiene dos pestañas: **Amigos** y **Cerca de ti**. La segunda muestra
 el estado y las fotos subidas de gente a menos de 10, 25 o 50 km (lo elige cada usuario) de su ciudad
-o pueblo, que se indica al registrarse con un buscador de OpenStreetMap (Nominatim).
+o pueblo. Es **opcional**: sin pueblo se puede usar todo lo demás. Se elige con un
+buscador de OpenStreetMap (Nominatim), que recibe el texto escrito (a partir de 3 letras,
+como mucho una búsqueda por segundo), la IP y el origen de la web; nunca la cuenta.
 
 - Quién aparece lo decide **Quién puede ver mi perfil** (cualquier persona o solo mis
   amigos): cuenta y perfil comparten la privacidad, y el estado y las fotos la
@@ -175,11 +177,74 @@ Estado de la conexión con Supabase (`src/services/supabase/`):
   ninguna función nueva lo es por defecto: cada migración concede las suyas.
 
 En el panel de Supabase, *Authentication > URL Configuration*: pon como *Site URL* la
-dirección de la app y añade `http://localhost:5173/login` a las *Redirect URLs* para
-los enlaces de confirmación de correo.
+dirección de la app y añade a las *Redirect URLs*, para cada dirección donde se sirva
+(local, Netlify y el dominio propio cuando exista): `/login` (confirmación de correo),
+`/reset-password` (recuperar contraseña) y `/settings/account` (cambio de correo).
 
 Nunca pongas la clave `service_role` en el frontend: la anon key es pública y RLS
 protege los datos.
+
+## Seguridad y privacidad
+
+- **Escrituras solo por RPC.** Las tablas solo tienen políticas de lectura; todo cambio
+  pasa por funciones de la base de datos que validan las reglas. Una ruta de Storage solo
+  la puede registrar el dueño de su carpeta, y un archivo privado solo se lee a través de
+  una fila que el lector puede ver.
+- **Storage.** `photos` y `covers` son privados (URLs firmadas de 1 h); `avatars` es público
+  (foto de perfil, identificación básica). Los tres solo aceptan JPEG con tamaño limitado.
+- **Solo mayores de 18 años.** El registro pide la fecha de nacimiento; la base de datos
+  rechaza el alta si no llega a 18 años y **no guarda la fecha**, solo la confirmación. Es
+  una declaración del usuario: no hay verificación de identidad.
+- **Perfil privado.** Cualquiera con sesión encuentra el nombre y la foto; el resto
+  (estado, fotos, álbumes, tablón, amigos, información) solo lo ven sus amigos. Los demás
+  ven el cumpleaños sin el año; las coordenadas solo las ve su dueño.
+- **Mensajes.** Solo los participantes leen una conversación. Cada uno puede eliminar sus
+  mensajes: el texto se borra para los dos y queda «Mensaje eliminado».
+- **Bloqueos.** Desde un perfil se puede bloquear a alguien: se rompe la amistad y las
+  solicitudes pendientes, y en los dos sentidos dejáis de ver el contenido, de escribiros
+  y de aparecer en búsquedas y sugerencias. La otra persona no recibe ningún aviso. La
+  lista está en *Configuración > Privacidad*.
+- **Reportes y moderación.** Se pueden reportar estados, fotos, comentarios, mensajes
+  del tablón, perfiles y mensajes privados. Los moderadores (tabla `moderators`) los
+  revisan en `/moderation`. Si retiran una foto, también se borra su archivo.
+- **Límites de uso.** Cada persona tiene un máximo por minuto de mensajes, comentarios,
+  solicitudes, reportes, subidas y búsquedas. Si lo supera, ve «Vas demasiado rápido».
+- **Configuración inicial obligatoria.** Mientras falte cambiar la contraseña
+  provisional, confirmar la edad o completar el perfil, la API solo permite esas acciones.
+- **Subidas.** Solo con nombre aleatorio `.jpg` dentro de la carpeta propia. Al entrar,
+  se borran las fotos de perfil y portadas antiguas que ya no se usan.
+- **Cuenta.** En *Configuración > Cuenta*: cambiar el correo (con confirmación por email),
+  descargar mis datos (JSON) y eliminar mi cuenta (borra los archivos de Storage y después
+  la cuenta y todos sus datos). Hay recuperación de contraseña por email, con la misma
+  respuesta exista o no la cuenta.
+- **Cabeceras.** `netlify.toml` define CSP, `frame-ancestors`/`X-Frame-Options`,
+  `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS (el porqué de cada directiva
+  está comentado allí). La CSP solo permite el host del proyecto de Supabase: si cambia el
+  proyecto, hay que cambiarlo también allí.
+- **Modo demo.** Una build de producción nunca pasa a modo demo: sin `VITE_DATA_SOURCE`, o
+  con `supabase` sin URL o clave, la build falla; en Netlify solo se admite `supabase`.
+
+### Tareas de administración (SQL Editor de Supabase)
+
+Estas funciones no están disponibles desde la app ni la API:
+
+```sql
+-- Dar permisos de moderación (la página es /moderation)
+insert into moderators (user_id) select id from auth.users where email = 'correo@ejemplo.com';
+
+-- Crear una cuenta a mano: devuelve una contraseña provisional aleatoria (dásela en privado).
+-- La persona tendrá que cambiarla, confirmar su edad y completar su perfil al entrar.
+select * from admin_create_account('correo@ejemplo.com', 'Nombre');
+
+-- Limpieza de datos sin finalidad (se programa sola con pg_cron si está activado)
+select run_retention();
+
+-- Archivos de Storage que ya no usa nadie (bórralos desde el panel de Storage)
+select * from admin_storage_orphans();
+```
+
+Los plazos de `run_retention()` están en la tabla `retention_settings`: son valores técnicos
+provisionales pendientes de validación jurídica.
 
 ## Diseño
 

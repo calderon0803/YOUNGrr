@@ -37,7 +37,9 @@ const now = useNow()
           </span>
           <span class="conversations__preview">
             <template v-if="c.lastMessage">
-              <template v-if="c.lastMessage.senderId === auth.meId">Tú: </template>{{ c.lastMessage.text }}
+              <template v-if="c.lastMessage.senderId === auth.meId">Tú: </template>
+              <em v-if="c.lastMessage.deleted">Mensaje eliminado</em>
+              <template v-else>{{ c.lastMessage.text }}</template>
             </template>
           </span>
         </span>

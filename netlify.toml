@@ -8,3 +8,43 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Security headers for every response.
+#
+# Content-Security-Policy, directive by directive:
+# - script-src 'self': the build has no inline scripts and no third-party ones.
+# - style-src 'self': all CSS comes from the built files. Vue's `:style`
+#   bindings go through el.style (CSSOM), which CSP does not block, so
+#   'unsafe-inline' is not needed.
+# - img-src: the app, data:/blob: (image previews before uploading) and
+#   Supabase Storage (public avatars and signed URLs).
+# - connect-src: Supabase (API, Auth, Storage, and wss: for its client), the
+#   geocoder (Nominatim) and data: (the app turns picked images into files with
+#   fetch before uploading them).
+# - frame-ancestors 'none': YOUNGrr cannot be embedded in other sites.
+# - The Supabase project host is written out (this file cannot read environment
+#   variables). It is not a secret: it is already in the app's JavaScript. If
+#   the project changes, update it here too or the app will not load data.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://wcewcvdvhzwunedpncxg.supabase.co; font-src 'self'; connect-src 'self' data: https://wcewcvdvhzwunedpncxg.supabase.co wss://wcewcvdvhzwunedpncxg.supabase.co https://nominatim.openstreetmap.org; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    # Other sites (Nominatim, Supabase) only get the origin, never the path
+    # (which can carry an invitation token).
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+# Built files have a content hash: they can be cached for good. index.html and
+# the service worker must always be revalidated to get new versions.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

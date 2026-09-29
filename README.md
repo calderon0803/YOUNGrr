@@ -243,8 +243,20 @@ select run_retention();
 select * from admin_storage_orphans();
 ```
 
-Los plazos de `run_retention()` están en la tabla `retention_settings`: son valores técnicos
-provisionales pendientes de validación jurídica.
+Los plazos de `run_retention()` están en la tabla `retention_settings` y coinciden con los de
+la política de privacidad: si cambias uno, cambia también el otro.
+
+## Textos legales
+
+- **Condiciones de uso** (`/legal/terms`) y **política de privacidad** (`/legal/privacy`), en
+  `src/pages/TermsPage.vue` y `src/pages/PrivacyPage.vue`. Se leen sin sesión y durante la
+  configuración inicial.
+- El responsable y el correo de contacto están en `LEGAL` (`src/config/app.js`).
+- Al registrarse hay que aceptarlos, y la base de datos guarda la versión aceptada. Si los
+  cambias, sube la versión en **dos sitios**, `LEGAL.version` y `yg_terms_version()` (con una
+  migración nueva). Todo el mundo tendrá que aceptarlos de nuevo al entrar; quien no quiera
+  puede descargar sus datos y eliminar su cuenta desde esa misma pantalla.
+- «Descargar mis datos» incluye las conversaciones completas (mensajes enviados y recibidos).
 
 ## Diseño
 

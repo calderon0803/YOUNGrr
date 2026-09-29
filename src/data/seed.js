@@ -1,7 +1,7 @@
 // Demo dataset for the local backend. Dates are relative to "now" so the demo
 // always reads fresh ("Hace 15 minutos"). Emojis only appear in user content.
 import { toDateInput } from '@/utils/time'
-import { NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
 
 const MIN = 60 * 1000
 const HOUR = 60 * MIN
@@ -89,6 +89,7 @@ export const buildSeed = () => {
     avatarUrl,
     coverPath: null,
     adultConfirmed: true,
+    termsVersion: LEGAL.version,
     city,
     cityLat: CITY_COORDS[city]?.[0] ?? null,
     cityLng: CITY_COORDS[city]?.[1] ?? null,

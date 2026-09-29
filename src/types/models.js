@@ -41,6 +41,7 @@
  * @property {boolean} needsSetup        account created by hand, profile pending
  * @property {boolean} mustChangePassword temporary password not changed yet
  * @property {boolean} adultConfirmed    confirmed 18+ (the birth date is not stored)
+ * @property {string | null} termsVersion version of the terms and privacy policy accepted
  * @property {string} createdAt
  */
 

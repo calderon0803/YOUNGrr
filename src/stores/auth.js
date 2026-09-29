@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { authService, isLocalBackend } from '@/services/auth.service'
 import { usersService } from '@/services/users.service'
-import { STORAGE_KEYS } from '@/config/app'
+import { LEGAL, STORAGE_KEYS } from '@/config/app'
 
 /**
  * What the app leaves in this browser about a session (open chats) goes when
@@ -27,10 +27,12 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => me.value !== null)
   /**
    * Something to do before using YOUNGrr: profile of an account created by
-   * hand, a temporary password, or the age of an account from before the check.
+   * hand, a temporary password, the age of an account from before the check,
+   * or terms and privacy policy not accepted in their current version.
    */
+  const needsTerms = computed(() => !!me.value && me.value.termsVersion !== LEGAL.version)
   const needsSetup = computed(
-    () => !!me.value && (!!me.value.needsSetup || !!me.value.mustChangePassword || me.value.adultConfirmed === false),
+    () => !!me.value && (!!me.value.needsSetup || !!me.value.mustChangePassword || me.value.adultConfirmed === false || needsTerms.value),
   )
   const meId = computed(() => me.value?.id ?? null)
 
@@ -51,7 +53,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** Whatever the account still needs: age, a password of its own, name and town. */
-  const completeSetup = async ({ birthDate, password, ...profile }) => {
+  const completeSetup = async ({ birthDate, password, acceptedTerms, ...profile }) => {
+    if (needsTerms.value && acceptedTerms) me.value = await usersService.acceptTerms(LEGAL.version)
     if (me.value.adultConfirmed === false) me.value = await usersService.confirmAdult(birthDate)
     if (me.value.mustChangePassword) {
       await authService.setPassword(password)
@@ -115,6 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
     ready,
     isAuthenticated,
     needsSetup,
+    needsTerms,
     isLocalBackend,
     restore,
     login,

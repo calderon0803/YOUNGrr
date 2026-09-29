@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/services/errors'
+import { safeNext } from '@/utils/text'
 
 // STORES
 const auth = useAuthStore()
@@ -20,7 +21,7 @@ const submit = async () => {
   submitting.value = true
   try {
     await auth.login(form.email, form.password)
-    router.replace(typeof route.query.next === 'string' ? route.query.next : { name: 'home' })
+    router.replace(safeNext(route.query.next))
   } catch (e) {
     error.value = errorMessage(e)
   } finally {

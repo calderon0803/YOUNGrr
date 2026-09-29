@@ -5,6 +5,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import ReportDialog from '@/components/feed/ReportDialog.vue'
 import GrrButton from '@/components/common/GrrButton.vue'
 import GrrersDialog from '@/components/feed/GrrersDialog.vue'
 import CommentItem from '@/components/feed/CommentItem.vue'
@@ -42,6 +43,7 @@ const savingCaption = ref(false)
 const showGrrers = ref(false)
 const sharing = ref(false)
 const answering = ref(false)
+const reporting = ref(false)
 
 // COMPUTED
 // Uploader and accepted co-owners have the same rights.
@@ -49,6 +51,7 @@ const isOwner = computed(() => !!props.photo.isOwner)
 const sharedOwnership = computed(() => (props.photo.owners?.length ?? 1) > 1)
 const owners = computed(() => props.photo.owners ?? [props.photo.owner])
 const album = computed(() => photos.albums[props.photo.albumId])
+const OTHER_MENU = [{ key: 'report', label: 'Reportar', danger: true }]
 const menuItems = computed(() => [
   { key: 'caption', label: props.photo.caption ? 'Editar pie de foto' : 'Añadir pie de foto' },
   // The album belongs to the uploader.
@@ -63,7 +66,9 @@ const canRemoveTag = (tag) => tag.userId === auth.meId || isOwner.value
 const canDeleteComment = (comment) => comment.authorId === auth.meId || isOwner.value
 
 const onMenu = async (key) => {
-  if (key === 'caption') {
+  if (key === 'report') {
+    reporting.value = true
+  } else if (key === 'caption') {
     caption.value = props.photo.caption
     editingCaption.value = true
   } else if (key === 'cover') {
@@ -127,7 +132,7 @@ watch(
           </template>
         </p>
       </div>
-      <DropdownMenu v-if="isOwner" label="Opciones de la fotografía" :items="menuItems" @select="onMenu" />
+      <DropdownMenu label="Opciones de la fotografía" :items="isOwner ? menuItems : OTHER_MENU" @select="onMenu" />
     </header>
 
     <div v-if="photo.ownerInvite" class="details__invite" role="status">
@@ -197,6 +202,7 @@ watch(
     </section>
 
     <CoOwnerDialog v-if="isOwner" :open="sharing" :photo="photo" @close="sharing = false" />
+    <ReportDialog v-if="!isOwner" :open="reporting" kind="photo" :target-id="photo.id" @close="reporting = false" />
     <GrrersDialog v-if="showGrrers" :open="showGrrers" target-type="photo" :target-id="photo.id" @close="showGrrers = false" />
   </div>
 </template>

@@ -6,6 +6,7 @@ import StateMessage from '@/components/common/StateMessage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
+import ReportDialog from '@/components/feed/ReportDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWallStore } from '@/stores/wall'
 import { useConfirm } from '@/composables/useConfirm'
@@ -28,6 +29,8 @@ const toast = useToast()
 
 // DATA
 const text = ref('')
+/** Id of the wall message being reported. */
+const reportingId = ref(null)
 const sending = ref(false)
 const inputId = useId()
 
@@ -97,11 +100,16 @@ onMounted(() => wall.loadWall(profileId.value))
                 ·
                 <button type="button" class="wall__delete" @click="remove(message.id)">Borrar</button>
               </template>
+              <template v-if="message.authorId !== auth.meId">
+                ·
+                <button type="button" class="wall__delete" @click="reportingId = message.id">Reportar</button>
+              </template>
             </p>
           </div>
         </li>
       </ul>
     </AsyncState>
+    <ReportDialog v-if="reportingId" :open="!!reportingId" kind="wall_message" :target-id="reportingId" @close="reportingId = null" />
   </div>
 </template>
 

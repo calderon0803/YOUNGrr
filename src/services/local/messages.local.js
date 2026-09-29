@@ -93,6 +93,21 @@ export const localMessagesService = {
     return message
   },
 
+  /** Only your own messages; the text is erased for both people. */
+  async deleteMessage(messageId) {
+    await latency(80, 160)
+    const db = await getDb()
+    const me = requireUserId(db)
+    const message = db.messages.find((m) => m.id === messageId)
+    ensure(message && db.conversations.find((c) => c.id === message.conversationId)?.memberIds.includes(me), 'not_found', 'Este mensaje ya no existe.')
+    ensure(message.senderId === me, 'forbidden', 'Solo puedes eliminar tus mensajes.')
+    message.text = ''
+    message.deleted = true
+    message.deletedAt ??= nowIso()
+    await commit()
+    return { ...message }
+  },
+
   async markRead(conversationId) {
     const db = await getDb()
     const me = requireUserId(db)

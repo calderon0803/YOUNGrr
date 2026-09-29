@@ -7,6 +7,7 @@ import StateMessage from '@/components/common/StateMessage.vue'
 import MessageComposer from '@/components/messages/MessageComposer.vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
+import { useConfirm } from '@/composables/useConfirm'
 import { clockTime, fullDate } from '@/utils/time'
 import { fullName } from '@/utils/text'
 
@@ -20,6 +21,7 @@ const props = defineProps({
 // STORES
 const messages = useMessagesStore()
 const auth = useAuthStore()
+const { confirm } = useConfirm()
 
 // DATA
 const scroller = ref(null)
@@ -42,6 +44,16 @@ const days = computed(() => {
 })
 
 // METHODS
+const remove = async (message) => {
+  const ok = await confirm({
+    title: 'Eliminar mensaje',
+    message: 'Desaparecerá para los dos y quedará «Mensaje eliminado». No se puede deshacer.',
+    confirmLabel: 'Eliminar',
+    danger: true,
+  })
+  if (ok) messages.deleteMessage(props.conversationId, message.id)
+}
+
 const scrollToEnd = async () => {
   await nextTick()
   if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight
@@ -79,11 +91,26 @@ watch(() => state.value.messages.length, scrollToEnd)
               v-for="message in day.items"
               :key="message.id"
               class="bubble"
-              :class="{ 'bubble--mine': message.senderId === auth.meId, 'bubble--pending': message.pending, 'bubble--failed': message.failed }"
+              :class="{
+                'bubble--mine': message.senderId === auth.meId,
+                'bubble--pending': message.pending,
+                'bubble--failed': message.failed,
+                'bubble--deleted': message.deleted,
+              }"
             >
               <span class="visually-hidden">{{ message.senderId === auth.meId ? 'Tú' : other?.firstName }}:</span>
-              <span class="bubble__text user-text">{{ message.text }}</span>
+              <span v-if="message.deleted" class="bubble__text">Mensaje eliminado</span>
+              <span v-else class="bubble__text user-text">{{ message.text }}</span>
               <span class="bubble__meta">
+                <button
+                  v-if="message.senderId === auth.meId && !message.deleted && !message.pending && !message.failed"
+                  type="button"
+                  class="bubble__delete"
+                  aria-label="Eliminar mensaje"
+                  @click="remove(message)"
+                >
+                  Eliminar
+                </button>
                 <template v-if="message.failed">
                   No enviado ·
                   <button type="button" class="bubble__discard" @click="messages.discardFailed(conversationId, message.id)">Descartar</button>
@@ -174,9 +201,19 @@ watch(() => state.value.messages.length, scrollToEnd)
     color: $color-text-muted;
   }
 
-  &__discard {
+  &__discard,
+  &__delete {
     @include reset-button;
     text-decoration: underline;
+  }
+
+  &__delete {
+    margin-right: $space-1;
+  }
+
+  &--deleted {
+    font-style: italic;
+    opacity: 0.7;
   }
 
   &--mine {
@@ -218,6 +255,21 @@ watch(() => state.value.messages.length, scrollToEnd)
 @media (min-width: $bp-tablet) {
   .thread__back {
     display: none;
+  }
+}
+
+/* With a mouse, "Eliminar" only shows on the message you point at. */
+@media (hover: hover) {
+  .bubble__delete {
+    opacity: 0;
+
+    &:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  .bubble:hover .bubble__delete {
+    opacity: 1;
   }
 }
 </style>

@@ -1,5 +1,7 @@
 // Turns a town name into coordinates with OpenStreetMap (Nominatim).
-// With a real backend this call should move server-side (caching, rate limit).
+// Only the text typed goes out (from 3 characters, at most one request per
+// second); Nominatim also sees the IP address and the site's origin (it needs
+// the Referer to identify the app), never the account or its data.
 import { ApiError } from '@/services/errors'
 import { GEOCODER } from '@/config/app'
 
@@ -36,7 +38,7 @@ export const geoService = {
    */
   async searchPlaces(query, { signal } = {}) {
     const q = query.trim()
-    if (q.length < 2) return []
+    if (q.length < GEOCODER.minQueryLength) return []
     await throttle()
 
     const params = new URLSearchParams({
@@ -50,7 +52,12 @@ export const geoService = {
 
     let response
     try {
-      response = await fetch(`${GEOCODER.url}?${params}`, { signal, headers: { Accept: 'application/json' } })
+      response = await fetch(`${GEOCODER.url}?${params}`, {
+        signal,
+        headers: { Accept: 'application/json' },
+        credentials: 'omit',
+        referrerPolicy: 'strict-origin-when-cross-origin',
+      })
     } catch (error) {
       if (error?.name === 'AbortError') throw error
       throw new ApiError('network', 'No se ha podido buscar la ubicación. Revisa tu conexión.')

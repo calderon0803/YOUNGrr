@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import InstallCard from '@/components/common/InstallCard.vue'
+import SettingsEmailChange from '@/components/settings/SettingsEmailChange.vue'
+import SettingsYourData from '@/components/settings/SettingsYourData.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { errorMessage } from '@/services/errors'
@@ -54,7 +56,7 @@ onMounted(async () => {
   <div class="settings-section">
     <section class="settings-section__block" aria-labelledby="acc-email">
       <h2 id="acc-email" class="settings-section__title">Correo electrónico</h2>
-      <p>{{ email }}</p>
+      <SettingsEmailChange :current="email" />
     </section>
 
     <section class="settings-section__block" aria-labelledby="acc-password">
@@ -91,6 +93,11 @@ onMounted(async () => {
       <div>
         <button type="button" class="btn btn--secondary" @click="resetDemo">Restablecer datos de demostración</button>
       </div>
+    </section>
+
+    <section class="settings-section__block" aria-labelledby="acc-data">
+      <h2 id="acc-data" class="settings-section__title">Tus datos</h2>
+      <SettingsYourData />
     </section>
 
     <section class="settings-section__block" aria-labelledby="acc-session">

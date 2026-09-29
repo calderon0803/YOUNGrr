@@ -36,7 +36,7 @@ let controller = null
 
 // COMPUTED
 const selected = computed(() => !!props.modelValue && props.modelValue.name === query.value)
-const describedBy = computed(() => [props.hint && `${inputId}-hint`, `${inputId}-error`].filter(Boolean).join(' '))
+const describedBy = computed(() => [props.hint && `${inputId}-hint`, `${inputId}-privacy`, `${inputId}-error`].filter(Boolean).join(' '))
 
 // METHODS
 const search = debounce(async (q) => {
@@ -57,7 +57,7 @@ const search = debounce(async (q) => {
 
 const onInput = () => {
   if (props.modelValue) emit('update:modelValue', null)
-  open.value = query.value.trim().length >= 2
+  open.value = query.value.trim().length >= GEOCODER.minQueryLength
   if (open.value) search(query.value)
   else suggestions.value = []
 }
@@ -123,7 +123,7 @@ watch(
         placeholder="Escribe y elige de la lista"
         @input="onInput"
         @keydown="onKeydown"
-        @focus="open = query.trim().length >= 2 && !selected"
+        @focus="open = query.trim().length >= GEOCODER.minQueryLength && !selected"
         @blur="onBlur"
       />
       <Check v-if="selected" class="city-picker__ok" aria-hidden="true" />
@@ -152,6 +152,9 @@ watch(
     </div>
 
     <p v-if="hint" :id="`${inputId}-hint`" class="field__hint">{{ hint }}</p>
+    <p :id="`${inputId}-privacy`" class="field__hint">
+      La búsqueda la hace OpenStreetMap (Nominatim): recibe lo que escribes y tu dirección IP, no tu cuenta.
+    </p>
     <p :id="`${inputId}-error`" class="field__error">{{ error }}</p>
   </div>
 </template>

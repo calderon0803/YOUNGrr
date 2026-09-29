@@ -2,6 +2,7 @@
 // Reads go through database functions that apply privacy as the caller.
 import { ensureOnline, getSupabase, rpc, toApiError } from '@/services/supabase/client'
 import { fromSettings, toPerson, toProfile, toProfileView, toSettings } from '@/services/supabase/mappers'
+import { avatarPathFromUrl, avatarUrl, removeFiles, signUrls, uploadImage } from '@/services/supabase/storage'
 import { ApiError, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { NEARBY_RADII_KM } from '@/config/app'
@@ -19,34 +20,41 @@ const currentUserId = async () => {
 
 const ownProfile = async () => toProfile(await rpc('my_profile', {}, 'No se ha podido cargar tu perfil.'))
 
-/** Data URL (from the image picker) → Blob for Storage uploads. */
-const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob()
-
 export const supabaseUsersService = {
   async getProfile(userId) {
-    return toProfileView(await rpc('profile_view', { target: userId }, 'No se ha podido cargar el perfil.'))
+    const view = toProfileView(await rpc('profile_view', { target: userId }, 'No se ha podido cargar el perfil.'))
+    // The cover is private: only signed when the profile is visible.
+    const urls = await signUrls('covers', [view.profile.coverPath])
+    view.profile.coverUrl = urls[view.profile.coverPath] ?? null
+    return view
   },
 
   async registerVisit(userId) {
     await rpc('register_visit', { profile: userId })
   },
 
-  /** First sign in of an account created by hand: name and town, then it is ready. */
+  /** First sign in of an account created by hand: name and (optional) town. */
   async completeSetup({ firstName, lastName, location }) {
     validate(
       rules.required(firstName, 'El nombre'),
       rules.max(firstName, LIMITS.name, 'El nombre'),
       rules.required(lastName, 'El apellido'),
       rules.max(lastName, LIMITS.name, 'El apellido'),
-      rules.location(location),
+      rules.optionalLocation(location),
       rules.max(location?.name, LIMITS.city, 'La ciudad'),
     )
     const row = await rpc(
       'complete_profile_setup',
-      { first_name: firstName, last_name: lastName, city: location.name, city_lat: location.lat, city_lng: location.lng },
+      { first_name: firstName, last_name: lastName, city: location?.name ?? '', city_lat: location?.lat ?? null, city_lng: location?.lng ?? null },
       'No se ha podido guardar tu perfil.',
     )
     return toProfile(row)
+  },
+
+  /** Accounts that did not confirm their age at sign up. Only the confirmation is stored. */
+  async confirmAdult(birthDate) {
+    validate(rules.adult(birthDate))
+    return toProfile(await rpc('confirm_adult', { birth_date: birthDate }, 'No se ha podido comprobar tu edad.'))
   },
 
   async updateProfile(update) {
@@ -55,55 +63,57 @@ export const supabaseUsersService = {
       rules.max(update.firstName, LIMITS.name, 'El nombre'),
       rules.required(update.lastName, 'El apellido'),
       rules.max(update.lastName, LIMITS.name, 'El apellido'),
-      update.location ? rules.location(update.location) : null,
-      update.location ? rules.max(update.location.name, LIMITS.city, 'La ciudad') : null,
+      rules.optionalLocation(update.location),
+      rules.max(update.location?.name, LIMITS.city, 'La ciudad'),
       rules.max(update.bio, LIMITS.bio, 'La biografía'),
       rules.max(update.studies, LIMITS.about, 'Estudios'),
       rules.max(update.work, LIMITS.about, 'Trabajo'),
       update.birthday ? rules.date(update.birthday) : null,
     )
-    ensureOnline()
-    const id = await currentUserId()
-    const { error } = await getSupabase()
-      .from('profiles')
-      .update({
-        first_name: update.firstName.trim(),
-        last_name: update.lastName.trim(),
-        // Without a town there is no "Cerca de ti" feed, but the profile is still valid.
-        city: update.location?.name.trim() ?? '',
+    // Only the editable fields, through the database (it validates them again).
+    const row = await rpc(
+      'update_my_profile',
+      {
+        first_name: update.firstName,
+        last_name: update.lastName,
+        bio: update.bio,
+        birthday: update.birthday || null,
+        studies: update.studies,
+        work: update.work,
+        // Without a town there is no "Cerca de ti", but the profile is still valid.
+        city: update.location?.name ?? '',
         city_lat: update.location?.lat ?? null,
         city_lng: update.location?.lng ?? null,
-        bio: update.bio.trim(),
-        birthday: update.birthday || null,
-        studies: update.studies.trim(),
-        work: update.work.trim(),
-      })
-      .eq('id', id)
-    if (error) throw toApiError(error, 'No se ha podido guardar el perfil.')
-    return ownProfile()
+      },
+      'No se ha podido guardar el perfil.',
+    )
+    return toProfile(row)
   },
 
   /**
-   * Uploads the avatar or cover to the public "avatars" bucket, in the user's
-   * own folder, and stores its URL in the profile.
+   * Avatar (public bucket) or cover (private bucket): uploads the new file,
+   * points the profile to it and deletes the one it replaces.
    * @param {'avatarUrl' | 'coverUrl'} field
    */
   async updateImage(field, dataUrl) {
     ensureOnline()
-    const supabase = getSupabase()
     const id = await currentUserId()
-    const kind = field === 'avatarUrl' ? 'avatar' : 'cover'
-    const path = `${id}/${kind}-${Date.now()}.jpg`
-    const upload = await supabase.storage
-      .from('avatars')
-      .upload(path, await dataUrlToBlob(dataUrl), { contentType: 'image/jpeg', upsert: false })
-    if (upload.error) throw toApiError(upload.error, 'No se ha podido subir la imagen.')
-
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    const column = field === 'avatarUrl' ? 'avatar_url' : 'cover_url'
-    const { error } = await supabase.from('profiles').update({ [column]: data.publicUrl }).eq('id', id)
-    if (error) throw toApiError(error, 'No se ha podido guardar la imagen.')
-    return ownProfile()
+    const isAvatar = field === 'avatarUrl'
+    const bucket = isAvatar ? 'avatars' : 'covers'
+    const path = await uploadImage(bucket, id, dataUrl, isAvatar ? 'avatar' : 'cover')
+    try {
+      const data = await rpc(
+        'set_profile_image',
+        { kind: isAvatar ? 'avatar' : 'cover', value: isAvatar ? avatarUrl(path) : path },
+        'No se ha podido guardar la imagen.',
+      )
+      const previous = isAvatar ? avatarPathFromUrl(data.previous) : data.previous
+      await removeFiles(bucket, [previous]).catch(() => {})
+      return toProfile(data.profile)
+    } catch (error) {
+      await removeFiles(bucket, [path]).catch(() => {})
+      throw error
+    }
   },
 
   async getSettings() {

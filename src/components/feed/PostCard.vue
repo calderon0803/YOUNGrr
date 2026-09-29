@@ -166,7 +166,7 @@ const comment = async () => {
       @select="onMenu"
     />
 
-    <ReportDialog v-if="!isOwn" :open="reporting" :post-id="post.id" @close="reporting = false" />
+    <ReportDialog v-if="!isOwn" :open="reporting" :target-id="post.id" @close="reporting = false" />
     <GrrersDialog v-if="showGrrers" :open="showGrrers" target-type="post" :target-id="post.id" @close="showGrrers = false" />
   </article>
 </template>

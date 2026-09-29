@@ -22,6 +22,7 @@ export const applyTheme = (preference) => {
 }
 
 export const useUserStore = defineStore('user', () => {
+  const visitedThisSession = new Set()
   const toast = useToast()
   const auth = useAuthStore()
 
@@ -92,8 +93,14 @@ export const useUserStore = defineStore('user', () => {
   /** Editable copy of the settings (structuredClone cannot copy Vue proxies). */
   const draftSettings = () => structuredClone(toRaw(settings.value))
 
-  /** Counts your visit to someone else's profile. Its total stays private to its owner. */
+  /**
+   * Counts your visit to someone else's profile. Its total stays private to its
+   * owner, and nobody stores who visited: to avoid inflating it by reloading,
+   * the app counts each profile once while it stays open (kept in memory only).
+   */
   const registerVisit = async (userId) => {
+    if (visitedThisSession.has(userId)) return
+    visitedThisSession.add(userId)
     try {
       await usersService.registerVisit(userId)
     } catch {

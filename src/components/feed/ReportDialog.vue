@@ -2,19 +2,25 @@
 import { ref, watch } from 'vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import { useFeedStore } from '@/stores/feed'
+import { useModerationStore } from '@/stores/moderation'
 import { errorMessage } from '@/services/errors'
 import { REPORT_REASONS } from '@/config/app'
+
+// Reports a status, photo, comment, wall message or profile to the moderators.
 
 // PROPS
 const props = defineProps({
   open: { type: Boolean, required: true },
-  postId: { type: String, required: true },
+  /** 'status' | 'photo' | 'comment' | 'wall_message' | 'profile' */
+  kind: { type: String, default: 'status' },
+  targetId: { type: String, required: true },
 })
 
 const emit = defineEmits(['close'])
 
 // STORES
 const feed = useFeedStore()
+const moderation = useModerationStore()
 
 // DATA
 const reason = ref('')
@@ -26,7 +32,9 @@ const send = async () => {
   sending.value = true
   error.value = ''
   try {
-    await feed.reportPost(props.postId, reason.value)
+    // A reported status also leaves the reporter's news.
+    if (props.kind === 'status') await feed.reportPost(props.targetId, reason.value)
+    else await moderation.report(props.kind, props.targetId, reason.value)
     emit('close')
   } catch (e) {
     error.value = errorMessage(e)

@@ -11,6 +11,7 @@ import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
 import { LIMITS, firstError, rules } from '@/utils/validation'
 import { fullName } from '@/utils/text'
+import { toDateInput } from '@/utils/time'
 
 // Sign up is by invitation only: the page needs the personal link (?invite=)
 // a registered friend sent, and the account is created with that email.
@@ -22,7 +23,7 @@ const router = useRouter()
 const toast = useToast()
 
 // DATA
-const form = reactive({ firstName: '', lastName: '', email: '', password: '', location: null })
+const form = reactive({ firstName: '', lastName: '', email: '', password: '', birthDate: '', location: null })
 const errors = reactive({})
 const serverError = ref('')
 const submitting = ref(false)
@@ -33,6 +34,12 @@ const inviteStatus = ref('checking')
 const invitation = ref(null)
 
 // COMPUTED
+/** Today minus the minimum age, for the date picker. */
+const maxBirthDate = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - LIMITS.minAge)
+  return toDateInput(d)
+})
 const inviteToken = computed(() => (typeof route.query.invite === 'string' ? route.query.invite : ''))
 
 // METHODS
@@ -41,7 +48,8 @@ const validateForm = () => {
   errors.lastName = firstError(rules.required(form.lastName, 'El apellido'), rules.max(form.lastName, LIMITS.name, 'El apellido'))
   errors.email = rules.email(form.email)
   errors.password = rules.password(form.password)
-  errors.location = rules.location(form.location)
+  errors.birthDate = rules.adult(form.birthDate)
+  errors.location = rules.optionalLocation(form.location)
   return !Object.values(errors).some(Boolean)
 }
 
@@ -118,7 +126,10 @@ watch(inviteToken, checkInvitation, { immediate: true })
       <UserAvatar :person="invitation.inviter" size="sm" />
       <span><strong>{{ fullName(invitation.inviter) }}</strong> te ha invitado a YOUNGrr.</span>
     </p>
-    <p class="register__lead">YOUNGrr es para tus amigos de verdad. Usa tu nombre real para que te encuentren.</p>
+    <p class="register__lead">
+      YOUNGrr es para tus amigos de verdad y solo para <strong>mayores de {{ LIMITS.minAge }} años</strong>. Usa tu nombre real para que te
+      encuentren.
+    </p>
 
     <form class="form-grid" novalidate @submit.prevent="submit">
       <div class="register__row">
@@ -145,10 +156,16 @@ watch(inviteToken, checkInvitation, { immediate: true })
         <p id="reg-password-hint" class="field__hint">Mínimo {{ LIMITS.passwordMin }} caracteres.</p>
         <p id="reg-password-error" class="field__error">{{ errors.password }}</p>
       </div>
+      <div class="field">
+        <label class="field__label" for="reg-birth">Fecha de nacimiento</label>
+        <input id="reg-birth" v-model="form.birthDate" class="input" type="date" :max="maxBirthDate" autocomplete="bday" :aria-invalid="!!errors.birthDate || undefined" aria-describedby="reg-birth-hint reg-birth-error" />
+        <p id="reg-birth-hint" class="field__hint">Solo para comprobar que tienes {{ LIMITS.minAge }} años o más: no la guardamos.</p>
+        <p id="reg-birth-error" class="field__error">{{ errors.birthDate }}</p>
+      </div>
       <CityPicker
         v-model="form.location"
-        label="¿Dónde vives? Ciudad o pueblo"
-        hint="Se usa para «Cerca de ti». Solo se muestra el nombre del lugar, nunca tu ubicación exacta."
+        label="¿Dónde vives? Ciudad o pueblo (opcional)"
+        hint="Solo para «Cerca de ti». Si no la pones, puedes usar todo lo demás. Nunca se muestra tu ubicación exacta."
         :error="errors.location ?? ''"
       />
 

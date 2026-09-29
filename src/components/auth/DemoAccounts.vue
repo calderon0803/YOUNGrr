@@ -5,6 +5,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { errorMessage } from '@/services/errors'
+import { safeNext } from '@/utils/text'
 
 // STORES
 const auth = useAuthStore()
@@ -21,7 +22,7 @@ const enter = async (id) => {
   pendingId.value = id
   try {
     await auth.loginDemo(id)
-    router.replace(typeof route.query.next === 'string' ? route.query.next : { name: 'home' })
+    router.replace(safeNext(route.query.next))
   } catch (e) {
     toast.error(errorMessage(e))
   } finally {

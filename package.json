@@ -13,8 +13,11 @@
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@fontsource-variable/source-sans-3": "^5.3.0",
     "@supabase/supabase-js": "^2.117.2",
+    "@tensorflow/tfjs": "^4.22.0",
+    "buffer": "^6.0.3",
     "idb-keyval": "^6.3.0",
     "lucide-vue-next": "^1.0.0",
+    "nsfwjs": "^4.4.0",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"

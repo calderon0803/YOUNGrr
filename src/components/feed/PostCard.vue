@@ -58,7 +58,9 @@ const titleId = computed(() => `post-${props.postId}-title`)
 const showComments = computed(() => interactive.value && (commenting.value || (post.value?.commentCount ?? 0) > 0))
 const uploadLabel = computed(() => {
   const n = post.value?.photoTotal ?? 0
-  const label = n === 1 ? 'ha subido una foto al álbum' : `ha subido ${n} fotos al álbum`
+  // Uploads go to "Mis fotos": the album is only named for the older albums.
+  const toAlbum = post.value?.album && post.value.album.kind !== 'wall'
+  const label = `${n === 1 ? 'ha subido una foto' : `ha subido ${n} fotos`}${toAlbum ? ' al álbum' : ''}`
   return props.bare ? `${label.charAt(0).toUpperCase()}${label.slice(1)}` : label
 })
 // Compact lines keep one row of thumbnails; "+N" links to the album.
@@ -114,7 +116,7 @@ const comment = async () => {
         <PersonLink v-if="!bare" :person="post.author" />
         <template v-if="isAlbumUpload">
           <span class="item__action">{{ uploadLabel }}</span>
-          <RouterLink v-if="post.album" class="item__album" :to="{ name: 'album', params: { id: post.album.id } }">
+          <RouterLink v-if="post.album && post.album.kind !== 'wall'" class="item__album" :to="{ name: 'album', params: { id: post.album.id } }">
             {{ post.album.title }}
           </RouterLink>
         </template>

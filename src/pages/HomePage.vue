@@ -10,6 +10,7 @@ import TabNav from '@/components/common/TabNav.vue'
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
+import PublicEventsWidget from '@/components/events/PublicEventsWidget.vue'
 import CalendarWidget from '@/components/events/CalendarWidget.vue'
 import InviteWidget from '@/components/friends/InviteWidget.vue'
 import { useFeedStore } from '@/stores/feed'
@@ -131,8 +132,9 @@ watch(locationKey, () => {
       </ActivityList>
     </section>
 
-    <aside class="home__right" aria-label="Personas que quizá conozcas">
+    <aside class="home__right" aria-label="Personas que quizá conozcas y planes públicos">
       <SuggestionsWidget />
+      <PublicEventsWidget />
     </aside>
 
     <ProfileEditDialog v-if="auth.me" :open="editingLocation" :profile="auth.me" @close="editingLocation = false" />

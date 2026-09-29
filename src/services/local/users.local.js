@@ -217,7 +217,8 @@ export const localUsersService = {
       .filter((p) => p.id !== me && friendshipStatus(db, me, p.id) === 'none' && mutualFriends(db, me, p.id) > 0)
       .map((p) => personView(db, me, p.id))
       .filter((p) => p.canSendRequest)
-      .sort((a, b) => b.mutualFriends - a.mutualFriends)
+      // Most friends in common first, then by name.
+      .sort((a, b) => b.mutualFriends - a.mutualFriends || a.firstName.localeCompare(b.firstName, 'es') || a.lastName.localeCompare(b.lastName, 'es'))
       .slice(0, limit)
   },
 

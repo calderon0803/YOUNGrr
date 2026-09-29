@@ -14,7 +14,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v19',
+  db: 'youngrr:db:v20',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -34,14 +34,21 @@ export const THEME_COLORS = { light: '#2350a0', dark: '#142a57' }
 
 export const FEED_PAGE_SIZE = 8
 export const COMMENT_PREVIEW = 3
+/** Name of each person's default album, where every photo is uploaded. */
+export const DEFAULT_ALBUM_TITLE = 'Mis fotos'
+
 /** Photos shown in a "ha subido N fotos al álbum" news item. */
 export const ALBUM_UPLOAD_PREVIEW = 6
 
 /** Friends' news: activity of the last days, one block per person. */
 export const ACTIVITY_WINDOW_DAYS = 30
 
-/** People shown in "Quizá conozcas a". */
-export const SUGGESTIONS_MAX = 3
+/** "Quizá conozcas a": people shown in Inicio, and the most in its "Ver todas" list. */
+export const SUGGESTIONS_SHOWN = 3
+/** Public events in Inicio: shown, and the most in the "Ver todos" list. */
+export const PUBLIC_EVENTS_SHOWN = 3
+export const PUBLIC_EVENTS_LIMIT = 100
+export const SUGGESTIONS_LIMIT = 100
 
 /**
  * Sign up is by invitation only. Each person gets 1 at sign up and 1 more every
@@ -70,6 +77,14 @@ export const GEOCODER = {
   minQueryLength: 3,
   limit: 6,
 }
+
+/**
+ * Automatic check of uploaded images, in the browser (NSFWJS). An image is not
+ * uploaded when the pornographic classes (Porn + Hentai) reach `explicit`, or
+ * "Sexy" alone reaches `suggestive`. Beach and swimsuit photos usually score
+ * "Sexy" well below that.
+ */
+export const IMAGE_CHECK = { explicit: 0.6, suggestive: 0.9 }
 
 export const IMAGE = {
   maxSide: 1600,

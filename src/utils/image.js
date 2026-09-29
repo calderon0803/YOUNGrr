@@ -1,4 +1,5 @@
 import { IMAGE } from '@/config/app'
+import { isImageAllowed } from '@/utils/imageCheck'
 
 export const ACCEPTED_IMAGE_TYPES = IMAGE.acceptedTypes.join(',')
 
@@ -12,7 +13,7 @@ const loadImage = (src) =>
 
 /**
  * Validates an image file and returns a resized JPEG data URL, so photos stay
- * light enough for local storage (and for upload once there is a backend).
+ * light. Images that look explicit are refused before they are uploaded.
  * @param {File} file
  * @returns {Promise<{ dataUrl: string, width: number, height: number }>}
  */
@@ -37,6 +38,10 @@ export const readImageFile = async (file, { maxSide = IMAGE.maxSide, quality = I
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('No se ha podido procesar la imagen.')
     ctx.drawImage(img, 0, 0, width, height)
+
+    if (!(await isImageAllowed(canvas))) {
+      throw new Error('Esta imagen parece contener desnudos o contenido sexual y no se puede subir a YOUNGrr.')
+    }
 
     return { dataUrl: canvas.toDataURL('image/jpeg', quality), width, height }
   } finally {

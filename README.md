@@ -103,12 +103,15 @@ cuenta una vez por perfil mientras tiene la app abierta (se recuerda solo en mem
   "Grr · Comentar" como enlaces); a la derecha, próximos planes, cumpleaños y sugerencias.
 - **Novedades de tus amigos** no es un muro de publicaciones: es la actividad de tus
   amigos, un bloque por persona (como en Tuenti) con su estado y lo que han hecho en los
-  últimos 30 días: fotos subidas a un álbum, nuevas amistades y fotos en las que les han
+  últimos 30 días: fotos subidas, nuevas amistades y fotos en las que les han
   etiquetado. Los bloques se ordenan por la actividad más reciente.
 - **Estado**: una frase breve (140 caracteres) y solo uno a la vez. Se cambia en la línea
   de la portada; el nuevo sustituye al anterior (con sus comentarios y Grr) y dejarla vacía
   lo borra. Admite comentarios y Grr, y se muestra bajo tu nombre en el perfil.
-- No hay publicaciones libres: las fotos se suben siempre a un álbum.
+- No hay publicaciones libres. Todas las fotos se suben a **Mis fotos**, el álbum por
+  defecto de cada persona, que no se puede borrar. Los demás álbumes son colecciones:
+  se les añaden fotos ya subidas (una foto puede estar en varios) y al borrarlos se
+  elige si se borra solo el álbum, también las fotos que solo están en él o todas.
 - **Perfil** sin portada: foto grande, datos y amigos a la izquierda; nombre, estado y
   pestañas (Tablón, Fotos, Etiquetas, Álbumes, Amigos) a la derecha.
 - **Chat** abajo a la derecha (tablet y escritorio): un panel plegable con tus
@@ -161,14 +164,14 @@ Estado de la conexión con Supabase (`src/services/supabase/`):
 
 - **Hecho:** registro, login, sesión, cierre de sesión y cambio de contraseña con Supabase
   Auth. El registro guarda nombre y pueblo (con coordenadas) en los metadatos y el trigger
-  crea el perfil, los ajustes y el álbum del muro.
+  crea el perfil, los ajustes y el álbum Mis fotos.
 - **Hecho:** perfiles (ver, editar, avatar y portada en el bucket público `avatars`,
   visitas), ajustes y amigos (lista, solicitudes, buscar personas, sugerencias). La
   privacidad se calcula en funciones de la base de datos como el usuario que consulta.
 - **Hecho:** estado, novedades de amigos por bloques y «Cerca de ti», comentarios y Grr.
   Las fotos van al bucket privado `photos` y se muestran con URLs firmadas.
 - **Hecho:** fotos y álbumes (subir, pies de foto, portada, visor, etiquetas, fotos
-  compartidas con invitación y novedades «ha subido N fotos al álbum»), eventos (con
+  compartidas con invitación y novedades «ha subido N fotos»), eventos (con
   imagen privada que solo ven los invitados), mensajes privados, búsqueda global y
   contadores de Novedades. Los grupos de Novedades se construyen igual en los dos
   backends (`services/notifications.groups.js`).
@@ -201,6 +204,19 @@ protege los datos.
   ven el cumpleaños sin el año; las coordenadas solo las ve su dueño.
 - **Mensajes.** Solo los participantes leen una conversación. Cada uno puede eliminar sus
   mensajes: el texto se borra para los dos y queda «Mensaje eliminado».
+- **Invitaciones.** Cada enlace es un código aleatorio de 32 caracteres, sirve para una
+  sola cuenta (si dos personas lo usan a la vez, la segunda alta se cancela) y caduca a los
+  30 días. No guarda datos de la persona invitada. Quien lo tenga puede usarlo: por eso se
+  avisa de compartirlo solo con quien se quiere invitar.
+- **Eventos públicos.** Los ven los amigos de quien los crea y los amigos de sus amigos, sin
+  bloqueos de por medio. Quien solo ve el evento (sin estar invitado ni apuntado) ve quién va
+  o quizá va, nunca a quien no respondió o dijo que no, ni a nadie con quien tenga un bloqueo.
+  La imagen y el buscador siguen las mismas reglas.
+- **Álbumes.** Solo se añaden a tus álbumes fotos de las que eres dueño (hasta 200 por vez).
+  Un álbum muestra a cada persona solo las fotos que puede ver según la privacidad de sus
+  dueños. Borrar un álbum solo borra fotos si se elige y solo las tuyas.
+- **Sugerencias de amistad.** Solo personas con amigos en común que admiten tu solicitud,
+  hasta 100, con límite por minuto para que no sirvan para sacar el mapa de amistades.
 - **Bloqueos.** Desde un perfil se puede bloquear a alguien: se rompe la amistad y las
   solicitudes pendientes, y en los dos sentidos dejáis de ver el contenido, de escribiros
   y de aparecer en búsquedas y sugerencias. La otra persona no recibe ningún aviso. La
@@ -209,9 +225,18 @@ protege los datos.
   del tablón, perfiles y mensajes privados. Los moderadores (tabla `moderators`) los
   revisan en `/moderation`. Si retiran una foto, también se borra su archivo.
 - **Límites de uso.** Cada persona tiene un máximo por minuto de mensajes, comentarios,
-  solicitudes, reportes, subidas y búsquedas. Si lo supera, ve «Vas demasiado rápido».
+  solicitudes, reportes, subidas, búsquedas y sugerencias. Si lo supera, ve «Vas demasiado rápido».
 - **Configuración inicial obligatoria.** Mientras falte cambiar la contraseña
-  provisional, confirmar la edad o completar el perfil, la API solo permite esas acciones.
+  provisional, confirmar la edad, completar el perfil o aceptar las condiciones vigentes, la
+  API solo permite esas acciones (y descargar los datos o eliminar la cuenta).
+- **Comprobación automática de imágenes.** Antes de subir cualquier imagen (fotos, foto
+  de perfil, portada, eventos), el navegador la analiza con NSFWJS (modelo abierto y
+  gratuito, en `src/utils/imageCheck.js`) y no deja subir las que parecen tener desnudos o
+  contenido sexual. Los umbrales están en `IMAGE_CHECK` (`src/config/app.js`). La foto no
+  sale del dispositivo para esto. El modelo (unos MB) se descarga solo la primera vez que
+  alguien sube una imagen. Es un primer filtro: quien llame a la API directamente se lo
+  salta, y para eso siguen los reportes y la moderación. Si el análisis no puede
+  ejecutarse (sin conexión al descargar el modelo, navegador sin WebGL), la imagen no se sube.
 - **Subidas.** Solo con nombre aleatorio `.jpg` dentro de la carpeta propia. Al entrar,
   se borran las fotos de perfil y portadas antiguas que ya no se usan.
 - **Cuenta.** En *Configuración > Cuenta*: cambiar el correo (con confirmación por email),

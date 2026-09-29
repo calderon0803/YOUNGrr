@@ -1,5 +1,5 @@
 // Events with Supabase. Same interface as local/events.local.js. The image is
-// stored in the private "photos" bucket and only the invited people can read it.
+// stored in the private "photos" bucket; only those who can see the event read it.
 import { currentUserId, rpc } from '@/services/supabase/client'
 import { removePhotos, signPhotoUrls, uploadPhoto } from '@/services/supabase/storage'
 import { toSummary } from '@/services/supabase/mappers'
@@ -30,6 +30,8 @@ const toEvent = (json, urls) => ({
   date: json.date,
   time: json.time,
   location: json.location,
+  // Public: the creator's friends and friends of friends see it and can join.
+  isPublic: !!json.is_public,
   createdAt: json.created_at,
   updatedAt: json.updated_at,
   creator: toSummary(json.creator),
@@ -55,11 +57,17 @@ const params = (input, imagePath) => ({
   event_date: input.date,
   event_time: input.time,
   location: input.location,
+  is_public: !!input.isPublic,
 })
 
 export const supabaseEventsService = {
   async listEvents() {
     return splitEvents(await eventsWithImages(await rpc('list_events', {}, 'No se han podido cargar los eventos.')))
+  },
+
+  /** Upcoming public events you can see and have not joined, the soonest first. */
+  async publicEvents({ limit = 100 } = {}) {
+    return eventsWithImages(await rpc('public_events', { max_results: limit }, 'No se han podido cargar los eventos.'))
   },
 
   async getEvent(eventId) {

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ImagePlus } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
+import { ImagePlus, Plus } from 'lucide-vue-next'
 import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
@@ -10,25 +10,24 @@ import PersonLink from '@/components/common/PersonLink.vue'
 import PhotoGrid from '@/components/photos/PhotoGrid.vue'
 import AlbumFormDialog from '@/components/photos/AlbumFormDialog.vue'
 import PhotoUploadDialog from '@/components/photos/PhotoUploadDialog.vue'
+import AlbumAddPhotosDialog from '@/components/photos/AlbumAddPhotosDialog.vue'
+import AlbumDeleteDialog from '@/components/photos/AlbumDeleteDialog.vue'
 import { usePhotosStore } from '@/stores/photos'
-import { useConfirm } from '@/composables/useConfirm'
-import { useToast } from '@/composables/useToast'
 import { useOwnerRedirect } from '@/composables/useOwnerRedirect'
-import { errorMessage } from '@/services/errors'
 import { fullDate } from '@/utils/time'
 import { plural } from '@/utils/text'
+import { DEFAULT_ALBUM_TITLE } from '@/config/app'
 
 // STORES
 const route = useRoute()
-const router = useRouter()
 const photos = usePhotosStore()
-const { confirm } = useConfirm()
-const toast = useToast()
 const { redirectToOwner } = useOwnerRedirect()
 
 // DATA
 const editing = ref(false)
 const uploading = ref(false)
+const adding = ref(false)
+const deleting = ref(false)
 
 // COMPUTED
 const albumId = computed(() => String(route.params.id))
@@ -41,25 +40,9 @@ const menuItems = computed(() => [
 ])
 
 // METHODS
-const onMenu = async (key) => {
-  if (key === 'edit') {
-    editing.value = true
-    return
-  }
-  const ok = await confirm({
-    title: 'Eliminar álbum',
-    message: `Se eliminarán ${plural(album.value.photoCount, 'fotografía', 'fotografías')} con sus comentarios y etiquetas.`,
-    confirmLabel: 'Eliminar álbum',
-    danger: true,
-  })
-  if (!ok) return
-  const ownerId = album.value.ownerId
-  try {
-    await photos.deleteAlbum(albumId.value)
-    router.replace({ name: 'profile', params: { id: ownerId }, query: { tab: 'albums' } })
-  } catch (error) {
-    toast.error(errorMessage(error))
-  }
+const onMenu = (key) => {
+  if (key === 'edit') editing.value = true
+  else deleting.value = true
 }
 
 const openFromQuery = () => {
@@ -100,14 +83,19 @@ watch(() => route.query.photo, openFromQuery)
               <UserAvatar :person="album.owner" size="xs" />
               <PersonLink :person="album.owner" />
             </p>
-            <h1 class="album-page__title">{{ isWall ? 'Fotos del muro' : album.title }}</h1>
+            <h1 class="album-page__title">{{ isWall ? DEFAULT_ALBUM_TITLE : album.title }}</h1>
             <p v-if="album.description" class="album-page__description user-text">{{ album.description }}</p>
             <p class="album-page__meta">{{ plural(album.photoCount, 'foto', 'fotos') }} · Actualizado el {{ fullDate(album.updatedAt) }}</p>
           </div>
           <div v-if="state.canEdit" class="album-page__actions">
-            <button v-if="!isWall" type="button" class="btn btn--primary" @click="uploading = true">
+            <!-- Photos are uploaded to "Mis fotos" and added from there to the other albums. -->
+            <button v-if="isWall" type="button" class="btn btn--primary" @click="uploading = true">
               <ImagePlus aria-hidden="true" />
               Subir fotografías
+            </button>
+            <button v-else type="button" class="btn btn--primary" @click="adding = true">
+              <Plus aria-hidden="true" />
+              Añadir fotos
             </button>
             <DropdownMenu v-if="!isWall" label="Opciones del álbum" :items="menuItems" @select="onMenu" />
           </div>
@@ -115,14 +103,17 @@ watch(() => route.query.photo, openFromQuery)
 
         <section class="panel album-page__photos" aria-label="Fotografías del álbum">
           <PhotoGrid v-if="state.ids.length" :ids="state.ids" :label="`Fotografías de ${album.title}`" />
-          <StateMessage v-else title="Este álbum está vacío." :text="state.canEdit ? 'Sube las primeras fotografías.' : ''">
-            <button v-if="state.canEdit && !isWall" type="button" class="btn btn--primary" @click="uploading = true">Subir fotografías</button>
+          <StateMessage v-else title="Este álbum está vacío." :text="state.canEdit ? (isWall ? 'Sube tus primeras fotografías.' : 'Añade fotos que ya hayas subido.') : ''">
+            <button v-if="state.canEdit && isWall" type="button" class="btn btn--primary" @click="uploading = true">Subir fotografías</button>
+            <button v-else-if="state.canEdit" type="button" class="btn btn--primary" @click="adding = true">Añadir fotos</button>
           </StateMessage>
         </section>
 
+        <PhotoUploadDialog v-if="state.canEdit && isWall" :open="uploading" @close="uploading = false" />
         <template v-if="state.canEdit && !isWall">
           <AlbumFormDialog :open="editing" :album="album" @close="editing = false" />
-          <PhotoUploadDialog :open="uploading" :album-id="album.id" @close="uploading = false" />
+          <AlbumAddPhotosDialog :open="adding" :album-id="album.id" @close="adding = false" />
+          <AlbumDeleteDialog :open="deleting" :album="album" @close="deleting = false" />
         </template>
       </template>
     </AsyncState>

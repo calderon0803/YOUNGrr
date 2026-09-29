@@ -67,6 +67,10 @@ import { LIMITS } from '@/utils/validation'
       </li>
     </ul>
     <p>
+      Antes de subir una foto, la app comprueba en tu propio dispositivo que no parezca contener desnudos o contenido
+      sexual. Esa comprobación no envía la foto a nadie ni guarda el resultado: si no la supera, simplemente no se sube.
+    </p>
+    <p>
       No vendemos tus datos, no mostramos publicidad, no hacemos perfiles comerciales y no tomamos decisiones
       automatizadas que te afecten de forma importante.
     </p>
@@ -77,6 +81,22 @@ import { LIMITS } from '@/utils/validation'
       ve quien permitas en <em>Configuración &gt; Privacidad</em>. Los mensajes privados solo los ven las personas de la
       conversación. Quien modera solo accede al contenido que se ha reportado.
     </p>
+    <ul>
+      <li>
+        <strong>Sugerencias de amistad:</strong> puedes aparecer como sugerencia, con tu nombre, tu foto y cuántos amigos
+        tenéis en común, a personas con las que compartes algún amigo. Si en <em>Configuración &gt; Privacidad</em> no
+        admites solicitudes de amistad, no apareces.
+      </li>
+      <li>
+        <strong>Eventos públicos:</strong> un evento público lo ven los amigos de quien lo organiza y los amigos de sus
+        amigos, incluida la lista de quién va. Si te apuntas a uno, esas personas verán tu nombre y tu respuesta. Los
+        eventos con invitación solo los ven quien los organiza y las personas invitadas.
+      </li>
+      <li>
+        <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro, sus eventos
+        públicos y sus sugerencias. No se avisa a la otra persona.
+      </li>
+    </ul>
     <p>Además, estos proveedores tratan datos por nuestra cuenta, solo para prestar el servicio:</p>
     <ul>
       <li><strong>Supabase</strong>: base de datos, cuentas, archivos y correos de la cuenta. Los datos se guardan en la Unión Europea.</li>

@@ -30,7 +30,8 @@ const choose = async (status) => {
 <template>
   <div class="rsvp">
     <p class="rsvp__label" :id="`rsvp-${event.id}`">
-      {{ event.myStatus === 'pending' ? 'Te han invitado. ¿Vas a ir?' : 'Tu respuesta' }}
+      {{ event.myStatus === 'pending' ? 'Te han invitado. ¿Vas a ir?' : event.myStatus ? 'Tu respuesta' : 'Es un evento público. ¿Te apuntas?' }}
+      <span v-if="event.isPublic" class="rsvp__note">Tu respuesta la ve quien puede ver el evento.</span>
     </p>
     <div class="rsvp__options" role="radiogroup" :aria-labelledby="`rsvp-${event.id}`">
       <button
@@ -52,6 +53,13 @@ const choose = async (status) => {
 
 <style lang="scss" scoped>
 .rsvp {
+  &__note {
+    display: block;
+    font-size: $fs-xs;
+    font-weight: 400;
+    color: $color-text-muted;
+  }
+
   &__label {
     margin-bottom: $space-2;
     font-weight: 600;

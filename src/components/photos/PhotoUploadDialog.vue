@@ -11,10 +11,11 @@ import { LIMITS } from '@/utils/validation'
 import { plural } from '@/utils/text'
 import { uid } from '@/utils/ids'
 
+// Every photo goes to "Mis fotos"; from there it can be added to other albums.
+
 // PROPS
 const props = defineProps({
   open: { type: Boolean, required: true },
-  albumId: { type: String, required: true },
 })
 
 const emit = defineEmits(['close'])
@@ -55,8 +56,7 @@ const upload = async () => {
   uploading.value = true
   error.value = ''
   try {
-    await photos.addPhotos(
-      props.albumId,
+    await photos.uploadPhotos(
       items.value.map(({ dataUrl, width, height, caption }) => ({ dataUrl, width, height, caption })),
       together.value ? coOwners.value : [],
     )

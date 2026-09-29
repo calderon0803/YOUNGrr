@@ -1,7 +1,7 @@
 // Demo dataset for the local backend. Dates are relative to "now" so the demo
 // always reads fresh ("Hace 15 minutos"). Emojis only appear in user content.
 import { toDateInput } from '@/utils/time'
-import { LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { DEFAULT_ALBUM_TITLE, LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
 
 const MIN = 60 * 1000
 const HOUR = 60 * MIN
@@ -150,7 +150,7 @@ export const buildSeed = () => {
 
   const wall = {}
   for (const key of ['carlos', 'ana', 'pablo', 'laura', 'javi', 'sara', 'miguel', 'nerea', 'hugo', 'ruben', 'bea']) {
-    wall[key] = album(`wall_${key}`, key, 'Fotos del muro', 'Fotografías publicadas en el muro.', ago({ d: 300 }), 'wall')
+    wall[key] = album(`wall_${key}`, key, DEFAULT_ALBUM_TITLE, '', ago({ d: 300 }), 'wall')
   }
 
   const verano = album('verano', 'carlos', 'Verano 2026', 'Semana en Comillas con la cuadrilla. Sol, playa y cero cobertura.', ago({ d: 40 }))
@@ -319,6 +319,8 @@ export const buildSeed = () => {
     E('cena', 'carlos', 'Cena de fin de verano', 'Despedimos el verano como se merece. Reservado para 10, confirmad antes del jueves para avisar al restaurante.', inDays(4), '21:30', 'La Bodeguilla, calle del Sol 12, Santander', ago({ d: 6, h: 4 })),
     E('cumple-sara', 'sara', 'Cumple de Sara', 'Celebramos mis 25 en casa. Traed hambre y buena música. Si venís de fuera hay sofá.', inDays(12), '22:00', 'Casa de Sara, Sardinero', ago({ d: 1, h: 2 })),
     E('partido', 'pablo', 'Partido del domingo', 'Pachanga de siempre. Traed peto blanco y peto azul.', inDays(2), '11:00', 'Campo de La Albericia', ago({ h: 4 })),
+    // Public: Carlos does not know Miguel directly, but they have friends in common.
+    { ...E('surf', 'miguel', 'Quedada de surf en Somo', 'Mañana de olas y bocadillos en la playa. Hay tablas de sobra para quien quiera probar.', inDays(6), '10:00', 'Playa de Somo', ago({ d: 1 })), isPublic: true },
     E('concierto', 'laura', 'Concierto en la campa', 'Semana Grande, grupo local y verbena después.', toDateInput(new Date(Date.now() - 45 * DAY)), '22:30', 'Campa de La Magdalena', ago({ d: 60 })),
   ]
 
@@ -336,6 +338,8 @@ export const buildSeed = () => {
     M('cumple-sara', 'ana', 'going', 'sara', ago({ h: 20 })),
     M('cumple-sara', 'laura', 'going', 'sara', ago({ h: 18 })),
     M('cumple-sara', 'miguel', 'maybe', 'sara', ago({ h: 10 })),
+    M('surf', 'miguel', 'going', 'miguel', ago({ d: 1 })),
+    M('surf', 'sara', 'maybe', 'sara', ago({ h: 12 })),
     M('partido', 'pablo', 'going', 'pablo', ago({ h: 4 })),
     M('partido', 'carlos', 'going', 'pablo', ago({ h: 3 })),
     M('partido', 'javi', 'going', 'pablo', ago({ h: 3 })),

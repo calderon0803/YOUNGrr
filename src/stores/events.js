@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { PUBLIC_EVENTS_LIMIT } from '@/config/app'
 import { computed, reactive } from 'vue'
 import { eventsService } from '@/services/events.service'
 import { errorMessage } from '@/services/errors'
@@ -16,6 +17,8 @@ export const useEventsStore = defineStore('events', () => {
 
   const events = reactive({})
   const overview = reactive({ status: 'idle', error: null, invitations: [], upcoming: [], past: [] })
+  /** Upcoming public events you can join (Inicio). */
+  const publicList = reactive({ status: 'idle', error: null, ids: [] })
   const details = reactive({})
 
   const pendingCount = computed(() => overview.invitations.length)
@@ -37,6 +40,20 @@ export const useEventsStore = defineStore('events', () => {
     } catch (error) {
       overview.status = 'error'
       overview.error = errorMessage(error)
+    }
+  }
+
+  const loadPublic = async () => {
+    publicList.status = publicList.ids.length ? 'success' : 'loading'
+    publicList.error = null
+    try {
+      const items = await eventsService.publicEvents({ limit: PUBLIC_EVENTS_LIMIT })
+      for (const event of items) events[event.id] = event
+      publicList.ids = items.map((e) => e.id)
+      publicList.status = 'success'
+    } catch (error) {
+      publicList.status = 'error'
+      publicList.error = errorMessage(error)
     }
   }
 
@@ -87,11 +104,16 @@ export const useEventsStore = defineStore('events', () => {
         overview.invitations = overview.invitations.filter((id) => id !== eventId)
         overview.upcoming = [...overview.upcoming, eventId]
       }
+      // Joining a public event takes it out of the ones to discover.
+      if (publicList.ids.includes(eventId)) {
+        publicList.ids = publicList.ids.filter((id) => id !== eventId)
+        if (!overview.upcoming.includes(eventId)) overview.upcoming = [...overview.upcoming, eventId]
+      }
       toast.success(RSVP_FEEDBACK[status])
     } catch (error) {
       toast.error(errorMessage(error))
     }
   }
 
-  return { events, overview, details, pendingCount, loadEvents, loadEvent, createEvent, updateEvent, deleteEvent, invite, respond }
+  return { events, overview, publicList, details, pendingCount, loadEvents, loadPublic, loadEvent, createEvent, updateEvent, deleteEvent, invite, respond }
 })

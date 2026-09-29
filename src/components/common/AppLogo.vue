@@ -1,7 +1,7 @@
 <script setup>
 // PROPS
 defineProps({
-  /** "Yrr" mark for tight spaces. */
+  /** "Grr" mark for tight spaces. */
   compact: { type: Boolean, default: false },
   onDark: { type: Boolean, default: false },
   size: { type: String, default: 'md', validator: (v) => ['sm', 'md', 'lg', 'xl'].includes(v) },
@@ -15,7 +15,7 @@ defineProps({
     :role="compact ? 'img' : undefined"
     :aria-label="compact ? 'YOUNGrr' : undefined"
   >
-    <span class="logo__young" :aria-hidden="compact || undefined">{{ compact ? 'Y' : 'YOUNG' }}</span><span
+    <span class="logo__young" :aria-hidden="compact || undefined">{{ compact ? 'G' : 'YOUNG' }}</span><span
       class="logo__rr"
       :aria-hidden="compact || undefined"
       >rr</span

@@ -186,7 +186,7 @@ protege los datos.
 - Paleta: azul tinta de marca, grises azulados y un único acento coral para Grr.
   Todos los colores son tokens (`src/styles/abstracts/_colors.scss`) que apuntan a
   variables CSS del tema claro y oscuro (`src/styles/base/_theme.scss`).
-- Logotipo tipográfico `YOUNG` + `rr`, con una versión reducida `Yrr` para el icono de la app.
+- Logotipo tipográfico `YOUNG` + `rr`, con una versión reducida `Grr` para el icono de la app.
 - Icono de Grr propio: tres zarpazos en SVG, con estados inactivo, hover, activo,
   pulsado y desactivado, y una microinteracción breve al hacer Grr.
 - Sin emojis en la interfaz: solo pueden aparecer en el contenido de los usuarios.

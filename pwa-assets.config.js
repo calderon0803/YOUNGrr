@@ -5,7 +5,7 @@ import {
 } from '@vite-pwa/assets-generator/config'
 
 // Generates favicon, PWA icons, maskable icon, apple-touch-icon and iOS splash screens
-// from the reduced "Yrr" mark.
+// from the reduced "Grr" mark.
 export default defineConfig({
   headLinkOptions: { preset: '2023' },
   preset: {

@@ -1,11 +1,10 @@
 // Invitations for the local demo backend. Same interface as invitations.supabase.js.
-// Sign up is by invitation only: a registered user invites a friend by email
-// and sends them a personal link.
+// Sign up is by invitation only: a registered user creates a single-use link
+// and sends it to a friend, who signs up with their own email.
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
 import { summaryOf } from '@/services/local/access'
-import { ensure, validate } from '@/services/errors'
-import { rules } from '@/utils/validation'
+import { ensure } from '@/services/errors'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
 import { INVITATION_DAYS, INVITATION_EVERY_DAYS, INVITATIONS_PER_USER } from '@/config/app'
@@ -35,9 +34,9 @@ const view = (db, inv) => ({
   usedBy: inv.usedBy ? summaryOf(db, inv.usedBy) : null,
 })
 
-/** The pending invitation for a token (and email, when signing up). */
+/** The pending invitation for a token. Old invitations made for an email only work with it. */
 export const findPendingInvitation = (db, token, email = null) =>
-  db.invitations.find((i) => i.token === token && isPending(i) && (!email || i.email === email)) ?? null
+  db.invitations.find((i) => i.token === token && isPending(i) && (!email || !i.email || i.email === email)) ?? null
 
 export const localInvitationsService = {
   async listInvitations() {
@@ -55,27 +54,18 @@ export const localInvitationsService = {
     }
   },
 
-  /** Returns the pending invitation for that email if there is one already. */
-  async createInvitation(email) {
-    validate(rules.email(email))
+  /** A new single-use link; nothing to fill in. */
+  async createInvitation() {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    const address = email.trim().toLowerCase()
-    ensure(
-      !db.users.some((u) => u.email === address),
-      'conflict',
-      'Esa persona ya tiene cuenta en YOUNGrr. Búscala y envíale una solicitud de amistad.',
-    )
-    const existing = db.invitations.find((i) => i.inviterId === me && i.email === address && isPending(i))
-    if (existing) return view(db, existing)
     ensure(usedCount(db, me) < earned(db, me).count, 'forbidden', 'No te quedan invitaciones disponibles.')
     const createdAt = nowIso()
     const inv = {
       id: uid('inv'),
       token: `${uid('t')}${uid('t')}`.replaceAll('t_', ''),
       inviterId: me,
-      email: address,
+      email: null,
       createdAt,
       expiresAt: new Date(Date.now() + INVITATION_DAYS * DAY_MS).toISOString(),
       usedBy: null,
@@ -97,13 +87,13 @@ export const localInvitationsService = {
     await commit()
   },
 
-  /** For the sign up page: who invites and to which email, or null. */
+  /** For the sign up page: who invites, or null. */
   async checkInvitation(token) {
     await latency(80, 160)
     const db = await getDb()
     const inv = findPendingInvitation(db, token)
     if (!inv) return null
     const inviter = summaryOf(db, inv.inviterId)
-    return { email: inv.email, inviter }
+    return { inviter }
   },
 }

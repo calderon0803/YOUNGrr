@@ -41,7 +41,8 @@ import { LIMITS } from '@/utils/validation'
         el número, no quién te visita).
       </li>
       <li>
-        <strong>Invitaciones:</strong> el correo de la persona a la que invitas, hasta que la invitación se usa o caduca.
+        <strong>Invitaciones:</strong> los enlaces que creas, quién entró con cada uno y cuándo. No guardamos datos de la
+        persona invitada hasta que crea su cuenta.
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
@@ -63,10 +64,6 @@ import { LIMITS } from '@/utils/validation'
       <li>
         <strong>Seguridad y convivencia</strong> (comprobar la edad, límites de uso, bloqueos, revisar reportes y retirar
         contenido que incumple las normas): interés legítimo en mantener una red segura (art. 6.1.f RGPD).
-      </li>
-      <li>
-        <strong>Invitaciones:</strong> interés legítimo de quien invita y de YOUNGrr en que puedas unirte. El correo solo
-        se usa para comprobar la invitación.
       </li>
     </ul>
     <p>
@@ -100,7 +97,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><th scope="col">Dato</th><th scope="col">Se borra</th></tr>
       </thead>
       <tbody>
-        <tr><td>Invitaciones sin usar</td><td>Al caducar</td></tr>
+        <tr><td>Enlaces de invitación sin usar</td><td>Al caducar (30 días)</td></tr>
         <tr><td>Avisos ya vistos</td><td>A los 90 días</td></tr>
         <tr><td>Avisos no vistos</td><td>Al año</td></tr>
         <tr><td>Solicitudes de amistad rechazadas o canceladas</td><td>A los 30 días</td></tr>

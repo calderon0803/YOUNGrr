@@ -8,7 +8,6 @@ import { useToast } from '@/composables/useToast'
 // PROPS
 const props = defineProps({
   link: { type: String, required: true },
-  email: { type: String, required: true },
 })
 
 // STORES
@@ -40,7 +39,7 @@ const share = async () => {
 
 <template>
   <div class="link">
-    <input class="input link__url" :value="link" readonly :aria-label="`Enlace de invitación para ${email}`" @focus="$event.target.select()" />
+    <input class="input link__url" :value="link" readonly aria-label="Enlace de invitación" @focus="$event.target.select()" />
     <button type="button" class="btn btn--secondary btn--sm btn--icon" :aria-label="copied ? 'Copiado' : 'Copiar enlace'" @click="copy">
       <Check v-if="copied" aria-hidden="true" />
       <Copy v-else aria-hidden="true" />

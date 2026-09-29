@@ -71,7 +71,7 @@ export const localAuthService = {
     const normalizedEmail = email.trim().toLowerCase()
     ensure(!db.users.some((u) => u.email === normalizedEmail), 'conflict', 'Ya existe una cuenta con ese correo.')
     const invitation = findPendingInvitation(db, inviteToken, normalizedEmail)
-    ensure(invitation, 'forbidden', 'La invitación no es válida para ese correo o ya se ha usado.')
+    ensure(invitation, 'forbidden', 'Este enlace de invitación ya no es válido: puede que ya se haya usado o que haya caducado.')
 
     const id = uid('u')
     const salt = randomSalt()

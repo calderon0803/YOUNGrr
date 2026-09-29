@@ -22,9 +22,9 @@ export const useInvitationsStore = defineStore('invitations', () => {
     }
   }
 
-  /** Creates (or returns the pending) invitation for that email; throws on error. */
-  const invite = async (email) => {
-    const invitation = await invitationsService.createInvitation(email)
+  /** Creates a new single-use invitation link; throws on error. */
+  const invite = async () => {
+    const invitation = await invitationsService.createInvitation()
     await load()
     return invitation
   }

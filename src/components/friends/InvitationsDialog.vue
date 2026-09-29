@@ -25,7 +25,7 @@ const { confirm } = useConfirm()
 const cancel = async (invitation) => {
   const ok = await confirm({
     title: 'Cancelar invitación',
-    message: `El enlace para ${invitation.email} dejará de funcionar y recuperarás la invitación.`,
+    message: 'El enlace dejará de funcionar y recuperarás la invitación.',
     confirmLabel: 'Cancelar invitación',
     danger: true,
   })
@@ -45,19 +45,19 @@ const cancel = async (invitation) => {
       <li v-for="inv in invitations.state.items" :key="inv.id" class="invitations__item">
         <template v-if="inv.usedBy">
           <p><PersonLink :person="inv.usedBy" /> ya está en YOUNGrr</p>
-          <p class="invitations__meta">{{ inv.email }} · se unió <RelativeTime :value="inv.usedAt" /></p>
+          <p class="invitations__meta">Se unió <RelativeTime :value="inv.usedAt" /></p>
         </template>
         <template v-else-if="inv.link">
-          <p class="invitations__email">{{ inv.email }}</p>
+          <p class="invitations__email">{{ inv.email ?? 'Enlace sin usar' }}</p>
           <p class="invitations__meta">
-            Pendiente · enviada <RelativeTime :value="inv.createdAt" /> ·
+            Pendiente · creado <RelativeTime :value="inv.createdAt" /> ·
             <button type="button" class="invitations__cancel" @click="cancel(inv)">Cancelar</button>
           </p>
-          <InvitationLink :link="inv.link" :email="inv.email" />
+          <InvitationLink :link="inv.link" />
         </template>
         <template v-else>
-          <p class="invitations__email">{{ inv.email }}</p>
-          <p class="invitations__meta">Caducada</p>
+          <p class="invitations__email">{{ inv.email ?? 'Enlace' }}</p>
+          <p class="invitations__meta">Caducado</p>
         </template>
       </li>
     </ul>

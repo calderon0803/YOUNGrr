@@ -70,14 +70,15 @@ src/
 ### Solo por invitación
 
 Como Tuenti, no hay registro abierto. En Inicio, **Invitar a tus amigos** muestra tus
-invitaciones disponibles: 1 al registrarte y 1 más cada semana, hasta 5 en total. Escribes el correo de tu amigo y la app te da
-un enlace personal (`/register?invite=…`) para mandárselo por donde quieras. La cuenta
-solo se puede crear con ese correo, el enlace caduca a los 30 días y al registrarse os
-hacéis amigos automáticamente. Las invitaciones pendientes se pueden cancelar y se
-recuperan.
+invitaciones disponibles: 1 al registrarte y 1 más cada semana, hasta 5 en total. Con un
+botón se crea un enlace personal (`/register?invite=…`) sin rellenar nada, para mandarlo
+por donde quieras. Sirve para **una sola cuenta**, con el correo que elija quien se
+registra, caduca a los 30 días y al registrarse os hacéis amigos automáticamente. Los
+enlaces sin usar se pueden cancelar y se recupera la invitación. Como cualquiera que tenga
+el enlace puede usarlo, conviene mandarlo solo a quien quieres invitar.
 
-La base de datos lo impone: un trigger rechaza cualquier alta en `auth.users` sin una
-invitación válida para ese correo, aunque se llame a la API directamente. Las altas
+La base de datos lo impone: un trigger rechaza cualquier alta en `auth.users` sin un
+enlace de invitación válido y sin usar, aunque se llame a la API directamente. Las altas
 hechas desde el panel de Supabase (*Invite user*) no pasan por esa comprobación.
 
 ### Novedades y visitas

@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MailCheck, MailQuestionMark } from 'lucide-vue-next'
 import CityPicker from '@/components/common/CityPicker.vue'
+import TermsConsent from '@/components/legal/TermsConsent.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -23,7 +24,7 @@ const router = useRouter()
 const toast = useToast()
 
 // DATA
-const form = reactive({ firstName: '', lastName: '', email: '', password: '', birthDate: '', location: null })
+const form = reactive({ firstName: '', lastName: '', email: '', password: '', birthDate: '', location: null, acceptedTerms: false })
 const errors = reactive({})
 const serverError = ref('')
 const submitting = ref(false)
@@ -50,6 +51,7 @@ const validateForm = () => {
   errors.password = rules.password(form.password)
   errors.birthDate = rules.adult(form.birthDate)
   errors.location = rules.optionalLocation(form.location)
+  errors.acceptedTerms = form.acceptedTerms ? null : 'Tienes que aceptar las condiciones de uso y la política de privacidad.'
   return !Object.values(errors).some(Boolean)
 }
 
@@ -168,6 +170,7 @@ watch(inviteToken, checkInvitation, { immediate: true })
         hint="Solo para «Cerca de ti». Si no la pones, puedes usar todo lo demás. Nunca se muestra tu ubicación exacta."
         :error="errors.location ?? ''"
       />
+      <TermsConsent id="reg-terms" v-model="form.acceptedTerms" :error="errors.acceptedTerms ?? ''" />
 
       <p v-if="serverError" class="field__error" role="alert">{{ serverError }}</p>
       <button type="submit" class="btn btn--primary btn--block" :disabled="submitting">

@@ -24,6 +24,10 @@ const auth = useAuthStore()
     <footer class="auth__footer">
       <AppLogo size="sm" />
       <span>Una red social para ver qué hacen tus amigos. Sin seguidores, sin algoritmos.</span>
+      <nav class="auth__legal" aria-label="Información legal">
+        <RouterLink :to="{ name: 'terms' }">Condiciones de uso</RouterLink>
+        <RouterLink :to="{ name: 'privacy' }">Privacidad</RouterLink>
+      </nav>
     </footer>
   </div>
 </template>
@@ -83,6 +87,11 @@ const auth = useAuthStore()
     font-size: $fs-sm;
     color: $color-text-muted;
     text-align: center;
+  }
+
+  &__legal {
+    display: flex;
+    gap: $space-3;
   }
 }
 

@@ -23,6 +23,8 @@ export const toProfile = (row) => ({
   mustChangePassword: !!row.must_change_password,
   // Accounts from before the age check confirm it at their next sign in.
   adultConfirmed: row.adult_confirmed_at !== null && row.adult_confirmed_at !== undefined,
+  // Version of the terms and privacy policy accepted (compared with LEGAL.version).
+  termsVersion: row.terms_version ?? null,
   createdAt: row.created_at,
 })
 

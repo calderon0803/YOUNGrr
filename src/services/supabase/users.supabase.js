@@ -57,6 +57,11 @@ export const supabaseUsersService = {
     return toProfile(await rpc('confirm_adult', { birth_date: birthDate }, 'No se ha podido comprobar tu edad.'))
   },
 
+  /** Accepts this version of the terms and privacy policy. */
+  async acceptTerms(version) {
+    return toProfile(await rpc('accept_terms', { version }, 'No se ha podido guardar tu aceptación.'))
+  },
+
   async updateProfile(update) {
     validate(
       rules.required(update.firstName, 'El nombre'),

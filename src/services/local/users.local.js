@@ -12,10 +12,10 @@ import {
   visibleCity,
   isBlockedBetween,
 } from '@/services/local/access'
-import { validate } from '@/services/errors'
+import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { matches } from '@/utils/text'
-import { NEARBY_RADII_KM } from '@/config/app'
+import { LEGAL, NEARBY_RADII_KM } from '@/config/app'
 
 // Friends always see your profile, so it only has two levels.
 const PROFILE_VISIBILITIES = ['everyone', 'friends']
@@ -116,6 +116,16 @@ export const localUsersService = {
     const db = await getDb()
     const profile = profileOf(db, requireUserId(db))
     profile.adultConfirmed = true
+    await commit()
+    return { ...profile }
+  },
+
+  async acceptTerms(version) {
+    await latency()
+    const db = await getDb()
+    const profile = profileOf(db, requireUserId(db))
+    ensure(version === LEGAL.version, 'conflict', 'Las condiciones han cambiado. Recarga la página para ver las nuevas.')
+    profile.termsVersion = version
     await commit()
     return { ...profile }
   },

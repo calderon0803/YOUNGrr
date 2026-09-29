@@ -39,11 +39,10 @@ export const purgeLocalUser = (db, id) => {
   db.invitations = db.invitations.filter((i) => i.inviterId !== id && i.usedBy !== id)
 }
 
-/** Everything the demo backend holds about a person (other people only by name). */
+/** Everything the demo backend holds about a person (others by name, plus their messages to them). */
 export const buildLocalExport = (db, id) => {
   const user = db.users.find((u) => u.id === id)
   const profile = db.profiles.find((p) => p.id === id)
-  const convIds = new Set(db.conversations.filter((c) => c.memberIds.includes(id)).map((c) => c.id))
   return {
     generated_at: new Date().toISOString(),
     account: { email: user?.email ?? null, created_at: user?.createdAt ?? null },
@@ -58,15 +57,20 @@ export const buildLocalExport = (db, id) => {
       .filter((f) => f.userA === id || f.userB === id)
       .map((f) => ({ name: fullNameOf(db, f.userA === id ? f.userB : f.userA), since: f.createdAt })),
     events_created: db.events.filter((e) => e.creatorId === id),
-    messages_sent: db.messages
-      .filter((m) => m.senderId === id)
-      .map((m) => ({
-        to: fullNameOf(db, db.conversations.find((c) => c.id === m.conversationId)?.memberIds.find((x) => x !== id)),
-        text: m.text,
-        deleted: !!m.deletedAt,
-        created_at: m.createdAt,
+    // Whole conversations: what the person wrote and what they received.
+    conversations: db.conversations
+      .filter((c) => c.memberIds.includes(id))
+      .map((c) => ({
+        with: c.memberIds.filter((x) => x !== id).map((x) => fullNameOf(db, x)),
+        messages: db.messages
+          .filter((m) => m.conversationId === c.id)
+          .map((m) => ({
+            from: m.senderId === id ? 'yo' : fullNameOf(db, m.senderId),
+            text: m.deletedAt ? null : m.text,
+            deleted: !!m.deletedAt,
+            created_at: m.createdAt,
+          })),
       })),
-    messages_received_count: db.messages.filter((m) => convIds.has(m.conversationId) && m.senderId !== id).length,
     wall_messages_written: db.wallMessages.filter((w) => w.authorId === id).map(({ text, createdAt }) => ({ text, created_at: createdAt })),
     invitations_sent: db.invitations.filter((i) => i.inviterId === id).map(({ email, createdAt, usedBy }) => ({ email, created_at: createdAt, used: !!usedBy })),
     reports_filed: db.reports.filter((r) => r.reporterId === id).map(({ targetType, reason, status, createdAt }) => ({ about: targetType, reason, status, created_at: createdAt })),

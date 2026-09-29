@@ -9,7 +9,7 @@ import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
 
 // Auth for the local demo backend (IndexedDB). Same interface as auth.supabase.js.
 
@@ -53,7 +53,7 @@ export const localAuthService = {
   },
 
   /** Only with a pending invitation for that email. */
-  async register({ firstName, lastName, email, password, location, birthDate, inviteToken }) {
+  async register({ firstName, lastName, email, password, location, birthDate, acceptedTerms, inviteToken }) {
     validate(
       rules.required(firstName, 'El nombre'),
       rules.max(firstName, LIMITS.name, 'El nombre'),
@@ -64,6 +64,7 @@ export const localAuthService = {
       rules.adult(birthDate),
       rules.optionalLocation(location),
       rules.max(location?.name, LIMITS.city, 'La ciudad'),
+      acceptedTerms ? null : 'Tienes que aceptar las condiciones de uso y la política de privacidad.',
     )
     await latency()
     const db = await getDb()
@@ -87,6 +88,7 @@ export const localAuthService = {
       cityLng: location?.lng ?? null,
       // Only the confirmation is kept, not the birth date.
       adultConfirmed: true,
+      termsVersion: LEGAL.version,
       bio: '',
       birthday: null,
       studies: '',

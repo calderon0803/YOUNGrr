@@ -13,6 +13,9 @@ const routes = [
   { path: '/forgot-password', name: 'forgot-password', component: () => import('@/pages/ForgotPasswordPage.vue'), meta: { guest: true, layout: 'auth', title: 'Recuperar contraseña' } },
   // Opened from the email link: Supabase signs the person in for the change.
   { path: '/reset-password', name: 'reset-password', component: () => import('@/pages/ResetPasswordPage.vue'), meta: { layout: 'auth', title: 'Nueva contraseña' } },
+  // Readable by everyone, also while completing the account (to accept them).
+  { path: '/legal/terms', name: 'terms', component: () => import('@/pages/TermsPage.vue'), meta: { public: true, layout: 'auth', title: 'Condiciones de uso' } },
+  { path: '/legal/privacy', name: 'privacy', component: () => import('@/pages/PrivacyPage.vue'), meta: { public: true, layout: 'auth', title: 'Política de privacidad' } },
   { path: '/register', name: 'register', component: () => import('@/pages/RegisterPage.vue'), meta: { guest: true, layout: 'auth', title: 'Crear cuenta' } },
 
   app('/setup', 'setup', () => import('@/pages/SetupPage.vue'), { layout: 'auth', title: 'Completa tu perfil' }),
@@ -55,9 +58,9 @@ router.beforeEach(async (to, from) => {
   await auth.restore()
   if (to.meta.auth && !auth.isAuthenticated) return { name: 'login', query: to.fullPath !== '/home' ? { next: to.fullPath } : {} }
   if (to.meta.guest && auth.isAuthenticated) return { name: 'home' }
-  // Pending age, password or profile: first things first (the recovery page
-  // sets a new password too).
-  if (auth.needsSetup && to.name !== 'setup' && to.name !== 'reset-password') return { name: 'setup' }
+  // Pending age, password, profile or terms: first things first (the recovery
+  // page sets a new password too, and the legal texts must stay readable).
+  if (auth.needsSetup && to.name !== 'setup' && to.name !== 'reset-password' && !to.meta.public) return { name: 'setup' }
   if (to.name === 'setup' && !auth.needsSetup) return { name: 'home' }
   if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId } }
   if (to.meta.moderator && !(await useModerationStore().checkModerator())) return { name: 'home' }

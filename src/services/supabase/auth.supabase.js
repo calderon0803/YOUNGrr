@@ -6,6 +6,7 @@ import { toProfile } from '@/services/supabase/mappers'
 import { removeAllOwnFiles, signPhotoUrls } from '@/services/supabase/storage'
 import { ApiError, ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
+import { LEGAL } from '@/config/app'
 
 // Supabase Auth error codes → messages for the user.
 const AUTH_MESSAGES = {
@@ -77,7 +78,7 @@ export const supabaseAuthService = {
    * not stored). With email confirmation on there is no session yet.
    * @returns {Promise<{ profile: object | null, needsConfirmation: boolean }>}
    */
-  async register({ firstName, lastName, email, password, location, birthDate, inviteToken }) {
+  async register({ firstName, lastName, email, password, location, birthDate, acceptedTerms, inviteToken }) {
     validate(
       rules.required(firstName, 'El nombre'),
       rules.max(firstName, LIMITS.name, 'El nombre'),
@@ -89,6 +90,7 @@ export const supabaseAuthService = {
       rules.optionalLocation(location),
       rules.max(location?.name, LIMITS.city, 'La ciudad'),
       inviteToken ? null : 'YOUNGrr es solo por invitación.',
+      acceptedTerms ? null : 'Tienes que aceptar las condiciones de uso y la política de privacidad.',
     )
     ensureOnline()
     const { data, error } = await getSupabase().auth.signUp({
@@ -102,12 +104,14 @@ export const supabaseAuthService = {
           birth_date: birthDate,
           ...(location ? { city: location.name.trim(), city_lat: String(location.lat), city_lng: String(location.lng) } : {}),
           invite_token: inviteToken,
+          // The database stores the version accepted (and rejects any other).
+          terms_version: LEGAL.version,
         },
       },
     })
     // The database rejects sign ups without a valid invitation or under 18.
     if (error && /database error saving new user/i.test(error.message ?? '')) {
-      throw new ApiError('forbidden', 'No se ha podido crear la cuenta. Comprueba tu fecha de nacimiento y que la invitación sea para este correo.')
+      throw new ApiError('forbidden', 'No se ha podido crear la cuenta. Comprueba tu fecha de nacimiento y que la invitación sea para este correo. Si acabas de recargar, vuelve a aceptar las condiciones.')
     }
     // An email already registered gets the same answer as a new one.
     if (error && NEUTRAL_EMAIL_ERRORS.includes(error.code)) return { profile: null, needsConfirmation: true }

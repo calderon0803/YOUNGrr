@@ -2,6 +2,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CityPicker from '@/components/common/CityPicker.vue'
+import TermsConsent from '@/components/legal/TermsConsent.vue'
+import SettingsYourData from '@/components/settings/SettingsYourData.vue'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
@@ -12,7 +14,9 @@ import { toDateInput } from '@/utils/time'
 // - age (accounts from before the check, or created by an administrator);
 // - a password of its own (accounts created by an administrator have a
 //   temporary one, which only stops counting when it really changes);
-// - name and, optionally, town (accounts created by hand).
+// - name and, optionally, town (accounts created by hand);
+// - accepting the current terms and privacy policy (new accounts accept them
+//   at sign up; everyone accepts again when they change).
 // The router sends them here until done; the database checks each step.
 
 // STORES
@@ -30,6 +34,7 @@ const form = reactive({
   birthDate: '',
   password: '',
   repeat: '',
+  acceptedTerms: false,
 })
 const errors = reactive({})
 const serverError = ref('')
@@ -39,6 +44,9 @@ const submitting = ref(false)
 const needsAge = computed(() => auth.me?.adultConfirmed === false)
 const needsPassword = computed(() => !!auth.me?.mustChangePassword)
 const needsProfile = computed(() => !!auth.me?.needsSetup)
+const needsTerms = computed(() => auth.needsTerms)
+// Only the terms changed: whoever does not accept them can take their data and leave.
+const onlyTerms = computed(() => needsTerms.value && !needsAge.value && !needsPassword.value && !needsProfile.value)
 const maxBirthDate = computed(() => {
   const d = new Date()
   d.setFullYear(d.getFullYear() - LIMITS.minAge)
@@ -53,6 +61,7 @@ const validateForm = () => {
   errors.firstName = needsProfile.value ? firstError(rules.required(form.firstName, 'El nombre'), rules.max(form.firstName, LIMITS.name, 'El nombre')) : null
   errors.lastName = needsProfile.value ? firstError(rules.required(form.lastName, 'El apellido'), rules.max(form.lastName, LIMITS.name, 'El apellido')) : null
   errors.location = needsProfile.value ? rules.optionalLocation(form.location) : null
+  errors.acceptedTerms = needsTerms.value && !form.acceptedTerms ? 'Tienes que aceptar las condiciones de uso y la política de privacidad.' : null
   return !Object.values(errors).some(Boolean)
 }
 
@@ -75,7 +84,8 @@ const submit = async () => {
 <template>
   <div class="setup panel">
     <h1 class="setup__title">Antes de empezar</h1>
-    <p class="setup__lead">
+    <p v-if="onlyTerms" class="setup__lead">Hemos actualizado las condiciones de uso y la política de privacidad. Para seguir, revísalas y acéptalas.</p>
+    <p v-else class="setup__lead">
       YOUNGrr es solo para mayores de {{ LIMITS.minAge }} años.
       <template v-if="needsPassword">La contraseña que te han dado es provisional: elige una tuya.</template>
     </p>
@@ -124,11 +134,19 @@ const submit = async () => {
         </div>
       </template>
 
+      <TermsConsent v-if="needsTerms" id="setup-terms" v-model="form.acceptedTerms" :error="errors.acceptedTerms ?? ''" />
+
       <p v-if="serverError" class="field__error" role="alert">{{ serverError }}</p>
       <button type="submit" class="btn btn--primary btn--block" :disabled="submitting">
-        {{ submitting ? 'Guardando…' : 'Empezar' }}
+        {{ submitting ? 'Guardando…' : onlyTerms ? 'Aceptar y seguir' : 'Empezar' }}
       </button>
     </form>
+
+    <details v-if="onlyTerms" class="setup__leave">
+      <summary>¿No quieres aceptarlas?</summary>
+      <p class="setup__alt">Puedes descargar tus datos y eliminar tu cuenta.</p>
+      <SettingsYourData />
+    </details>
 
     <p class="setup__alt">¿No eres tú? <button type="button" class="setup__logout" @click="auth.logout()">Salir</button></p>
   </div>
@@ -160,6 +178,11 @@ const submit = async () => {
   &__row {
     display: grid;
     gap: $space-4;
+  }
+
+  &__leave summary {
+    color: $color-link;
+    cursor: pointer;
   }
 
   &__logout {

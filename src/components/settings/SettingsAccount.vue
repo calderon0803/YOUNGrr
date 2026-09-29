@@ -98,6 +98,11 @@ onMounted(async () => {
     <section class="settings-section__block" aria-labelledby="acc-data">
       <h2 id="acc-data" class="settings-section__title">Tus datos</h2>
       <SettingsYourData />
+      <p class="muted">
+        Qué datos se guardan y durante cuánto tiempo:
+        <RouterLink :to="{ name: 'privacy' }">política de privacidad</RouterLink> ·
+        <RouterLink :to="{ name: 'terms' }">condiciones de uso</RouterLink>.
+      </p>
     </section>
 
     <section class="settings-section__block" aria-labelledby="acc-session">

@@ -15,7 +15,7 @@ import {
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { matches } from '@/utils/text'
-import { LEGAL, NEARBY_RADII_KM } from '@/config/app'
+import { LEGAL, NEARBY_RADII_KM, VISIT_RECOUNT_HOURS } from '@/config/app'
 
 // Friends always see your profile, so it only has two levels.
 const PROFILE_VISIBILITIES = ['everyone', 'friends']
@@ -79,7 +79,13 @@ export const localUsersService = {
     const me = requireUserId(db)
     const profile = profileOf(db, userId)
     if (userId === me || !canViewProfile(db, me, userId)) return
-    // Only the counter: who visited, when or how often is not stored.
+    // Once per person and profile every VISIT_RECOUNT_HOURS (the database keeps
+    // only a salted hash; the demo keeps the pair, it never leaves the browser).
+    const now = Date.now()
+    db.visitMarks = Object.fromEntries(Object.entries(db.visitMarks ?? {}).filter(([, until]) => until > now))
+    const mark = `${me}:${userId}`
+    if (db.visitMarks[mark]) return
+    db.visitMarks[mark] = now + VISIT_RECOUNT_HOURS * 3_600_000
     profile.visitCount = (profile.visitCount ?? 0) + 1
     await commit()
   },

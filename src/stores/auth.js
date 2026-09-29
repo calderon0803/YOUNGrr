@@ -12,7 +12,7 @@ import { LEGAL, STORAGE_KEYS } from '@/config/app'
 const clearBrowserData = () => {
   try {
     Object.keys(localStorage)
-      .filter((key) => key.startsWith(STORAGE_KEYS.chatDock))
+      .filter((key) => key.startsWith(STORAGE_KEYS.chatDock) || key.startsWith(STORAGE_KEYS.visits))
       .forEach((key) => localStorage.removeItem(key))
   } catch {
     // Storage blocked: nothing was saved either.

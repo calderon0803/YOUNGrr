@@ -5,7 +5,7 @@ import { geoService } from '@/services/geo.service'
 import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
-import { STORAGE_KEYS, THEME_COLORS } from '@/config/app'
+import { STORAGE_KEYS, THEME_COLORS, VISIT_RECOUNT_HOURS } from '@/config/app'
 const darkQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
 
 export const applyTheme = (preference) => {
@@ -95,12 +95,30 @@ export const useUserStore = defineStore('user', () => {
 
   /**
    * Counts your visit to someone else's profile. Its total stays private to its
-   * owner, and nobody stores who visited: to avoid inflating it by reloading,
-   * the app counts each profile once while it stays open (kept in memory only).
+   * owner. The database counts each person once per profile every 6 hours;
+   * your browser also remembers the profiles you opened in that time, so
+   * reloading does not even send the visit again.
    */
   const registerVisit = async (userId) => {
-    if (visitedThisSession.has(userId)) return
+    const key = `${STORAGE_KEYS.visits}:${auth.meId}`
+    const now = Date.now()
+    const since = now - VISIT_RECOUNT_HOURS * 3_600_000
+    let recent = {}
+    try {
+      recent = JSON.parse(localStorage.getItem(key) ?? '{}')
+    } catch {
+      // Blocked or broken storage: this tab's memory still avoids double counts.
+    }
+    if (visitedThisSession.has(userId) || recent[userId] > since) return
     visitedThisSession.add(userId)
+    // Only the recent ones are kept.
+    recent = Object.fromEntries(Object.entries(recent).filter(([, at]) => at > since))
+    recent[userId] = now
+    try {
+      localStorage.setItem(key, JSON.stringify(recent))
+    } catch {
+      // Same as above.
+    }
     try {
       await usersService.registerVisit(userId)
     } catch {

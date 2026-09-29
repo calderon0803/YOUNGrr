@@ -18,7 +18,10 @@ import { LIMITS } from '@/utils/validation'
     <h2>Quién puede usar YOUNGrr</h2>
     <ul>
       <li>Solo personas de {{ LIMITS.minAge }} años o más.</li>
-      <li>Solo con invitación de alguien que ya tenga cuenta.</li>
+      <li>
+        Solo con invitación de alguien que ya tenga cuenta. Cada enlace de invitación sirve para una sola cuenta y quien
+        lo usa se hace amigo de quien lo creó: compártelo solo con la persona a la que quieres invitar.
+      </li>
       <li>Una cuenta por persona, con tu nombre real y datos veraces. No puedes hacerte pasar por otra persona.</li>
       <li>Tu contraseña es personal: no la compartas. Si crees que alguien ha entrado en tu cuenta, cámbiala y avísanos.</li>
     </ul>
@@ -32,6 +35,10 @@ import { LIMITS } from '@/utils/validation'
     <p>
       Publica solo lo que tengas derecho a publicar. Si subes fotos en las que aparecen otras personas o las etiquetas,
       asegúrate de que están de acuerdo. Si alguien te pide que quites una foto suya, quítala.
+    </p>
+    <p>
+      Un evento público lo ven los amigos de tus amigos, aunque no te conozcan, y también quién va. No pongas en él datos que
+      no quieras que vea esa gente, como la dirección de tu casa.
     </p>
 
     <h2>Normas de convivencia</h2>
@@ -48,6 +55,10 @@ import { LIMITS } from '@/utils/validation'
     </ul>
 
     <h2>Moderación</h2>
+    <p>
+      Antes de subir una foto, la app la analiza automáticamente en tu propio dispositivo y no deja subir las que parecen
+      contener desnudos o contenido sexual. Es un filtro automático y puede equivocarse en ambos sentidos.
+    </p>
     <p>
       Puedes reportar contenido y perfiles, y bloquear a cualquier persona. Quien modera revisa los reportes y puede
       retirar el contenido que incumpla estas normas. Si los incumplimientos son graves o se repiten, podemos suspender o

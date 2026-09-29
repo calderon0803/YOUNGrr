@@ -2,12 +2,12 @@ import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
 import { areFriends, findOr404 } from '@/services/local/access'
 import { dropNotifications } from '@/services/local/notify'
-import { canSeeEvent, eventView } from '@/services/local/views'
+import { canSeeEvent, eventView, isInEvent } from '@/services/local/views'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { splitEvents } from '@/utils/events'
-import { nowIso } from '@/utils/time'
+import { nowIso, toDateInput } from '@/utils/time'
 
 const RSVP = ['going', 'maybe', 'declined', 'pending']
 
@@ -45,7 +45,20 @@ export const localEventsService = {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    return splitEvents(db.events.filter((e) => canSeeEvent(db, me, e)).map((e) => eventView(db, me, e)))
+    return splitEvents(db.events.filter((e) => isInEvent(db, me, e)).map((e) => eventView(db, me, e)))
+  },
+
+  /** Upcoming public events you can see and have not joined, the soonest first. */
+  async publicEvents({ limit = 100 } = {}) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const today = toDateInput(new Date())
+    return db.events
+      .filter((e) => e.isPublic && e.date >= today && !isInEvent(db, me, e) && canSeeEvent(db, me, e))
+      .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+      .slice(0, limit)
+      .map((e) => eventView(db, me, e))
   },
 
   async getEvent(eventId) {
@@ -70,6 +83,7 @@ export const localEventsService = {
       date: input.date,
       time: input.time,
       location: input.location.trim(),
+      isPublic: !!input.isPublic,
       createdAt,
       updatedAt: createdAt,
     }
@@ -94,6 +108,7 @@ export const localEventsService = {
       date: input.date,
       time: input.time,
       location: input.location.trim(),
+      isPublic: !!input.isPublic,
       updatedAt: nowIso(),
     })
     await commit()
@@ -132,8 +147,13 @@ export const localEventsService = {
     const db = await getDb()
     const me = requireUserId(db)
     const event = visibleEvent(db, me, eventId)
-    const member = db.eventMembers.find((m) => m.eventId === eventId && m.userId === me)
-    ensure(member, 'forbidden', 'No estás invitado a este evento.')
+    let member = db.eventMembers.find((m) => m.eventId === eventId && m.userId === me)
+    // In a public event, answering is how you join it.
+    if (!member) {
+      ensure(event.isPublic, 'forbidden', 'No estás invitado a este evento.')
+      member = { eventId, userId: me, status, invitedBy: me, respondedAt: null }
+      db.eventMembers.push(member)
+    }
     member.status = status
     member.respondedAt = nowIso()
     await commit()

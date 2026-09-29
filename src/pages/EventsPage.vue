@@ -92,6 +92,9 @@ onMounted(() => events.loadEvents())
 
   &__grid {
     display: grid;
+    // One column on mobile, never wider than the screen (long places are cut
+    // with an ellipsis instead of widening the whole page).
+    grid-template-columns: minmax(0, 1fr);
     gap: $space-3;
     margin: 0;
   }

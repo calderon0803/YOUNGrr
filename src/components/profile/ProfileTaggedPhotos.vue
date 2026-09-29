@@ -31,7 +31,7 @@ onMounted(load)
 
 <template>
   <section class="panel tagged-photos" aria-labelledby="tagged-title">
-    <h2 id="tagged-title" class="panel-title">{{ isSelf ? 'Fotos en las que sales' : `Fotos en las que sale ${view.profile.firstName}` }}</h2>
+    <h2 id="tagged-title" class="visually-hidden">{{ isSelf ? 'Fotos en las que sales' : `Fotos en las que sale ${view.profile.firstName}` }}</h2>
     <AsyncState :status="tagged.status" :error="tagged.error" :empty="!tagged.ids.length" skeleton="grid" :skeleton-count="6" @retry="load">
       <template #empty>
         <StateMessage

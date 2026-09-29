@@ -14,8 +14,8 @@ import { LIMITS, firstError, rules } from '@/utils/validation'
 import { fullName } from '@/utils/text'
 import { toDateInput } from '@/utils/time'
 
-// Sign up is by invitation only: the page needs the personal link (?invite=)
-// a registered friend sent, and the account is created with that email.
+// Sign up is by invitation only: the page needs the single-use link (?invite=)
+// a registered friend sent. The email is the new person's own.
 
 // STORES
 const auth = useAuthStore()
@@ -60,7 +60,7 @@ const submit = async () => {
   if (!validateForm()) return
   submitting.value = true
   try {
-    const { needsConfirmation } = await auth.register({ ...form, email: invitation.value.email, inviteToken: inviteToken.value })
+    const { needsConfirmation } = await auth.register({ ...form, inviteToken: inviteToken.value })
     if (needsConfirmation) {
       confirmEmail.value = form.email.trim().toLowerCase()
       return
@@ -83,7 +83,6 @@ const checkInvitation = async (token) => {
   try {
     invitation.value = await invitationsService.checkInvitation(token)
     inviteStatus.value = invitation.value ? 'valid' : 'invalid'
-    if (invitation.value) form.email = invitation.value.email
   } catch {
     inviteStatus.value = 'invalid'
   }
@@ -148,8 +147,7 @@ watch(inviteToken, checkInvitation, { immediate: true })
       </div>
       <div class="field">
         <label class="field__label" for="reg-email">Correo electrónico</label>
-        <input id="reg-email" v-model="form.email" class="input" type="email" autocomplete="email" readonly aria-describedby="reg-email-hint reg-email-error" />
-        <p id="reg-email-hint" class="field__hint">Es el correo al que te han invitado.</p>
+        <input id="reg-email" v-model="form.email" class="input" type="email" inputmode="email" autocomplete="email" :aria-invalid="!!errors.email || undefined" aria-describedby="reg-email-error" />
         <p id="reg-email-error" class="field__error">{{ errors.email }}</p>
       </div>
       <div class="field">

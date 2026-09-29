@@ -1,5 +1,5 @@
 // Builds the view models the UI consumes (joins + counters), as a SQL view would.
-import { canViewPhoto, canViewProfile, friendIdsOf, pendingOwnerInvite, photoOwnerIds, summaryOf } from '@/services/local/access'
+import { areFriends, canViewPhoto, canViewProfile, friendIdsOf, isBlockedBetween, mutualFriends, pendingOwnerInvite, photoOwnerIds, summaryOf } from '@/services/local/access'
 import { ACTIVITY_LIMITS, ALBUM_UPLOAD_PREVIEW, COMMENT_PREVIEW } from '@/config/app'
 
 const byDateAsc = (a, b) => a.createdAt.localeCompare(b.createdAt)
@@ -35,7 +35,7 @@ export const postView = (db, me, post, { commentPreview = COMMENT_PREVIEW } = {}
   return {
     ...post,
     kind: post.kind ?? 'status',
-    album: album ? { id: album.id, title: album.title } : null,
+    album: album ? { id: album.id, title: album.title, kind: album.kind } : null,
     photos: uploaded.slice(0, ALBUM_UPLOAD_PREVIEW).map((p) => ({ id: p.id, url: p.url, width: p.width, height: p.height })),
     photoTotal: uploaded.length,
     author: summaryOf(db, post.authorId),
@@ -119,8 +119,15 @@ export const photoView = (db, me, photo, { withComments = false } = {}) => {
 }
 
 /** Counts and cover only include the photos the viewer may see (co-owner privacy). */
+/** "Mis fotos" holds every photo its owner uploaded; the other albums, the ones added to them. */
+export const albumPhotos = (db, album) => {
+  if (album.kind === 'wall') return db.photos.filter((p) => p.albumId === album.id)
+  const ids = new Set(db.albumPhotos.filter((ap) => ap.albumId === album.id).map((ap) => ap.photoId))
+  return db.photos.filter((p) => ids.has(p.id))
+}
+
 export const albumView = (db, album, me) => {
-  const photos = db.photos.filter((p) => p.albumId === album.id && canViewPhoto(db, me, p)).sort(byDateAsc)
+  const photos = albumPhotos(db, album).filter((p) => canViewPhoto(db, me, p)).sort(byDateAsc)
   const cover = photos.find((p) => p.id === album.coverPhotoId) ?? photos[photos.length - 1] ?? null
   return {
     ...album,
@@ -133,15 +140,19 @@ export const albumView = (db, album, me) => {
 const RSVP_ORDER = { going: 0, maybe: 1, pending: 2, declined: 3 }
 
 export const eventView = (db, me, event) => {
-  const members = db.eventMembers.filter((m) => m.eventId === event.id)
+  const all = db.eventMembers.filter((m) => m.eventId === event.id)
+  // Who only sees a public event gets who goes or may go, never who did not
+  // answer or said no, and never anyone they have a block with.
+  const inside = isInEvent(db, me, event)
+  const members = all.filter((m) => (inside || m.status === 'going' || m.status === 'maybe') && (m.userId === me || !isBlockedBetween(db, me, m.userId)))
   const counts = { going: 0, maybe: 0, declined: 0, pending: 0 }
-  for (const m of members) counts[m.status] += 1
+  for (const m of all) if (inside || m.status === 'going' || m.status === 'maybe') counts[m.status] += 1
 
   return {
     ...event,
     creator: summaryOf(db, event.creatorId),
     isCreator: event.creatorId === me,
-    myStatus: members.find((m) => m.userId === me)?.status ?? null,
+    myStatus: all.find((m) => m.userId === me)?.status ?? null,
     counts,
     members: members
       .map((m) => ({ person: summaryOf(db, m.userId), status: m.status }))
@@ -149,6 +160,10 @@ export const eventView = (db, me, event) => {
   }
 }
 
-export const canSeeEvent = (db, me, event) => {
-  return event.creatorId === me || db.eventMembers.some((m) => m.eventId === event.id && m.userId === me)
-}
+/** Creator or invited (or joined). */
+export const isInEvent = (db, me, event) => event.creatorId === me || db.eventMembers.some((m) => m.eventId === event.id && m.userId === me)
+
+/** Also public events of your friends and friends of friends (unless blocked). */
+export const canSeeEvent = (db, me, event) =>
+  isInEvent(db, me, event) ||
+  (!!event.isPublic && !isBlockedBetween(db, me, event.creatorId) && (areFriends(db, me, event.creatorId) || mutualFriends(db, me, event.creatorId) > 0))

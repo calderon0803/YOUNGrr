@@ -80,6 +80,7 @@ watch(eventId, (id) => events.loadEvent(id), { immediate: true })
             <p class="event__creator">
               <UserAvatar :person="event.creator" size="xs" />
               <span>Organiza <PersonLink :person="event.creator" /></span>
+              <span v-if="event.isPublic" class="event__public">Público</span>
             </p>
           </div>
           <DropdownMenu v-if="event.isCreator" label="Opciones del evento" :items="MENU" @select="onMenu" />
@@ -96,7 +97,8 @@ watch(eventId, (id) => events.loadEvent(id), { immediate: true })
           </div>
         </dl>
 
-        <div v-if="!event.isCreator && event.myStatus && !past" class="event__rsvp">
+        <!-- Invited people answer; in a public event anyone who sees it joins by answering. -->
+        <div v-if="!event.isCreator && (event.myStatus || event.isPublic) && !past" class="event__rsvp">
           <RsvpControl :event="event" />
         </div>
 
@@ -145,6 +147,15 @@ watch(eventId, (id) => events.loadEvent(id), { immediate: true })
 }
 
 .event {
+  &__public {
+    padding: 0.05rem $space-2;
+    border-radius: $radius-sm;
+    background: $color-brand-tint;
+    color: $color-brand-strong;
+    font-size: $fs-xs;
+    font-weight: 700;
+  }
+
   overflow: hidden;
 
   &__image {

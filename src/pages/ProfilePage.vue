@@ -162,10 +162,20 @@ watch(tab, loadTab)
     background: $color-surface-alt;
   }
 
-  // The tabs' contents come as panels of their own; inside this block they are flat.
+  // The tabs' contents come as panels of their own; inside this block they are
+  // flat, with the same margins in every tab (the tab names the section).
   &__content :deep(> .panel) {
     border: 0;
     border-radius: 0;
+  }
+
+  &__content :deep(.photo-grid),
+  &__content :deep(.album-grid) {
+    padding: $space-3 $space-4 $space-4;
+  }
+
+  &__content :deep(.person-grid) {
+    margin-top: $space-2;
   }
 }
 

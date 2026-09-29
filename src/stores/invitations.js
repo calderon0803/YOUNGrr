@@ -8,7 +8,8 @@ import { useToast } from '@/composables/useToast'
 export const useInvitationsStore = defineStore('invitations', () => {
   const toast = useToast()
 
-  const state = reactive({ status: 'idle', error: null, available: 0, items: [] })
+  /** nextAt: when the next invitation arrives (null once all have been earned). */
+  const state = reactive({ status: 'idle', error: null, available: 0, nextAt: null, items: [] })
 
   const load = async () => {
     state.status = state.status === 'success' ? 'success' : 'loading'
@@ -21,9 +22,9 @@ export const useInvitationsStore = defineStore('invitations', () => {
     }
   }
 
-  /** Creates (or returns the pending) invitation for that email; throws on error. */
-  const invite = async (email) => {
-    const invitation = await invitationsService.createInvitation(email)
+  /** Creates a new single-use invitation link; throws on error. */
+  const invite = async () => {
+    const invitation = await invitationsService.createInvitation()
     await load()
     return invitation
   }

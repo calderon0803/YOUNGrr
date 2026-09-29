@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { Tag, X } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
@@ -11,6 +12,7 @@ import GrrersDialog from '@/components/feed/GrrersDialog.vue'
 import CommentItem from '@/components/feed/CommentItem.vue'
 import CommentForm from '@/components/feed/CommentForm.vue'
 import CoOwnerDialog from '@/components/photos/CoOwnerDialog.vue'
+import PhotoToAlbumDialog from '@/components/photos/PhotoToAlbumDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePhotosStore } from '@/stores/photos'
 import { useConfirm } from '@/composables/useConfirm'
@@ -31,6 +33,7 @@ const props = defineProps({
 const emit = defineEmits(['toggle-tagging', 'highlight', 'close'])
 
 // STORES
+const route = useRoute()
 const auth = useAuthStore()
 const photos = usePhotosStore()
 const { confirm } = useConfirm()
@@ -44,18 +47,25 @@ const showGrrers = ref(false)
 const sharing = ref(false)
 const answering = ref(false)
 const reporting = ref(false)
+const toAlbum = ref(false)
 
 // COMPUTED
 // Uploader and accepted co-owners have the same rights.
 const isOwner = computed(() => !!props.photo.isOwner)
 const sharedOwnership = computed(() => (props.photo.owners?.length ?? 1) > 1)
 const owners = computed(() => props.photo.owners ?? [props.photo.owner])
-const album = computed(() => photos.albums[props.photo.albumId])
+// The album being looked at, when the photo is opened from one of your albums.
+const album = computed(() => {
+  const viewed = route.name === 'album' ? photos.albums[String(route.params.id)] : null
+  return viewed?.ownerId === auth.meId ? viewed : null
+})
 const OTHER_MENU = [{ key: 'report', label: 'Reportar', danger: true }]
 const menuItems = computed(() => [
   { key: 'caption', label: props.photo.caption ? 'Editar pie de foto' : 'Añadir pie de foto' },
-  // The album belongs to the uploader.
-  ...(props.photo.isUploader && album.value?.kind === 'user' ? [{ key: 'cover', label: 'Usar como portada del álbum' }] : []),
+  { key: 'album', label: 'Añadir a un álbum' },
+  ...(album.value ? [{ key: 'cover', label: 'Usar como portada del álbum' }] : []),
+  // It stays in "Mis fotos" and in any other album.
+  ...(album.value?.kind === 'user' ? [{ key: 'remove', label: 'Quitar de este álbum' }] : []),
   { key: 'share', label: 'Compartir la foto con amigos' },
   { key: 'delete', label: sharedOwnership.value ? 'Quitar de mi perfil' : 'Eliminar fotografía', danger: true },
 ])
@@ -71,8 +81,12 @@ const onMenu = async (key) => {
   } else if (key === 'caption') {
     caption.value = props.photo.caption
     editingCaption.value = true
+  } else if (key === 'album') {
+    toAlbum.value = true
   } else if (key === 'cover') {
-    photos.setCover(props.photo.albumId, props.photo.id)
+    photos.setCover(album.value.id, props.photo.id)
+  } else if (key === 'remove') {
+    photos.removeFromAlbum(album.value.id, props.photo.id)
   } else if (key === 'share') {
     sharing.value = true
   } else if (key === 'delete') {
@@ -202,6 +216,7 @@ watch(
     </section>
 
     <CoOwnerDialog v-if="isOwner" :open="sharing" :photo="photo" @close="sharing = false" />
+    <PhotoToAlbumDialog v-if="isOwner" :open="toAlbum" :photo-id="photo.id" @close="toAlbum = false" />
     <ReportDialog v-if="!isOwner" :open="reporting" kind="photo" :target-id="photo.id" @close="reporting = false" />
     <GrrersDialog v-if="showGrrers" :open="showGrrers" target-type="photo" :target-id="photo.id" @close="showGrrers = false" />
   </div>

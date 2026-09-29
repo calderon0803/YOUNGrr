@@ -8,7 +8,7 @@ import { useFeedStore } from '@/stores/feed'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import { fullName } from '@/utils/text'
-import { SUGGESTIONS_MAX } from '@/config/app'
+import { SUGGESTIONS_LIMIT } from '@/config/app'
 
 export const useFriendsStore = defineStore('friends', () => {
   const toast = useToast()
@@ -53,7 +53,7 @@ export const useFriendsStore = defineStore('friends', () => {
   const loadSuggestions = async () => {
     suggestions.status = 'loading'
     try {
-      suggestions.items = await usersService.suggestions({ limit: SUGGESTIONS_MAX })
+      suggestions.items = await usersService.suggestions({ limit: SUGGESTIONS_LIMIT })
       suggestions.status = 'success'
     } catch {
       suggestions.status = 'error'

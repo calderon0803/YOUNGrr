@@ -38,12 +38,14 @@ const open = (index) => photos.openViewer(items.value.map((p) => p.id), index)
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
+  gap: $space-1;
   margin: 0;
 
   &__item {
     aspect-ratio: 1;
     min-width: 0;
+    overflow: hidden;
+    border-radius: $radius-sm;
     background: $color-skeleton;
   }
 
@@ -103,7 +105,7 @@ const open = (index) => photos.openViewer(items.value.map((p) => p.id), index)
 @media (min-width: $bp-tablet) {
   .photo-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: $space-1;
+    gap: $space-2;
   }
 }
 

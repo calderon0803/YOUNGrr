@@ -41,7 +41,8 @@ import { LIMITS } from '@/utils/validation'
         el número, no quién te visita).
       </li>
       <li>
-        <strong>Invitaciones:</strong> el correo de la persona a la que invitas, hasta que la invitación se usa o caduca.
+        <strong>Invitaciones:</strong> los enlaces que creas, quién entró con cada uno y cuándo. No guardamos datos de la
+        persona invitada hasta que crea su cuenta.
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
@@ -64,11 +65,11 @@ import { LIMITS } from '@/utils/validation'
         <strong>Seguridad y convivencia</strong> (comprobar la edad, límites de uso, bloqueos, revisar reportes y retirar
         contenido que incumple las normas): interés legítimo en mantener una red segura (art. 6.1.f RGPD).
       </li>
-      <li>
-        <strong>Invitaciones:</strong> interés legítimo de quien invita y de YOUNGrr en que puedas unirte. El correo solo
-        se usa para comprobar la invitación.
-      </li>
     </ul>
+    <p>
+      Antes de subir una foto, la app comprueba en tu propio dispositivo que no parezca contener desnudos o contenido
+      sexual. Esa comprobación no envía la foto a nadie ni guarda el resultado: si no la supera, simplemente no se sube.
+    </p>
     <p>
       No vendemos tus datos, no mostramos publicidad, no hacemos perfiles comerciales y no tomamos decisiones
       automatizadas que te afecten de forma importante.
@@ -80,6 +81,22 @@ import { LIMITS } from '@/utils/validation'
       ve quien permitas en <em>Configuración &gt; Privacidad</em>. Los mensajes privados solo los ven las personas de la
       conversación. Quien modera solo accede al contenido que se ha reportado.
     </p>
+    <ul>
+      <li>
+        <strong>Sugerencias de amistad:</strong> puedes aparecer como sugerencia, con tu nombre, tu foto y cuántos amigos
+        tenéis en común, a personas con las que compartes algún amigo. Si en <em>Configuración &gt; Privacidad</em> no
+        admites solicitudes de amistad, no apareces.
+      </li>
+      <li>
+        <strong>Eventos públicos:</strong> un evento público lo ven los amigos de quien lo organiza y los amigos de sus
+        amigos, incluida la lista de quién va. Si te apuntas a uno, esas personas verán tu nombre y tu respuesta. Los
+        eventos con invitación solo los ven quien los organiza y las personas invitadas.
+      </li>
+      <li>
+        <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro, sus eventos
+        públicos y sus sugerencias. No se avisa a la otra persona.
+      </li>
+    </ul>
     <p>Además, estos proveedores tratan datos por nuestra cuenta, solo para prestar el servicio:</p>
     <ul>
       <li><strong>Supabase</strong>: base de datos, cuentas, archivos y correos de la cuenta. Los datos se guardan en la Unión Europea.</li>
@@ -100,7 +117,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><th scope="col">Dato</th><th scope="col">Se borra</th></tr>
       </thead>
       <tbody>
-        <tr><td>Invitaciones sin usar</td><td>Al caducar</td></tr>
+        <tr><td>Enlaces de invitación sin usar</td><td>Al caducar (30 días)</td></tr>
         <tr><td>Avisos ya vistos</td><td>A los 90 días</td></tr>
         <tr><td>Avisos no vistos</td><td>Al año</td></tr>
         <tr><td>Solicitudes de amistad rechazadas o canceladas</td><td>A los 30 días</td></tr>

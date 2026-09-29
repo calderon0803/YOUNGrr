@@ -38,7 +38,6 @@ const accountMenu = computed(() => [
 const tabs = computed(() => [
   { to: { name: 'home' }, label: 'Inicio', count: notifications.total, badge: 'novedades', match: ['home'] },
   { to: { name: 'friends' }, label: 'Amigos', count: friends.incomingCount, badge: 'solicitudes pendientes', match: ['friends'] },
-  { to: { name: 'photos' }, label: 'Fotos', match: ['photos', 'album', 'photo'] },
   { to: { name: 'events' }, label: 'Eventos', count: events.pendingCount, badge: 'invitaciones pendientes', match: ['events', 'event'] },
 ])
 

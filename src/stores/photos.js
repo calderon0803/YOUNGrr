@@ -81,7 +81,6 @@ export const usePhotosStore = defineStore('photos', () => {
 
   const loadUserPhotos = (userId) => loadList(`user:${userId}`, () => photosService.listUserPhotos(userId))
   const loadTaggedPhotos = (userId) => loadList(`tagged:${userId}`, () => photosService.listTaggedPhotos(userId))
-  const loadFriendsPhotos = () => loadList('friends', () => photosService.listFriendsPhotos())
 
   const refreshAlbum = (album) => {
     albums[album.id] = album
@@ -101,27 +100,67 @@ export const usePhotosStore = defineStore('photos', () => {
     toast.success('Álbum actualizado.')
   }
 
-  const deleteAlbum = async (albumId) => {
+  /** @param {'album' | 'exclusive' | 'all'} mode only the album, also the photos only in it, or also all its photos */
+  const deleteAlbum = async (albumId, mode = 'album') => {
     const ownerId = albums[albumId]?.ownerId
-    await photosService.deleteAlbum(albumId)
+    await photosService.deleteAlbum(albumId, mode)
     if (ownerId && albumsByUser[ownerId]) albumsByUser[ownerId].ids = albumsByUser[ownerId].ids.filter((id) => id !== albumId)
     delete albums[albumId]
     delete albumDetail[albumId]
-    toast.success('Álbum eliminado.')
+    // Some photos went too: the lists that had them load again when shown.
+    if (mode !== 'album') forgetOwnerLists(ownerId)
+    toast.success(mode === 'album' ? 'Álbum eliminado. Sus fotos siguen en Mis fotos.' : 'Álbum y fotos eliminados.')
   }
 
-  /** @param {string[]} coOwnerIds friends invited to co-own the uploaded photos */
-  const addPhotos = async (albumId, items, coOwnerIds = []) => {
-    const added = await photosService.addPhotos(albumId, items, coOwnerIds)
+  /** Drops the cached albums and photo lists of a person, to load them again. */
+  const forgetOwnerLists = (ownerId) => {
+    for (const key of Object.keys(lists)) if (key.endsWith(`:${ownerId}`)) delete lists[key]
+    for (const [id, album] of Object.entries(albums)) if (album.ownerId === ownerId) delete albumDetail[id]
+    delete albumsByUser[ownerId]
+  }
+
+  /**
+   * Every photo goes to "Mis fotos".
+   * @param {string[]} coOwnerIds friends invited to co-own the uploaded photos
+   */
+  const uploadPhotos = async (items, coOwnerIds = []) => {
+    const added = await photosService.uploadPhotos(items, coOwnerIds)
     const ids = keep(added)
-    if (albumDetail[albumId]) albumDetail[albumId].ids = [...albumDetail[albumId].ids, ...ids]
-    const album = albums[albumId]
-    if (album) {
-      album.photoCount += ids.length
-      album.coverUrl ??= added[0]?.url ?? null
+    const ownerId = added[0]?.ownerId
+    const defaultAlbum = Object.values(albums).find((a) => a.ownerId === ownerId && a.kind === 'wall')
+    if (defaultAlbum) {
+      if (albumDetail[defaultAlbum.id]) albumDetail[defaultAlbum.id].ids = [...albumDetail[defaultAlbum.id].ids, ...ids]
+      defaultAlbum.photoCount += ids.length
+      defaultAlbum.coverUrl ??= added[0]?.url ?? null
     }
+    const own = lists[`user:${ownerId}`]
+    if (own) own.ids = [...ids, ...own.ids]
     const uploaded = ids.length === 1 ? 'Fotografía subida.' : `${ids.length} fotografías subidas.`
     toast.success(coOwnerIds.length ? `${uploaded} Invitación para compartirla enviada.` : uploaded)
+  }
+
+  /** Adds photos already uploaded to one of your albums. */
+  const addToAlbum = async (albumId, photoIds) => {
+    refreshAlbum(await photosService.addToAlbum(albumId, photoIds))
+    const detail = albumDetail[albumId]
+    if (detail) detail.ids = [...detail.ids, ...photoIds.filter((id) => !detail.ids.includes(id))]
+    toast.success(photoIds.length === 1 ? `Foto añadida a ${albums[albumId].title}.` : `${photoIds.length} fotos añadidas a ${albums[albumId].title}.`)
+  }
+
+  const removeFromAlbum = async (albumId, photoId) => {
+    try {
+      refreshAlbum(await photosService.removeFromAlbum(albumId, photoId))
+      const detail = albumDetail[albumId]
+      if (detail) detail.ids = detail.ids.filter((id) => id !== photoId)
+      if (viewer.open && viewer.ids.includes(photoId)) {
+        viewer.ids = viewer.ids.filter((id) => id !== photoId)
+        if (!viewer.ids.length) closeViewer()
+        else viewer.index = Math.min(viewer.index, viewer.ids.length - 1)
+      }
+      toast.success('Foto quitada del álbum. Sigue en Mis fotos.')
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
   }
 
   const setCover = async (albumId, photoId) => {
@@ -143,10 +182,14 @@ export const usePhotosStore = defineStore('photos', () => {
     const photo = photos[photoId]
     try {
       const result = await photosService.deletePhoto(photoId)
+      // Every album that showed it has one photo less.
+      for (const [id, detail] of Object.entries(albumDetail)) {
+        if (detail.ids.includes(photoId) && albums[id]) albums[id].photoCount -= 1
+      }
+      if (photo && !albumDetail[photo.albumId] && albums[photo.albumId]) albums[photo.albumId].photoCount -= 1
       for (const state of [...Object.values(albumDetail), ...Object.values(lists)]) {
         state.ids = state.ids.filter((id) => id !== photoId)
       }
-      if (photo && albums[photo.albumId]) albums[photo.albumId].photoCount -= 1
       if (viewer.open) {
         viewer.ids = viewer.ids.filter((id) => id !== photoId)
         if (!viewer.ids.length) closeViewer()
@@ -305,11 +348,12 @@ export const usePhotosStore = defineStore('photos', () => {
     loadAlbum,
     loadUserPhotos,
     loadTaggedPhotos,
-    loadFriendsPhotos,
     createAlbum,
     updateAlbum,
     deleteAlbum,
-    addPhotos,
+    uploadPhotos,
+    addToAlbum,
+    removeFromAlbum,
     setCover,
     updateCaption,
     deletePhoto,

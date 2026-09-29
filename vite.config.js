@@ -57,7 +57,9 @@ export default defineConfig(({ command, mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,ico,woff2}', 'pwa-*.png', 'maskable-*.png', 'apple-touch-icon-*.png'],
-          globIgnores: ['**/*-cyrillic*', '**/*-greek*', '**/*-vietnamese*'],
+          // The image check model (several MB, see utils/imageCheck.js) is only
+          // downloaded when someone uploads an image: it stays out of the precache.
+          globIgnores: ['**/*-cyrillic*', '**/*-greek*', '**/*-vietnamese*', '**/group1-shard*', '**/model.min-*'],
           // No offline mode: only the app shell is precached (fast start, install,
           // and the "sin conexión" screen). Data and photos always need the network.
           navigateFallback: '/index.html',

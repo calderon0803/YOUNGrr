@@ -5,7 +5,6 @@ import {
   canViewPhoto,
   canViewProfile,
   findOr404,
-  friendIdsOf,
   isPhotoOwner,
   pendingOwnerInvite,
   photoOwnerIds,
@@ -13,7 +12,8 @@ import {
   summaryOf,
 } from '@/services/local/access'
 import { dropNotifications, notify } from '@/services/local/notify'
-import { albumView, photoView } from '@/services/local/views'
+import { albumPhotos, albumView, photoView } from '@/services/local/views'
+import { DEFAULT_ALBUM_TITLE } from '@/config/app'
 import { removePhotoCascade } from '@/services/local/posts.local'
 import { ensure, ensureAccess, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
@@ -50,7 +50,7 @@ const wallAlbumOf = (db, userId) => {
   let wall = db.albums.find((a) => a.ownerId === userId && a.kind === 'wall')
   if (!wall) {
     const createdAt = nowIso()
-    wall = { id: uid('a'), ownerId: userId, kind: 'wall', title: 'Fotos del muro', description: 'Fotografías publicadas en el muro.', coverPhotoId: null, createdAt, updatedAt: createdAt }
+    wall = { id: uid('a'), ownerId: userId, kind: 'wall', title: DEFAULT_ALBUM_TITLE, description: '', coverPhotoId: null, createdAt, updatedAt: createdAt }
     db.albums.push(wall)
   }
   return wall
@@ -77,6 +77,9 @@ const inviteOwners = (db, me, photo, userIds) => {
  * @returns {'deleted' | 'left'}
  */
 const leavePhoto = (db, me, photo) => {
+  // Whoever leaves the photo takes it out of their albums.
+  const mine = new Set(db.albums.filter((a) => a.ownerId === me).map((a) => a.id))
+  db.albumPhotos = db.albumPhotos.filter((ap) => !(ap.photoId === photo.id && mine.has(ap.albumId)))
   const others = photoOwnerIds(db, photo).filter((id) => id !== me)
   if (!others.length) {
     removePhotoCascade(db, photo.id)
@@ -106,8 +109,8 @@ export const localPhotosService = {
     return db.albums
       .filter((a) => a.ownerId === userId)
       .map((a) => albumView(db, a, me))
-      .filter((a) => a.kind === 'user' || a.photoCount > 0)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      // "Mis fotos" first, then the other albums by last change.
+      .sort((a, b) => (b.kind === 'wall') - (a.kind === 'wall') || b.updatedAt.localeCompare(a.updatedAt))
   },
 
   async getAlbum(albumId) {
@@ -119,8 +122,8 @@ export const localPhotosService = {
     return {
       album: albumView(db, album, me),
       // A co-owner's privacy can hide some photos of the album.
-      photos: db.photos
-        .filter((p) => p.albumId === albumId && canViewPhoto(db, me, p))
+      photos: albumPhotos(db, album)
+        .filter((p) => canViewPhoto(db, me, p))
         .sort(byDateAsc)
         .map((p) => photoView(db, me, p)),
       canEdit: album.ownerId === me,
@@ -153,14 +156,25 @@ export const localPhotosService = {
     return albumView(db, album, me)
   },
 
-  /** Photos shared with co-owners are not lost: they move to the other owner. */
-  async deleteAlbum(albumId) {
+  /**
+   * @param {'album' | 'exclusive' | 'all'} mode only the album, also the photos
+   *   in no other album of yours, or also all its photos. Photos shared with
+   *   co-owners are not lost: they stay with the other owners.
+   */
+  async deleteAlbum(albumId, mode = 'album') {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
     const album = ownAlbum(db, me, albumId)
     ensure(album.kind === 'user', 'forbidden', 'Este álbum no se puede eliminar.')
-    for (const photo of db.photos.filter((p) => p.albumId === albumId)) leavePhoto(db, me, photo)
+    if (mode !== 'album') {
+      const myOtherAlbums = new Set(db.albums.filter((a) => a.ownerId === me && a.id !== albumId).map((a) => a.id))
+      const inOtherAlbum = (photo) => db.albumPhotos.some((ap) => ap.photoId === photo.id && myOtherAlbums.has(ap.albumId))
+      for (const photo of albumPhotos(db, album)) {
+        if (isPhotoOwner(db, me, photo) && (mode === 'all' || !inOtherAlbum(photo))) leavePhoto(db, me, photo)
+      }
+    }
+    db.albumPhotos = db.albumPhotos.filter((ap) => ap.albumId !== albumId)
     db.albums = db.albums.filter((a) => a.id !== albumId)
     db.posts = db.posts.filter((p) => p.albumId !== albumId)
     await commit()
@@ -171,7 +185,7 @@ export const localPhotosService = {
     const db = await getDb()
     const me = requireUserId(db)
     const album = ownAlbum(db, me, albumId)
-    ensure(db.photos.some((p) => p.id === photoId && p.albumId === albumId), 'not_found', 'La foto no está en este álbum.')
+    ensure(albumPhotos(db, album).some((p) => p.id === photoId), 'not_found', 'La foto no está en este álbum.')
     album.coverPhotoId = photoId
     await commit()
     return albumView(db, album, me)
@@ -181,13 +195,15 @@ export const localPhotosService = {
    * @param {{ dataUrl: string, width: number, height: number, caption: string }[]} items
    * @param {string[]} coOwnerIds friends invited to co-own every uploaded photo
    */
-  async addPhotos(albumId, items, coOwnerIds = []) {
+  async uploadPhotos(items, coOwnerIds = []) {
     validate(items.length ? null : 'Elige al menos una fotografía.')
     items.forEach((item) => validate(rules.max(item.caption, LIMITS.caption, 'El pie de foto')))
     await latency(250, 500)
     const db = await getDb()
     const me = requireUserId(db)
-    const album = ownAlbum(db, me, albumId)
+    // Every photo is uploaded to "Mis fotos".
+    const album = wallAlbumOf(db, me)
+    const albumId = album.id
     coOwnerIds.forEach((id) => ensure(areFriends(db, me, id), 'forbidden', 'Solo puedes compartir la foto con tus amigos.'))
     const createdAt = nowIso()
     const added = items.map((item, i) => {
@@ -207,12 +223,41 @@ export const localPhotosService = {
       return photo
     })
     album.updatedAt = createdAt
-    // "X ha subido N fotos al álbum Y" in the friends' news.
-    if (album.kind === 'user') {
-      db.posts.push({ id: uid('p'), authorId: me, kind: 'album_upload', albumId, photoIds: added.map((p) => p.id), text: '', photoId: null, createdAt, updatedAt: null })
-    }
+    // "X ha subido N fotos" in the friends' news.
+    db.posts.push({ id: uid('p'), authorId: me, kind: 'album_upload', albumId, photoIds: added.map((p) => p.id), text: '', photoId: null, createdAt, updatedAt: null })
     await commit()
     return added.map((p) => photoView(db, me, p))
+  },
+
+  /** Adds photos you own (uploaded or shared with you) to one of your albums. */
+  async addToAlbum(albumId, photoIds) {
+    validate(photoIds.length ? null : 'Elige al menos una fotografía.')
+    await latency(80, 160)
+    const db = await getDb()
+    const me = requireUserId(db)
+    const album = ownAlbum(db, me, albumId)
+    ensure(album.kind === 'user', 'forbidden', 'Solo puedes añadir fotos a tus álbumes.')
+    const addedAt = nowIso()
+    for (const photoId of photoIds) {
+      ownedPhoto(db, me, photoId)
+      if (!db.albumPhotos.some((ap) => ap.albumId === albumId && ap.photoId === photoId)) db.albumPhotos.push({ albumId, photoId, addedAt })
+    }
+    album.updatedAt = addedAt
+    await commit()
+    return albumView(db, album, me)
+  },
+
+  /** The photo stays in "Mis fotos" and in any other album. */
+  async removeFromAlbum(albumId, photoId) {
+    await latency(80, 160)
+    const db = await getDb()
+    const me = requireUserId(db)
+    const album = ownAlbum(db, me, albumId)
+    ensure(album.kind === 'user', 'forbidden', 'Solo puedes modificar tus álbumes.')
+    db.albumPhotos = db.albumPhotos.filter((ap) => !(ap.albumId === albumId && ap.photoId === photoId))
+    if (album.coverPhotoId === photoId) album.coverPhotoId = null
+    await commit()
+    return albumView(db, album, me)
   },
 
   async updateCaption(photoId, caption) {
@@ -304,18 +349,6 @@ export const localPhotosService = {
   },
 
   /** Latest photos from friends, for the Photos page. */
-  async listFriendsPhotos({ limit = 24 } = {}) {
-    await latency()
-    const db = await getDb()
-    const me = requireUserId(db)
-    const friends = new Set(friendIdsOf(db, me))
-    return db.photos
-      .filter((p) => photoOwnerIds(db, p).some((id) => friends.has(id)) && !isPhotoOwner(db, me, p) && canViewPhoto(db, me, p))
-      .sort(byDateDesc)
-      .slice(0, limit)
-      .map((p) => photoView(db, me, p))
-  },
-
   /** Only the photo's owners can tag, each one themselves or their own friends. */
   async addTag(photoId, userId, x, y) {
     await latency()

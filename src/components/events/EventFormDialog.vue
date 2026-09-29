@@ -23,7 +23,11 @@ const emit = defineEmits(['close', 'saved'])
 const events = useEventsStore()
 
 // DATA
-const form = reactive({ title: '', description: '', imageUrl: null, date: '', time: '21:00', location: '' })
+const form = reactive({ title: '', description: '', imageUrl: null, date: '', time: '21:00', location: '', isPublic: false })
+const VISIBILITY = [
+  { value: false, label: 'Con invitación', hint: 'Solo lo ven las personas que invites.' },
+  { value: true, label: 'Público', hint: 'Lo ven tus amigos y los amigos de tus amigos, con la lista de quién va, y pueden apuntarse sin invitación.' },
+]
 const invitees = ref([])
 const errors = reactive({})
 const saving = ref(false)
@@ -78,6 +82,7 @@ watch(
       date: e?.date ?? toDateInput(new Date(Date.now() + 7 * 86_400_000)),
       time: e?.time ?? '21:00',
       location: e?.location ?? '',
+      isPublic: e?.isPublic ?? false,
     })
     invitees.value = []
     Object.keys(errors).forEach((k) => (errors[k] = null))
@@ -130,6 +135,17 @@ watch(
         <p id="ev-location-error" class="field__error">{{ errors.location }}</p>
       </div>
 
+      <fieldset class="field event-visibility">
+        <legend class="field__label">¿Quién puede verlo?</legend>
+        <label v-for="option in VISIBILITY" :key="String(option.value)" class="event-visibility__option">
+          <input v-model="form.isPublic" type="radio" name="event-visibility" :value="option.value" />
+          <span>
+            <strong>{{ option.label }}</strong>
+            <span class="event-visibility__hint">{{ option.hint }}</span>
+          </span>
+        </label>
+      </fieldset>
+
       <div class="field">
         <label class="field__label" for="ev-description">Descripción</label>
         <textarea id="ev-description" v-model="form.description" class="textarea" rows="4" :maxlength="LIMITS.eventDescription" placeholder="Cuéntales el plan" />
@@ -148,6 +164,42 @@ watch(
 </template>
 
 <style lang="scss" scoped>
+.event-visibility {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  &__option {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-2;
+    padding: $space-2 $space-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    cursor: pointer;
+
+    input {
+      flex-shrink: 0;
+      margin-top: 0.25rem;
+      accent-color: $color-brand;
+    }
+
+    &:has(input:checked) {
+      border-color: $color-brand;
+      background: $color-brand-tint;
+    }
+  }
+
+  &__hint {
+    display: block;
+    font-size: $fs-sm;
+    color: $color-text-muted;
+  }
+}
+
 .event-form {
   &__image {
     display: flex;
@@ -169,7 +221,7 @@ watch(
 
   &__row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: $space-3;
   }
 }

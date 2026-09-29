@@ -24,7 +24,8 @@ const routes = [
   app('/profile/:id', 'profile', () => import('@/pages/ProfilePage.vue'), { title: 'Perfil' }),
   app('/post/:id', 'post', () => import('@/pages/PostPage.vue'), { title: 'Novedad' }),
   app('/friends', 'friends', () => import('@/pages/FriendsPage.vue'), { title: 'Amigos' }),
-  app('/photos', 'photos', () => import('@/pages/PhotosPage.vue'), { title: 'Fotos' }),
+  // Photos live on the profiles; old links go to your own photos.
+  { path: '/photos', redirect: { name: 'my-profile', query: { tab: 'photos' } } },
   app('/photos/news', 'photo-news', () => import('@/pages/PhotoNewsPage.vue'), { title: 'Novedades de tus fotos' }),
   app('/photo/:id', 'photo', () => import('@/pages/PhotoPage.vue'), { title: 'Fotografía' }),
   app('/albums/:id', 'album', () => import('@/pages/AlbumPage.vue'), { title: 'Álbum' }),
@@ -62,7 +63,7 @@ router.beforeEach(async (to, from) => {
   // page sets a new password too, and the legal texts must stay readable).
   if (auth.needsSetup && to.name !== 'setup' && to.name !== 'reset-password' && !to.meta.public) return { name: 'setup' }
   if (to.name === 'setup' && !auth.needsSetup) return { name: 'home' }
-  if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId } }
+  if (to.name === 'my-profile') return { name: 'profile', params: { id: auth.meId }, query: to.query }
   if (to.meta.moderator && !(await useModerationStore().checkModerator())) return { name: 'home' }
   // From tablet up, messages live in the chat dock instead of a page.
   if ((to.name === 'messages' || to.name === 'conversation') && window.matchMedia(`(min-width: ${BREAKPOINTS.tablet}px)`).matches) {

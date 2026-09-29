@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Images } from 'lucide-vue-next'
 import { fullDate } from '@/utils/time'
 import { plural } from '@/utils/text'
+import { DEFAULT_ALBUM_TITLE } from '@/config/app'
 
 // PROPS
 const props = defineProps({
@@ -11,7 +12,7 @@ const props = defineProps({
 })
 
 // COMPUTED
-const title = computed(() => (props.album.kind === 'wall' ? 'Fotos del muro' : props.album.title))
+const title = computed(() => (props.album.kind === 'wall' ? DEFAULT_ALBUM_TITLE : props.album.title))
 </script>
 
 <template>

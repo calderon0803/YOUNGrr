@@ -3,7 +3,7 @@
 // at a real backend without touching stores or components.
 import { del, get, keys, set } from 'idb-keyval'
 import { buildSeed } from '@/data/seed'
-import { STORAGE_KEYS } from '@/config/app'
+import { DEFAULT_ALBUM_TITLE, STORAGE_KEYS } from '@/config/app'
 import { ensure } from '@/services/errors'
 
 const KEY = STORAGE_KEYS.db
@@ -12,6 +12,30 @@ const KEY_PREFIX = KEY.replace(/v\d+$/, '')
 let db = null
 let loading = null
 let storageAvailable = true
+
+/**
+ * Every photo lives in its owner's "Mis fotos"; the other albums only list the
+ * photos added to them (same change as the default_album migration).
+ */
+const toDefaultAlbums = (db) => {
+  db.albumPhotos = []
+  const mine = (ownerId) => {
+    let album = db.albums.find((a) => a.ownerId === ownerId && a.kind === 'wall')
+    if (!album) {
+      album = { id: `wall_${ownerId}`, ownerId, kind: 'wall', title: DEFAULT_ALBUM_TITLE, description: '', coverPhotoId: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      db.albums.push(album)
+    }
+    return album
+  }
+  for (const album of db.albums) if (album.kind === 'wall') Object.assign(album, { title: DEFAULT_ALBUM_TITLE, description: '' })
+  for (const photo of db.photos) {
+    const album = db.albums.find((a) => a.id === photo.albumId)
+    if (album?.kind === 'user') {
+      db.albumPhotos.push({ albumId: album.id, photoId: photo.id, addedAt: photo.createdAt })
+      photo.albumId = mine(photo.ownerId).id
+    }
+  }
+}
 
 const load = async () => {
   let stored = null
@@ -28,6 +52,7 @@ const load = async () => {
   db.moderators ??= []
   db.blocks ??= []
   db.wallMessages ??= []
+  if (!db.albumPhotos) toDefaultAlbums(db)
   if (!stored) {
     await commit()
     await dropOldVersions()

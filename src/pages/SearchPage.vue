@@ -122,6 +122,7 @@ watch(
 
   &__events {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: $space-3;
     margin: 0;
   }

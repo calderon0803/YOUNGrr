@@ -9,7 +9,7 @@ import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { DEFAULT_ALBUM_TITLE, LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
 
 // Auth for the local demo backend (IndexedDB). Same interface as auth.supabase.js.
 
@@ -71,7 +71,7 @@ export const localAuthService = {
     const normalizedEmail = email.trim().toLowerCase()
     ensure(!db.users.some((u) => u.email === normalizedEmail), 'conflict', 'Ya existe una cuenta con ese correo.')
     const invitation = findPendingInvitation(db, inviteToken, normalizedEmail)
-    ensure(invitation, 'forbidden', 'La invitación no es válida para ese correo o ya se ha usado.')
+    ensure(invitation, 'forbidden', 'Este enlace de invitación ya no es válido: puede que ya se haya usado o que haya caducado.')
 
     const id = uid('u')
     const salt = randomSalt()
@@ -105,8 +105,8 @@ export const localAuthService = {
       id: uid('a'),
       ownerId: id,
       kind: 'wall',
-      title: 'Fotos del muro',
-      description: 'Fotografías publicadas en el muro.',
+      title: DEFAULT_ALBUM_TITLE,
+      description: '',
       coverPhotoId: null,
       createdAt,
       updatedAt: createdAt,

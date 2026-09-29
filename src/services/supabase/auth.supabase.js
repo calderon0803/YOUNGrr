@@ -111,7 +111,7 @@ export const supabaseAuthService = {
     })
     // The database rejects sign ups without a valid invitation or under 18.
     if (error && /database error saving new user/i.test(error.message ?? '')) {
-      throw new ApiError('forbidden', 'No se ha podido crear la cuenta. Comprueba tu fecha de nacimiento y que la invitación sea para este correo. Si acabas de recargar, vuelve a aceptar las condiciones.')
+      throw new ApiError('forbidden', 'No se ha podido crear la cuenta. Comprueba tu fecha de nacimiento y que el enlace de invitación siga siendo válido (solo sirve una vez).')
     }
     // An email already registered gets the same answer as a new one.
     if (error && NEUTRAL_EMAIL_ERRORS.includes(error.code)) return { profile: null, needsConfirmation: true }

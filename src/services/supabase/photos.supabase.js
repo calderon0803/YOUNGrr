@@ -47,9 +47,23 @@ export const supabasePhotosService = {
     return album
   },
 
-  async deleteAlbum(albumId) {
-    const paths = await rpc('delete_album', { target: albumId }, 'No se ha podido eliminar el álbum.')
+  /** @param {'album' | 'exclusive' | 'all'} mode what goes with the album (see delete_album) */
+  async deleteAlbum(albumId, mode = 'album') {
+    const paths = await rpc('delete_album', { target: albumId, mode }, 'No se ha podido eliminar el álbum.')
     await removePhotos(paths).catch(() => {})
+  },
+
+  /** Adds photos you own to one of your albums; returns the album. */
+  async addToAlbum(albumId, photoIds) {
+    validate(photoIds.length ? null : 'Elige al menos una fotografía.')
+    const [album] = await albumsWithUrls([await rpc('add_to_album', { target: albumId, photo_ids: photoIds }, 'No se han podido añadir las fotos al álbum.')])
+    return album
+  },
+
+  /** The photo stays in "Mis fotos" and in any other album; returns the album. */
+  async removeFromAlbum(albumId, photoId) {
+    const [album] = await albumsWithUrls([await rpc('remove_from_album', { target: albumId, photo: photoId }, 'No se ha podido quitar la foto del álbum.')])
+    return album
   },
 
   async setCover(albumId, photoId) {
@@ -61,7 +75,7 @@ export const supabasePhotosService = {
    * @param {{ dataUrl: string, width: number, height: number, caption: string }[]} items
    * @param {string[]} coOwnerIds friends invited to co-own every uploaded photo
    */
-  async addPhotos(albumId, items, coOwnerIds = []) {
+  async uploadPhotos(items, coOwnerIds = []) {
     validate(items.length ? null : 'Elige al menos una fotografía.')
     items.forEach((item) => validate(rules.max(item.caption, LIMITS.caption, 'El pie de foto')))
     const me = await currentUserId()
@@ -70,7 +84,7 @@ export const supabasePhotosService = {
       for (const item of items) {
         uploaded.push({ path: await uploadPhoto(me, item.dataUrl), width: item.width, height: item.height, caption: item.caption })
       }
-      const added = await rpc('add_photos', { target: albumId, items: uploaded, co_owner_ids: coOwnerIds }, 'No se han podido subir las fotografías.')
+      const added = await rpc('upload_photos', { items: uploaded, co_owner_ids: coOwnerIds }, 'No se han podido subir las fotografías.')
       return photosWithUrls(added)
     } catch (error) {
       // Do not leave orphan files if the upload could not be completed.
@@ -115,10 +129,6 @@ export const supabasePhotosService = {
 
   async listTaggedPhotos(userId) {
     return photosWithUrls(await rpc('list_tagged_photos', { target: userId }, 'No se han podido cargar las fotografías.'))
-  },
-
-  async listFriendsPhotos({ limit = 24 } = {}) {
-    return photosWithUrls(await rpc('list_friends_photos', { max_results: limit }, 'No se han podido cargar las fotografías.'))
   },
 
   async addTag(photoId, userId, x, y) {

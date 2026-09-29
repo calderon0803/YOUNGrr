@@ -29,7 +29,7 @@ onMounted(load)
 
 <template>
   <section class="panel" aria-labelledby="profile-friends-title">
-    <h2 id="profile-friends-title" class="panel-title">{{ plural(view.friendsCount, 'amigo', 'amigos') }}</h2>
+    <h2 id="profile-friends-title" class="visually-hidden">{{ plural(view.friendsCount, 'amigo', 'amigos') }}</h2>
     <AsyncState :status="state.status" :error="state.error" :empty="!state.items.length" @retry="load">
       <template #empty>
         <StateMessage :icon="Users" :title="isSelf ? 'Todavía no tienes amigos.' : 'Todavía no tiene amigos en YOUNGrr.'" :text="isSelf ? 'Busca personas para empezar.' : ''">

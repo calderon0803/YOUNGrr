@@ -36,9 +36,9 @@ onMounted(load)
 
 <template>
   <section class="panel profile-albums" aria-labelledby="albums-title">
-    <div class="profile-albums__head">
-      <h2 id="albums-title" class="panel-title profile-albums__title">{{ isSelf ? 'Mis álbumes' : `Álbumes de ${view.profile.firstName}` }}</h2>
-      <button v-if="isSelf" type="button" class="btn btn--soft btn--sm" @click="creating = true">
+    <h2 id="albums-title" class="visually-hidden">{{ isSelf ? 'Mis álbumes' : `Álbumes de ${view.profile.firstName}` }}</h2>
+    <div v-if="isSelf" class="profile-albums__head">
+      <button type="button" class="btn btn--soft btn--sm" @click="creating = true">
         <Plus aria-hidden="true" />
         Nuevo álbum
       </button>
@@ -57,18 +57,8 @@ onMounted(load)
 .profile-albums {
   &__head {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $space-3;
+    justify-content: flex-end;
     padding: $space-3 $space-4 0;
-  }
-
-  // Same light subheading as the other profile tabs, next to its button.
-  &__title {
-    padding: 0;
-    background: none;
-    border: 0;
-    color: $color-text-muted;
   }
 }
 </style>

@@ -28,7 +28,7 @@ onMounted(load)
 
 <template>
   <section class="panel profile-photos" aria-labelledby="uploaded-title">
-    <h2 id="uploaded-title" class="panel-title">{{ isSelf ? 'Fotos que has subido' : `Fotos subidas por ${view.profile.firstName}` }}</h2>
+    <h2 id="uploaded-title" class="visually-hidden">{{ isSelf ? 'Fotos que has subido' : `Fotos subidas por ${view.profile.firstName}` }}</h2>
     <AsyncState :status="own.status" :error="own.error" :empty="!own.ids.length" skeleton="grid" :skeleton-count="10" @retry="load">
       <template #empty>
         <StateMessage compact :icon="Images" title="Todavía no hay fotografías." />

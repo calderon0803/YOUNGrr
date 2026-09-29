@@ -45,6 +45,11 @@ import { LIMITS } from '@/utils/validation'
         persona invitada hasta que crea su cuenta.
       </li>
       <li>
+        <strong>Visitas a perfiles:</strong> para que la misma persona no cuente más de una vez cada 6 horas, cada visita
+        deja una marca cifrada con una clave secreta. No contiene tu nombre ni el del perfil, nadie puede consultarla y se
+        borra a las 6 horas. Del perfil solo se guarda el total.
+      </li>
+      <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
         que se pueda revisar. La persona reportada no sabe quién la ha reportado.
       </li>
@@ -124,6 +129,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Invitaciones para compartir una foto rechazadas</td><td>A los 30 días</td></tr>
         <tr><td>Reportes ya revisados, con su copia del contenido</td><td>Al año de la decisión</td></tr>
         <tr><td>Recuento de acciones por minuto</td><td>En una hora</td></tr>
+        <tr><td>Marca de visita a un perfil</td><td>A las 6 horas</td></tr>
       </tbody>
     </table>
     <p>
@@ -152,8 +158,8 @@ import { LIMITS } from '@/utils/validation'
     <h2>Cookies y almacenamiento del navegador</h2>
     <p>
       No usamos cookies de publicidad ni de analítica. El navegador guarda solo lo imprescindible para que la app
-      funcione: tu sesión, tus preferencias (como el tema o los chats abiertos) y los archivos de la app para que cargue
-      rápido. Al cerrar sesión se borra lo relacionado con tu cuenta.
+      funcione: tu sesión, tus preferencias (como el tema o los chats abiertos), los perfiles que has abierto en las
+      últimas 6 horas (para no volver a enviar la visita) y los archivos de la app para que cargue rápido. Al cerrar sesión se borra lo relacionado con tu cuenta.
     </p>
 
     <h2>Cambios</h2>

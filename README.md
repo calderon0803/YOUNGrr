@@ -93,7 +93,10 @@ ha hecho qué; al abrir cada foto se marca como vista solo esa.
 
 Debajo de las Novedades está tu **contador de visitas**, que solo ves tú. YOUNGrr solo
 guarda el número: no sabe ni conserva quién visitó, cuándo ni cuántas veces. Cada visitante
-cuenta una vez por perfil mientras tiene la app abierta (se recuerda solo en memoria).
+cuenta una vez por perfil cada 6 horas, desde cualquier dispositivo. Para saberlo, cada
+visita deja en la tabla `visit_marks` solo un SHA-256 de una sal secreta (`app_secrets`),
+el visitante y el perfil, que nadie puede leer por la API y que se borra a las 6 horas. El
+navegador, además, no reenvía la visita al recargar.
 
 ### Inicio y perfil al estilo Tuenti
 

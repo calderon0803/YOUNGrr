@@ -19,7 +19,12 @@ export const STORAGE_KEYS = {
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
   chatDock: 'youngrr:chat-dock',
+  // Profiles you visited recently, per user, so reloading does not count again.
+  visits: 'youngrr:visits',
 }
+
+/** The same person does not count again on a profile until this many hours pass. */
+export const VISIT_RECOUNT_HOURS = 6
 
 /** Same values as styles/abstracts/_breakpoints.scss. */
 export const BREAKPOINTS = { tablet: 768, desktop: 1200 }
@@ -127,8 +132,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-29',
-  updatedOn: '29 de septiembre de 2026',
+  version: '2026-09-29.2',
+  updatedOn: '29 de septiembre de 2026 (revisión 2)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

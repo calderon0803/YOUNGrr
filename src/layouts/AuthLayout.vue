@@ -1,5 +1,10 @@
 <script setup>
 import AppLogo from '@/components/common/AppLogo.vue'
+import { useAuthStore } from '@/stores/auth'
+
+// STORES
+// Signed in (completing the profile), the sign in links make no sense.
+const auth = useAuthStore()
 </script>
 
 <template>
@@ -8,7 +13,7 @@ import AppLogo from '@/components/common/AppLogo.vue'
       <RouterLink class="auth__brand" to="/" aria-label="YOUNGrr, portada">
         <AppLogo on-dark size="md" />
       </RouterLink>
-      <nav class="auth__links" aria-label="Cuenta">
+      <nav v-if="!auth.isAuthenticated" class="auth__links" aria-label="Cuenta">
         <RouterLink :to="{ name: 'login' }">Entrar</RouterLink>
         <RouterLink :to="{ name: 'register' }">Crear cuenta</RouterLink>
       </nav>

@@ -10,6 +10,7 @@ import { useMessagesStore } from '@/stores/messages'
 import { useFriendsStore } from '@/stores/friends'
 import { useImagePicker } from '@/composables/useImagePicker'
 import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
 import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
 import { IMAGE } from '@/config/app'
@@ -36,6 +37,7 @@ const toast = useToast()
 const avatarInput = ref(null)
 const opening = ref(false)
 const reporting = ref(false)
+const { confirm } = useConfirm()
 const infoId = useId()
 const friendsId = useId()
 const { processing, read } = useImagePicker()
@@ -69,6 +71,17 @@ const pickAvatar = async (event) => {
   const [image] = await read([...event.target.files].slice(0, 1), { maxSide: IMAGE.avatarMaxSide })
   event.target.value = ''
   if (image) await user.updateImage('avatarUrl', image.dataUrl)
+}
+
+// Blocking works both ways and removes the friendship; the other person is not told.
+const block = async () => {
+  const ok = await confirm({
+    title: `Bloquear a ${fullName(profile.value)}`,
+    message: 'Dejaréis de ser amigos y no podréis veros el contenido, escribiros ni enviaros solicitudes. No se le avisa. Puedes desbloquear cuando quieras.',
+    confirmLabel: 'Bloquear',
+    danger: true,
+  })
+  if (ok) await friends.block(profile.value)
 }
 
 const sendMessage = async () => {
@@ -109,12 +122,14 @@ onMounted(() => {
           Editar perfil
         </button>
         <template v-else>
-          <FriendshipButton :person="person" size="sm" />
+          <FriendshipButton v-if="!friends.isBlocked(profile.id)" :person="person" size="sm" />
           <button v-if="view.friendship === 'friends'" type="button" class="btn btn--secondary btn--sm" :disabled="opening" @click="sendMessage">
             <MessageCircle aria-hidden="true" />
             Enviar mensaje
           </button>
           <button type="button" class="aside__report" @click="reporting = true">Reportar perfil</button>
+          <button v-if="friends.isBlocked(profile.id)" type="button" class="aside__report" @click="friends.unblock(profile)">Desbloquear</button>
+          <button v-else type="button" class="aside__report" @click="block">Bloquear</button>
           <ReportDialog :open="reporting" kind="profile" :target-id="profile.id" @close="reporting = false" />
         </template>
       </div>

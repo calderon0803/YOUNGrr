@@ -2,7 +2,7 @@
 // Reads go through database functions that apply privacy as the caller.
 import { ensureOnline, getSupabase, rpc, toApiError } from '@/services/supabase/client'
 import { fromSettings, toPerson, toProfile, toProfileView, toSettings } from '@/services/supabase/mappers'
-import { avatarPathFromUrl, avatarUrl, removeFiles, signUrls, uploadImage } from '@/services/supabase/storage'
+import { avatarPathFromUrl, avatarUrl, listOwnFiles, removeFiles, signUrls, uploadImage } from '@/services/supabase/storage'
 import { ApiError, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { NEARBY_RADII_KM } from '@/config/app'
@@ -113,6 +113,19 @@ export const supabaseUsersService = {
     } catch (error) {
       await removeFiles(bucket, [path]).catch(() => {})
       throw error
+    }
+  },
+
+  /**
+   * Deletes avatars and covers of yours that the profile no longer uses (e.g.
+   * if a replacement failed half-way, or public covers from before they
+   * became private). Only your own folder.
+   */
+  async cleanOldProfileImages(profile) {
+    const keep = new Set([avatarPathFromUrl(profile.avatarUrl), profile.coverPath].filter(Boolean))
+    for (const bucket of ['avatars', 'covers']) {
+      const stale = (await listOwnFiles(bucket, profile.id)).filter((path) => !keep.has(path))
+      await removeFiles(bucket, stale)
     }
   },
 

@@ -108,6 +108,16 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /** Once per session: avatars and covers the profile no longer uses. */
+  const cleanOldProfileImages = async () => {
+    if (!auth.me) return
+    try {
+      await usersService.cleanOldProfileImages(auth.me)
+    } catch {
+      // Housekeeping only; it will be tried again next session.
+    }
+  }
+
   /** Town suggestions for the location picker (OpenStreetMap). */
   const searchPlaces = (query, options) => geoService.searchPlaces(query, options)
 
@@ -119,7 +129,7 @@ export const useUserStore = defineStore('user', () => {
     await updateSettings(next, `Mostrando gente a menos de ${radiusKm} km.`)
   }
 
-  return { profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit, draftSettings }
+  return { cleanOldProfileImages, profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit, draftSettings }
 })
 
 // Follow OS changes while the preference is "system".

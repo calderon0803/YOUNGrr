@@ -1,7 +1,7 @@
 // Friends with Supabase. Same interface as local/friends.local.js.
 // Every action runs as a database function and returns the person with the new status.
 import { rpc } from '@/services/supabase/client'
-import { toBirthday, toFriendRequest, toPerson } from '@/services/supabase/mappers'
+import { toBirthday, toFriendRequest, toPerson, toSummary } from '@/services/supabase/mappers'
 
 export const supabaseFriendsService = {
   async listFriends(userId) {
@@ -31,6 +31,20 @@ export const supabaseFriendsService = {
 
   async upcomingBirthdays({ days = 30 } = {}) {
     return (await rpc('upcoming_birthdays', { days })).map(toBirthday)
+  },
+
+  /** Blocking: no friendship, requests or messages in either direction. */
+  async blockUser(otherId) {
+    await rpc('block_user', { target: otherId }, 'No se ha podido bloquear.')
+  },
+
+  async unblockUser(otherId) {
+    await rpc('unblock_user', { target: otherId }, 'No se ha podido desbloquear.')
+  },
+
+  /** The people you blocked (never who blocked you). */
+  async listBlocked() {
+    return (await rpc('list_blocked', {}, 'No se ha podido cargar la lista.')).map((b) => ({ person: toSummary(b.person), createdAt: b.created_at }))
   },
 
   async removeFriend(otherId) {

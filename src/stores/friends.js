@@ -143,7 +143,53 @@ export const useFriendsStore = defineStore('friends', () => {
     return person
   }
 
+  // ---- Blocks (only the people you blocked; never who blocked you) ----------
+
+  const blocked = reactive({ status: 'idle', items: [] })
+  const isBlocked = (id) => blocked.items.some((b) => b.person.id === id)
+
+  const loadBlocked = async () => {
+    try {
+      blocked.items = await friendsService.listBlocked()
+      blocked.status = 'success'
+    } catch {
+      blocked.status = 'error'
+    }
+  }
+
+  const block = async (person) => {
+    try {
+      await friendsService.blockUser(person.id)
+      await loadBlocked()
+      // The block removed the friendship and any pending request.
+      const me = useAuthStore().meId
+      if (lists[me]) lists[me].items = lists[me].items.filter((f) => f.id !== person.id)
+      suggestions.items = suggestions.items.filter((s) => s.id !== person.id)
+      useFeedStore().invalidate()
+      await Promise.all([loadRequests(), useUserStore().loadProfile(person.id, { silent: true })])
+      toast.success(`Has bloqueado a ${fullName(person)}.`)
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
+  const unblock = async (person) => {
+    try {
+      await friendsService.unblockUser(person.id)
+      blocked.items = blocked.items.filter((b) => b.person.id !== person.id)
+      await useUserStore().loadProfile(person.id, { silent: true })
+      toast.success(`Has desbloqueado a ${fullName(person)}.`)
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
   return {
+    blocked,
+    isBlocked,
+    loadBlocked,
+    block,
+    unblock,
     lists,
     requests,
     suggestions,

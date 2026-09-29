@@ -48,6 +48,8 @@ onMounted(() => {
   events.loadEvents()
   user.loadSettings().catch(() => {})
   moderation.checkModerator()
+  friends.loadBlocked()
+  user.cleanOldProfileImages()
   poll = setInterval(refreshBadges, BADGE_POLL_INTERVAL_MS)
   document.addEventListener('visibilitychange', onVisibility)
 })

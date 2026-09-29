@@ -26,6 +26,7 @@ const load = async () => {
   db.photoOwners ??= []
   delete db.profileVisits
   db.moderators ??= []
+  db.blocks ??= []
   db.wallMessages ??= []
   if (!stored) {
     await commit()

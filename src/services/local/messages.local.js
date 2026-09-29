@@ -1,6 +1,6 @@
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { areFriends, findOr404, profileOf, summaryOf } from '@/services/local/access'
+import { areFriends, findOr404, isBlockedBetween, profileOf, summaryOf } from '@/services/local/access'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
@@ -66,6 +66,7 @@ export const localMessagesService = {
     const existing = db.conversations.find(
       (c) => c.memberIds.length === 2 && c.memberIds.includes(me) && c.memberIds.includes(userId),
     )
+    ensure(!isBlockedBetween(db, me, userId), 'forbidden', 'No puedes escribir a esta persona.')
     if (existing) return existing.id
     ensure(areFriends(db, me, userId), 'forbidden', 'Solo puedes escribir a tus amigos.')
 
@@ -84,6 +85,7 @@ export const localMessagesService = {
     const db = await getDb()
     const me = requireUserId(db)
     const conversation = membership(db, me, conversationId)
+    ensure(!conversation.memberIds.some((id) => id !== me && isBlockedBetween(db, me, id)), 'forbidden', 'No puedes escribir a esta persona.')
     const message = { id: uid('m'), conversationId, senderId: me, text: text.trim(), createdAt: nowIso() }
     db.messages.push(message)
     conversation.updatedAt = message.createdAt

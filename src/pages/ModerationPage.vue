@@ -25,7 +25,7 @@ const TABS = [
   { key: 'resolved', label: 'Resueltos' },
   { key: 'dismissed', label: 'Descartados' },
 ]
-const KIND_LABEL = { status: 'Estado', photo: 'Foto', comment: 'Comentario', wall_message: 'Mensaje del tablón', profile: 'Perfil' }
+const KIND_LABEL = { status: 'Estado', photo: 'Foto', comment: 'Comentario', wall_message: 'Mensaje del tablón', profile: 'Perfil', message: 'Mensaje privado' }
 const notes = reactive({})
 
 // COMPUTED
@@ -44,7 +44,7 @@ const resolve = async (report, decision, removeContent = false) => {
     })
     if (!ok) return
   }
-  await moderation.resolve(report.id, decision, { removeContent, note: notes[report.id] ?? '' })
+  await moderation.resolve(report.id, decision, { removeContent, note: notes[report.id] ?? '', storagePath: report.snapshot.storagePath ?? null })
 }
 
 // WATCHERS

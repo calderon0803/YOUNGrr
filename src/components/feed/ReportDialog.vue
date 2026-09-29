@@ -11,7 +11,7 @@ import { REPORT_REASONS } from '@/config/app'
 // PROPS
 const props = defineProps({
   open: { type: Boolean, required: true },
-  /** 'status' | 'photo' | 'comment' | 'wall_message' | 'profile' */
+  /** 'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message' */
   kind: { type: String, default: 'status' },
   targetId: { type: String, required: true },
 })
@@ -60,7 +60,10 @@ watch(
           {{ option }}
         </label>
       </fieldset>
-      <p class="report__hint">Dejarás de verla en tu inicio. La persona que la publicó no sabrá quién la ha reportado.</p>
+      <p class="report__hint">
+        <template v-if="kind === 'status'">Dejarás de verla en tu inicio. </template>
+        La otra persona no sabrá quién ha hecho el reporte.
+      </p>
       <p v-if="error" class="field__error" role="alert">{{ error }}</p>
     </form>
     <template #footer>

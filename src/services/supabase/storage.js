@@ -52,6 +52,13 @@ export const avatarPathFromUrl = (url) => {
   return at === -1 ? null : decodeURIComponent(url.slice(at + marker.length).split('?')[0])
 }
 
+/** Paths in your own folder of a bucket (first LIST_PAGE files). */
+export const listOwnFiles = async (bucket, userId) => {
+  const { data, error } = await getSupabase().storage.from(bucket).list(userId, { limit: LIST_PAGE })
+  if (error) throw toApiError(error, 'No se han podido revisar tus archivos.')
+  return (data ?? []).filter((f) => f.id).map((f) => `${userId}/${f.name}`)
+}
+
 /** Deletes every file in your own folder of every bucket (to delete the account). */
 export const removeAllOwnFiles = async (userId) => {
   const storage = getSupabase().storage

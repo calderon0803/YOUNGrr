@@ -8,7 +8,7 @@ import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
 import { REPORT_REASONS } from '@/config/app'
 
-const COLLECTIONS = { status: 'posts', photo: 'photos', comment: 'comments', wall_message: 'wallMessages', profile: 'profiles' }
+const COLLECTIONS = { status: 'posts', photo: 'photos', comment: 'comments', wall_message: 'wallMessages', profile: 'profiles', message: 'messages' }
 
 /** The reported content, if the reporter can see it: { ownerId, snapshot }. */
 const findTarget = (db, me, kind, id) => {
@@ -27,6 +27,12 @@ const findTarget = (db, me, kind, id) => {
   if (kind === 'wall_message') {
     const message = db.wallMessages.find((w) => w.id === id && canViewProfile(db, me, w.profileId))
     return message && { ownerId: message.authorId, snapshot: { text: message.text } }
+  }
+  if (kind === 'message') {
+    // Only a participant can report someone else's message.
+    const message = db.messages.find((m) => m.id === id && !m.deleted)
+    const member = message && db.conversations.find((c) => c.id === message.conversationId)?.memberIds.includes(me)
+    return member && { ownerId: message.senderId, snapshot: { text: message.text } }
   }
   if (kind === 'profile') {
     const profile = db.profiles.find((p) => p.id === id)
@@ -108,8 +114,13 @@ export const localModerationService = {
     const remove = removeContent && decision === 'resolved'
     if (remove) {
       ensure(report.targetType !== 'profile', 'validation', 'Un perfil no se puede eliminar desde aquí.')
-      const key = COLLECTIONS[report.targetType]
-      db[key] = db[key].filter((x) => x.id !== report.targetId)
+      if (report.targetType === 'message') {
+        const message = db.messages.find((m) => m.id === report.targetId)
+        if (message) Object.assign(message, { text: '', deleted: true, deletedAt: nowIso() })
+      } else {
+        const key = COLLECTIONS[report.targetType]
+        db[key] = db[key].filter((x) => x.id !== report.targetId)
+      }
     }
     // Every open report on the same content gets the same decision.
     for (const r of db.reports) {

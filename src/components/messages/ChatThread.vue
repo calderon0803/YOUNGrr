@@ -5,6 +5,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import MessageComposer from '@/components/messages/MessageComposer.vue'
+import ReportDialog from '@/components/feed/ReportDialog.vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirm } from '@/composables/useConfirm'
@@ -25,6 +26,8 @@ const { confirm } = useConfirm()
 
 // DATA
 const scroller = ref(null)
+/** Id of the message being reported. */
+const reportingId = ref(null)
 const composer = ref(null)
 
 // COMPUTED
@@ -103,6 +106,15 @@ watch(() => state.value.messages.length, scrollToEnd)
               <span v-else class="bubble__text user-text">{{ message.text }}</span>
               <span class="bubble__meta">
                 <button
+                  v-if="message.senderId !== auth.meId && !message.deleted"
+                  type="button"
+                  class="bubble__delete"
+                  aria-label="Reportar mensaje"
+                  @click="reportingId = message.id"
+                >
+                  Reportar
+                </button>
+                <button
                   v-if="message.senderId === auth.meId && !message.deleted && !message.pending && !message.failed"
                   type="button"
                   class="bubble__delete"
@@ -124,6 +136,7 @@ watch(() => state.value.messages.length, scrollToEnd)
       </AsyncState>
     </div>
 
+    <ReportDialog v-if="reportingId" :open="!!reportingId" kind="message" :target-id="reportingId" @close="reportingId = null" />
     <MessageComposer ref="composer" v-if="state.status === 'success' && other" :recipient="fullName(other)" :send="(text) => messages.send(conversationId, text)" />
   </section>
 </template>

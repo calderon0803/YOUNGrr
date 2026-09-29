@@ -48,8 +48,12 @@ const allowedBy = (db, viewer, ownerId, visibility) => {
   return false
 }
 
+/** A block in either direction (only the blocker knows about it). */
+export const isBlockedBetween = (db, a, b) =>
+  (db.blocks ?? []).some((x) => (x.blockerId === a && x.blockedId === b) || (x.blockerId === b && x.blockedId === a))
+
 export const canViewProfile = (db, viewer, ownerId) =>
-  allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.profileVisibility)
+  !isBlockedBetween(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.profileVisibility)
 
 /** Town (profile, people lists, "Cerca de ti") and distance ("Cerca de ti") have separate settings. */
 export const canViewCity = (db, viewer, ownerId) =>
@@ -62,7 +66,7 @@ export const canViewDistance = (db, viewer, ownerId) =>
 export const visibleCity = (db, viewer, profile) => (canViewCity(db, viewer, profile.id) ? profile.city : '')
 
 export const canSendRequest = (db, me, other) => {
-  if (friendshipStatus(db, me, other) !== 'none') return false
+  if (friendshipStatus(db, me, other) !== 'none' || isBlockedBetween(db, me, other)) return false
   const policy = settingsOf(db, other).privacy.friendRequests
   if (policy === 'nobody') return false
   if (policy === 'friends_of_friends') return mutualFriends(db, me, other) > 0

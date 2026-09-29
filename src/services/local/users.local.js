@@ -10,6 +10,7 @@ import {
   personView,
   profileOf,
   visibleCity,
+  isBlockedBetween,
 } from '@/services/local/access'
 import { validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
@@ -161,6 +162,9 @@ export const localUsersService = {
     return { ...profile }
   },
 
+  /** Demo backend: images live in the data itself, nothing to clean up. */
+  async cleanOldProfileImages() {},
+
   async getSettings() {
     const db = await getDb()
     return structuredClone(db.settings[requireUserId(db)])
@@ -188,7 +192,7 @@ export const localUsersService = {
     const db = await getDb()
     const me = requireUserId(db)
     return db.profiles
-      .filter((p) => p.id !== me && matches(`${p.firstName} ${p.lastName} ${visibleCity(db, me, p)}`, query))
+      .filter((p) => p.id !== me && !isBlockedBetween(db, me, p.id) && matches(`${p.firstName} ${p.lastName} ${visibleCity(db, me, p)}`, query))
       .slice(0, limit)
       .map((p) => personView(db, me, p.id))
       .sort((a, b) => b.mutualFriends - a.mutualFriends)

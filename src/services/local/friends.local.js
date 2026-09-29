@@ -9,6 +9,7 @@ import {
   pendingRequest,
   personView,
   profileOf,
+  summaryOf,
   visibleCity,
 } from '@/services/local/access'
 import { dropNotifications, notify } from '@/services/local/notify'
@@ -119,6 +120,38 @@ export const localFriendsService = {
     ensure(db.friendships.length < before, 'not_found', 'No sois amigos.')
     await commit()
     return personView(db, me, otherId)
+  },
+
+  /** Blocking: no friendship, requests or messages in either direction. */
+  async blockUser(otherId) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    ensure(otherId !== me, 'validation', 'No puedes bloquearte a ti.')
+    profileOf(db, otherId)
+    if (!db.blocks.some((b) => b.blockerId === me && b.blockedId === otherId)) db.blocks.push({ blockerId: me, blockedId: otherId, createdAt: nowIso() })
+    const [userA, userB] = pairKey(me, otherId)
+    db.friendships = db.friendships.filter((f) => !(f.userA === userA && f.userB === userB))
+    db.friendRequests = db.friendRequests.filter((r) => !(r.status === 'pending' && [r.fromId, r.toId].includes(me) && [r.fromId, r.toId].includes(otherId)))
+    dropNotifications(db, (n) => (n.userId === me && n.actorId === otherId) || (n.userId === otherId && n.actorId === me))
+    await commit()
+  },
+
+  async unblockUser(otherId) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    db.blocks = db.blocks.filter((b) => !(b.blockerId === me && b.blockedId === otherId))
+    await commit()
+  },
+
+  /** The people you blocked (never who blocked you). */
+  async listBlocked() {
+    const db = await getDb()
+    const me = requireUserId(db)
+    return db.blocks
+      .filter((b) => b.blockerId === me && db.profiles.some((p) => p.id === b.blockedId))
+      .map((b) => ({ person: summaryOf(db, b.blockedId), createdAt: b.createdAt }))
   },
 
   /** Friends' birthdays in the coming days (30 by default), soonest first. */

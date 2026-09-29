@@ -2,7 +2,7 @@
 // Reports are only readable by moderators, through list_reports().
 import { rpc } from '@/services/supabase/client'
 import { toSummary } from '@/services/supabase/mappers'
-import { signPhotoUrls } from '@/services/supabase/storage'
+import { removePhotos, signPhotoUrls } from '@/services/supabase/storage'
 import { validate } from '@/services/errors'
 import { REPORT_REASONS } from '@/config/app'
 
@@ -17,6 +17,7 @@ const toReport = (json, urls) => ({
     text: json.snapshot.text ?? json.snapshot.caption ?? json.snapshot.bio ?? '',
     name: json.snapshot.name ?? null,
     photoUrl: urls[json.snapshot.storage_path] ?? null,
+    storagePath: json.snapshot.storage_path ?? null,
   },
   contentExists: !!json.content_exists,
   contentRemoved: !!json.content_removed,
@@ -28,7 +29,7 @@ const toReport = (json, urls) => ({
 })
 
 export const supabaseModerationService = {
-  /** @param {'status' | 'photo' | 'comment' | 'wall_message' | 'profile'} kind */
+  /** @param {'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message'} kind */
   async reportContent(kind, targetId, reason) {
     validate(REPORT_REASONS.includes(reason) ? null : 'Elige un motivo.')
     await rpc('report_content', { kind, target: targetId, reason }, 'No se ha podido enviar el reporte.')
@@ -46,8 +47,13 @@ export const supabaseModerationService = {
     return data.map((r) => toReport(r, urls))
   },
 
-  /** @param {'resolved' | 'dismissed'} decision */
-  async resolveReport(reportId, decision, { removeContent = false, note = '' } = {}) {
+  /**
+   * @param {'resolved' | 'dismissed'} decision
+   * @param {{ removeContent?: boolean, note?: string, storagePath?: string | null }} options
+   */
+  async resolveReport(reportId, decision, { removeContent = false, note = '', storagePath = null } = {}) {
     await rpc('resolve_report', { target: reportId, decision, remove_content: removeContent, note }, 'No se ha podido guardar la decisión.')
+    // A removed photo also loses its file (moderators may delete only those).
+    if (removeContent && storagePath) await removePhotos([storagePath]).catch(() => {})
   },
 }

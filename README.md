@@ -200,13 +200,27 @@ protege los datos.
   ven el cumpleaños sin el año; las coordenadas solo las ve su dueño.
 - **Mensajes.** Solo los participantes leen una conversación. Cada uno puede eliminar sus
   mensajes: el texto se borra para los dos y queda «Mensaje eliminado».
+- **Bloqueos.** Desde un perfil se puede bloquear a alguien: se rompe la amistad y las
+  solicitudes pendientes, y en los dos sentidos dejáis de ver el contenido, de escribiros
+  y de aparecer en búsquedas y sugerencias. La otra persona no recibe ningún aviso. La
+  lista está en *Configuración > Privacidad*.
+- **Reportes y moderación.** Se pueden reportar estados, fotos, comentarios, mensajes
+  del tablón, perfiles y mensajes privados. Los moderadores (tabla `moderators`) los
+  revisan en `/moderation`. Si retiran una foto, también se borra su archivo.
+- **Límites de uso.** Cada persona tiene un máximo por minuto de mensajes, comentarios,
+  solicitudes, reportes, subidas y búsquedas. Si lo supera, ve «Vas demasiado rápido».
+- **Configuración inicial obligatoria.** Mientras falte cambiar la contraseña
+  provisional, confirmar la edad o completar el perfil, la API solo permite esas acciones.
+- **Subidas.** Solo con nombre aleatorio `.jpg` dentro de la carpeta propia. Al entrar,
+  se borran las fotos de perfil y portadas antiguas que ya no se usan.
 - **Cuenta.** En *Configuración > Cuenta*: cambiar el correo (con confirmación por email),
   descargar mis datos (JSON) y eliminar mi cuenta (borra los archivos de Storage y después
   la cuenta y todos sus datos). Hay recuperación de contraseña por email, con la misma
   respuesta exista o no la cuenta.
 - **Cabeceras.** `netlify.toml` define CSP, `frame-ancestors`/`X-Frame-Options`,
   `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS (el porqué de cada directiva
-  está comentado allí).
+  está comentado allí). La CSP solo permite el host del proyecto de Supabase: si cambia el
+  proyecto, hay que cambiarlo también allí.
 - **Modo demo.** Una build de producción nunca pasa a modo demo: sin `VITE_DATA_SOURCE`, o
   con `supabase` sin URL o clave, la build falla; en Netlify solo se admite `supabase`.
 

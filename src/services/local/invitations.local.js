@@ -8,7 +8,7 @@ import { ensure, validate } from '@/services/errors'
 import { rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { INVITATION_DAYS, INVITATIONS_PER_USER } from '@/config/app'
+import { INVITATION_DAYS, INVITATION_EVERY_DAYS, INVITATIONS_PER_USER } from '@/config/app'
 import { invitationLink } from '@/utils/invitations'
 
 const DAY_MS = 86_400_000
@@ -16,6 +16,13 @@ const DAY_MS = 86_400_000
 const isPending = (inv) => !inv.usedBy && inv.expiresAt > nowIso()
 
 const usedCount = (db, me) => db.invitations.filter((i) => i.inviterId === me && (i.usedBy || isPending(i))).length
+
+/** 1 at sign up and 1 more each week since, up to INVITATIONS_PER_USER. */
+const earned = (db, me) => {
+  const createdAt = Date.parse(db.profiles.find((p) => p.id === me)?.createdAt ?? nowIso())
+  const weeks = Math.floor((Date.now() - createdAt) / (INVITATION_EVERY_DAYS * DAY_MS))
+  return { count: Math.min(INVITATIONS_PER_USER, 1 + weeks), createdAt }
+}
 
 const view = (db, inv) => ({
   id: inv.id,
@@ -37,8 +44,10 @@ export const localInvitationsService = {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
+    const { count, createdAt } = earned(db, me)
     return {
-      available: Math.max(0, INVITATIONS_PER_USER - usedCount(db, me)),
+      available: Math.max(0, count - usedCount(db, me)),
+      nextAt: count < INVITATIONS_PER_USER ? new Date(createdAt + count * INVITATION_EVERY_DAYS * DAY_MS).toISOString() : null,
       items: db.invitations
         .filter((i) => i.inviterId === me)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -60,7 +69,7 @@ export const localInvitationsService = {
     )
     const existing = db.invitations.find((i) => i.inviterId === me && i.email === address && isPending(i))
     if (existing) return view(db, existing)
-    ensure(usedCount(db, me) < INVITATIONS_PER_USER, 'forbidden', 'No te quedan invitaciones disponibles.')
+    ensure(usedCount(db, me) < earned(db, me).count, 'forbidden', 'No te quedan invitaciones disponibles.')
     const createdAt = nowIso()
     const inv = {
       id: uid('inv'),

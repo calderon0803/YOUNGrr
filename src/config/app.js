@@ -43,8 +43,13 @@ export const ACTIVITY_WINDOW_DAYS = 30
 /** People shown in "Quizá conozcas a". */
 export const SUGGESTIONS_MAX = 3
 
-/** Sign up is by invitation only: invitations each person has, and how long they last. */
+/**
+ * Sign up is by invitation only. Each person gets 1 at sign up and 1 more every
+ * INVITATION_EVERY_DAYS, up to INVITATIONS_PER_USER (also enforced by the
+ * database); an invitation lasts INVITATION_DAYS.
+ */
 export const INVITATIONS_PER_USER = 5
+export const INVITATION_EVERY_DAYS = 7
 export const INVITATION_DAYS = 30
 export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000

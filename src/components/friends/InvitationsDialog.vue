@@ -5,6 +5,8 @@ import RelativeTime from '@/components/common/RelativeTime.vue'
 import InvitationLink from '@/components/friends/InvitationLink.vue'
 import { useInvitationsStore } from '@/stores/invitations'
 import { useConfirm } from '@/composables/useConfirm'
+import { shortDayMonth, toDateInput } from '@/utils/time'
+import { INVITATIONS_PER_USER } from '@/config/app'
 
 // Invitations you have sent: pending ones (link to copy, cancel) and accepted.
 
@@ -36,6 +38,8 @@ const cancel = async (invitation) => {
     <p class="invitations__available">
       Te quedan <strong>{{ invitations.state.available }}</strong>
       {{ invitations.state.available === 1 ? 'invitación' : 'invitaciones' }}.
+      <template v-if="invitations.state.nextAt">Recibirás otra el {{ shortDayMonth(toDateInput(new Date(invitations.state.nextAt))) }}.</template>
+      <template v-else>Ya has recibido las {{ INVITATIONS_PER_USER }}: si cancelas una pendiente o caduca, la recuperas.</template>
     </p>
     <ul class="invitations" role="list">
       <li v-for="inv in invitations.state.items" :key="inv.id" class="invitations__item">

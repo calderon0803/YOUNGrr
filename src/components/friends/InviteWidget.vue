@@ -5,6 +5,7 @@ import InvitationsDialog from '@/components/friends/InvitationsDialog.vue'
 import { useInvitationsStore } from '@/stores/invitations'
 import { errorMessage } from '@/services/errors'
 import { rules } from '@/utils/validation'
+import { shortDayMonth, toDateInput } from '@/utils/time'
 
 // Tuenti's "Invitar a tus amigos": YOUNGrr is by invitation only. You write a
 // friend's email and get a personal link to send them.
@@ -54,6 +55,7 @@ onMounted(() => invitations.load())
       <p class="invite__available">
         <strong>{{ invitations.state.available }}</strong>
         {{ invitations.state.available === 1 ? 'invitación disponible' : 'invitaciones disponibles' }}
+        <template v-if="invitations.state.nextAt">· otra el {{ shortDayMonth(toDateInput(new Date(invitations.state.nextAt))) }}</template>
       </p>
 
       <form class="invite__form" novalidate @submit.prevent="submit">

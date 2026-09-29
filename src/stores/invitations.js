@@ -8,7 +8,8 @@ import { useToast } from '@/composables/useToast'
 export const useInvitationsStore = defineStore('invitations', () => {
   const toast = useToast()
 
-  const state = reactive({ status: 'idle', error: null, available: 0, items: [] })
+  /** nextAt: when the next invitation arrives (null once all have been earned). */
+  const state = reactive({ status: 'idle', error: null, available: 0, nextAt: null, items: [] })
 
   const load = async () => {
     state.status = state.status === 'success' ? 'success' : 'loading'

@@ -18,7 +18,7 @@ const toInvitation = (json) => ({
 export const supabaseInvitationsService = {
   async listInvitations() {
     const data = await rpc('list_invitations', {}, 'No se han podido cargar tus invitaciones.')
-    return { available: data.available, items: data.invitations.map(toInvitation) }
+    return { available: data.available, nextAt: data.next_at ?? null, items: data.invitations.map(toInvitation) }
   },
 
   /** Returns the pending invitation for that email if there is one already. */

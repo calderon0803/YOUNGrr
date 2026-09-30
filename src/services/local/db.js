@@ -54,8 +54,10 @@ const load = async () => {
   db.wallMessages ??= []
   db.achievements ??= []
   db.moderationRemovals ??= []
-  for (const table of ['groups', 'groupMembers', 'groupInvites', 'groupJoinRequests', 'groupPosts', 'groupReplies', 'groupPostGrrs', 'groupNotices', 'placeRequests']) db[table] ??= []
+  for (const table of ['groups', 'groupMembers', 'groupInvites', 'groupJoinRequests', 'groupPosts', 'groupReplies', 'groupPostGrrs', 'groupNotices', 'placeRequests', 'tastes']) db[table] ??= []
   if (!db.albumPhotos) toDefaultAlbums(db)
+  db.conversationInvites ??= []
+  for (const s of Object.values(db.settings)) s.groups ??= { profileShare: 'basic', notify: 'all', invites: 'friends' }
   if (!stored) {
     await commit()
     await dropOldVersions()

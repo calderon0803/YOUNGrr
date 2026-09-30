@@ -136,7 +136,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <section v-if="view.canViewProfile" class="panel aside__block" :aria-labelledby="infoId">
+    <section v-if="view.canViewInfo ?? view.canViewProfile" class="panel aside__block" :aria-labelledby="infoId">
       <h2 :id="infoId" class="panel-title">Información</h2>
       <div class="aside__info">
         <p v-if="profile.bio" class="aside__bio user-text">{{ profile.bio }}</p>

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, markRaw, useId } from 'vue'
-import { ChartNoAxesColumn, CalendarDays, CircleAlert, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus, UsersRound } from 'lucide-vue-next'
+import { AtSign, ChartNoAxesColumn, CalendarDays, CircleAlert, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus, UsersRound } from 'lucide-vue-next'
 import GrrIcon from '@/components/common/GrrIcon.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useAuthStore } from '@/stores/auth'
@@ -28,6 +28,8 @@ const ICONS = {
   group_invites: markRaw(UsersRound),
   group_requests: markRaw(UsersRound),
   group_notices: markRaw(CircleAlert),
+  group_mentions: markRaw(AtSign),
+  chat_invites: markRaw(MessageCircle),
   comments_posts: markRaw(MessageSquare),
   comments_photos: markRaw(MessageSquare),
   grr_posts: markRaw(GrrIcon),

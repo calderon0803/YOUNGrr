@@ -148,6 +148,9 @@ export const supabaseUsersService = {
       VISIBILITIES.includes(next.privacy.cityVisibility) ? null : 'Opción de privacidad no válida.',
       REQUEST_POLICIES.includes(next.privacy.friendRequests) ? null : 'Opción de solicitudes no válida.',
       THEMES.includes(next.appearance.theme) ? null : 'Tema no válido.',
+      ['basic', 'info', 'full'].includes(next.groups?.profileShare) ? null : 'Opción de grupos no válida.',
+      ['all', 'mentions', 'none'].includes(next.groups?.notify) ? null : 'Opción de grupos no válida.',
+      ['friends', 'nobody'].includes(next.groups?.invites) ? null : 'Opción de grupos no válida.',
     )
     ensureOnline()
     const id = await currentUserId()

@@ -16,10 +16,10 @@
 # - style-src 'self': all CSS comes from the built files. Vue's `:style`
 #   bindings go through el.style (CSSOM), which CSP does not block, so
 #   'unsafe-inline' is not needed.
-# - img-src: the app, data:/blob: (image previews before uploading) and
-#   Supabase Storage (public avatars and signed URLs).
+# - img-src: the app, data:/blob: (image previews before uploading),
+#   Supabase Storage (public avatars and signed URLs) and TMDB posters (tastes).
 # - connect-src: Supabase (API, Auth, Storage, and wss: for its client), the
-#   geocoder (Nominatim) and data: (the app turns picked images into files with
+#   geocoder (Nominatim), the catalogues of tastes (TMDB, MusicBrainz) and data: (the app turns picked images into files with
 #   fetch before uploading them).
 # - frame-ancestors 'none': YOUNGrr cannot be embedded in other sites.
 # - The Supabase project host is written out (this file cannot read environment
@@ -28,7 +28,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://wcewcvdvhzwunedpncxg.supabase.co; font-src 'self'; connect-src 'self' data: https://wcewcvdvhzwunedpncxg.supabase.co wss://wcewcvdvhzwunedpncxg.supabase.co https://nominatim.openstreetmap.org; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://wcewcvdvhzwunedpncxg.supabase.co https://image.tmdb.org; font-src 'self'; connect-src 'self' data: https://wcewcvdvhzwunedpncxg.supabase.co wss://wcewcvdvhzwunedpncxg.supabase.co https://nominatim.openstreetmap.org https://api.themoviedb.org https://musicbrainz.org; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     # Other sites (Nominatim, Supabase) only get the origin, never the path

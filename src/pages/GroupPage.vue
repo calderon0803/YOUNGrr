@@ -14,6 +14,8 @@ import GallineroPost from '@/components/groups/GallineroPost.vue'
 import GroupMembers from '@/components/groups/GroupMembers.vue'
 import GroupFormDialog from '@/components/groups/GroupFormDialog.vue'
 import GroupInviteDialog from '@/components/groups/GroupInviteDialog.vue'
+import GroupSettingsDialog from '@/components/groups/GroupSettingsDialog.vue'
+import GroupActivity from '@/components/groups/GroupActivity.vue'
 import { useGroupsStore } from '@/stores/groups'
 import { useEventsStore } from '@/stores/events'
 import { useConfirm } from '@/composables/useConfirm'
@@ -36,6 +38,7 @@ const { confirm } = useConfirm()
 const editing = ref(false)
 const inviting = ref(false)
 const creatingEvent = ref(false)
+const settingUp = ref(false)
 
 // COMPUTED
 const groupId = computed(() => String(route.params.id))
@@ -46,13 +49,15 @@ const groupEvents = computed(() => events.groupLists[groupId.value] ?? { status:
 const isMember = computed(() => !!group.value?.myRole)
 const isAdmin = computed(() => !!group.value?.canManage)
 const isPlace = computed(() => group.value?.kind === 'place')
-const tab = computed(() => (['people', 'events'].includes(route.query.tab) ? route.query.tab : 'gallinero'))
+const tab = computed(() => (['news', 'people', 'events'].includes(route.query.tab) ? route.query.tab : 'gallinero'))
 const tabs = computed(() => [
   { key: 'gallinero', label: 'Gallinero' },
+  { key: 'news', label: 'Novedades' },
   { key: 'people', label: 'Personas', count: isAdmin.value ? (groups.details[groupId.value]?.requests.length ?? 0) : 0 },
   { key: 'events', label: 'Eventos' },
 ])
 const menu = computed(() => [
+  { key: 'settings', label: 'Mi privacidad y avisos' },
   ...(isAdmin.value ? [{ key: 'edit', label: 'Editar grupo' }] : []),
   { key: 'leave', label: 'Salir del grupo', danger: true },
   ...(group.value?.myRole === 'owner' ? [{ key: 'delete', label: 'Eliminar grupo', danger: true }] : []),
@@ -68,7 +73,8 @@ const eventSections = computed(() =>
 const tabRoute = (key) => ({ query: key === 'gallinero' ? {} : { tab: key } })
 
 const onMenu = async (key) => {
-  if (key === 'edit') editing.value = true
+  if (key === 'settings') settingUp.value = true
+  else if (key === 'edit') editing.value = true
   else if (key === 'leave') {
     const owner = group.value.myRole === 'owner'
     const place = isPlace.value
@@ -171,6 +177,7 @@ watch([groupId, tab, isMember], loadInside, { immediate: true })
             </AsyncState>
           </template>
 
+          <GroupActivity v-else-if="tab === 'news'" :key="groupId" :group-id="groupId" />
           <GroupMembers v-else-if="tab === 'people'" :group-id="groupId" />
 
           <div v-else class="group-page__events">
@@ -213,6 +220,7 @@ watch([groupId, tab, isMember], loadInside, { immediate: true })
           />
         </div>
 
+        <GroupSettingsDialog v-if="isMember" :open="settingUp" :group-id="groupId" @close="settingUp = false" />
         <GroupFormDialog v-if="isAdmin" :open="editing" :group="group" @close="editing = false" />
         <GroupInviteDialog v-if="isMember" :open="inviting" :group-id="groupId" @close="inviting = false" />
         <EventFormDialog

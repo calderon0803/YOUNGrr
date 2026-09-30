@@ -120,6 +120,18 @@ Novedades de tus amigos).
   persona. Un reporte llega a moderación con el 30% de los miembros (entre 3 y 10).
 - **Eventos de grupo.** Al crear un evento se elige «Con invitación», «Público» o «De un
   grupo»; los de grupo los ven sus miembros, que se apuntan sin invitación.
+- **Privacidad por grupo.** La de amigos y la de grupos son distintas: para los amigos solo
+  cuentan los ajustes de amigos. En cada grupo, cada persona elige qué ve de ella la gente
+  del grupo que no es su amiga: nombre y foto (por defecto), también su información o el perfil
+  completo (`group_members.profile_share`, `yg_group_share()`). Todo el mundo aparece con su
+  nombre en la lista de personas.
+- **Avisos por grupo:** todas las publicaciones nuevas, solo menciones o nada. Los grupos de
+  lugares solo avisan de menciones. Los valores por defecto y quién puede invitarte a grupos
+  están en *Configuración > Privacidad*.
+- **Menciones.** «@» abre una lista con la gente del grupo o del chat; la base de datos solo
+  guarda a quien se nombra de verdad en el texto (`yg_clean_mentions()`).
+- **Novedades del grupo.** Una pestaña con quién ha entrado, los eventos nuevos y la actividad
+  de sus personas (de quien puedes ver), como las Novedades de tus amigos. El Gallinero va aparte.
 
 **Grupos de lugares.** Hay uno por cada comunidad autónoma y provincia (las comunidades de una
 sola provincia, como Cantabria, son un único grupo), con las claves de `src/config/places.js`.
@@ -133,6 +145,15 @@ clave del grupo, así que no hay duplicados). Solo se ve cuántas personas lo ha
 peticiones (`app_settings.place_group_threshold`, y `PLACE_GROUPS` para la demo) se crea el
 grupo, dentro de su provincia, con todos ellos, que reciben un aviso. Las peticiones caducan a
 los 90 días.
+
+### Gustos
+
+Pestaña «Gustos» en el perfil: artistas (MusicBrainz), películas y series (TMDB), buscados en sus
+catálogos para que el mismo título sea el mismo para todos. Las películas y series se valoran con
+estrellas, de media a cinco; los artistas solo se añaden. Los ve quien puede ver el perfil y salen
+en las Novedades de los amigos. La clave de TMDB va en `VITE_TMDB_API_KEY` (es pública por diseño:
+solo lee el catálogo); sin ella, la demo usa un catálogo de ejemplo (`src/data/catalog.js`). Hay
+que citar a TMDB: «Este producto usa la API de TMDB, pero TMDB no lo avala ni lo certifica».
 
 ### Logros
 
@@ -257,7 +278,7 @@ protege los datos.
 - **Mensajes.** Solo los participantes leen una conversación. Cada uno puede eliminar sus
   mensajes: el texto se borra para todos y queda «Mensaje eliminado».
 - **Chats de grupo.** Con amigos (no hace falta que lo sean entre sí), hasta 20 personas. Quien
-  lo crea le pone nombre, añade y quita gente; cualquiera puede salir, y si sale el creador lo
+  lo crea le pone nombre, invita (se entra solo aceptando la invitación) y quita gente; cualquiera puede salir, y si sale el creador lo
   sustituye el miembro más antiguo. No se puede añadir a alguien con quien hay un bloqueo; si el
   bloqueo llega después, los dos siguen pero dejan de ver los mensajes del otro. Al borrar una
   cuenta se van sus mensajes y el chat sigue. Sus mensajes llegan a moderación con 2 reportes si

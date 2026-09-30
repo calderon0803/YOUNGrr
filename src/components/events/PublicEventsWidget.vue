@@ -25,9 +25,12 @@ onMounted(() => events.loadPublic())
 </script>
 
 <template>
-  <section v-if="items.length" class="panel public-events" aria-labelledby="public-events-title">
+  <section class="panel public-events" aria-labelledby="public-events-title">
     <h2 id="public-events-title" class="panel-title">Planes públicos</h2>
-    <ul class="public-events__list" role="list">
+    <p v-if="!items.length && events.publicList.status !== 'loading'" class="public-events__empty">
+      No hay planes públicos. <RouterLink :to="{ name: 'events' }">Crear evento</RouterLink>
+    </p>
+    <ul v-else class="public-events__list" role="list">
       <li v-for="event in shown" :key="event.id" class="public-events__item">
         <EventDateBadge :date="event.date" />
         <span class="public-events__text">
@@ -62,6 +65,12 @@ onMounted(() => events.loadPublic())
   &__list {
     margin: 0;
     padding: $space-2 $space-3;
+  }
+
+  &__empty {
+    padding: $space-2 $space-3 $space-3;
+    font-size: $fs-sm;
+    color: $color-text-muted;
   }
 
   &__item {

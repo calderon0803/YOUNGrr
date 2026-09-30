@@ -45,7 +45,7 @@ import { LIMITS } from '@/utils/validation'
       grupo es su propietario: nombra a quien lo administra, y quienes lo administran aceptan a quien pide entrar, quitan
       personas y pueden borrar lo publicado que no encaje en el grupo. Cada persona puede crear hasta 10 grupos, de hasta
       200 personas; un grupo al que no se une nadie en 7 días se elimina solo. Las normas de convivencia se aplican
-      igual dentro de los grupos.
+      igual dentro de los grupos. Menciona a la gente con respeto: una mención le avisa.
     </p>
     <p>
       Los grupos de lugares (comunidades, provincias, pueblos y ciudades) son de YOUNGrr: cualquiera puede unirse y los

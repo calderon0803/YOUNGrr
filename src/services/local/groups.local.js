@@ -11,7 +11,9 @@
 // PLACE_GROUPS.threshold people have asked for it.
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { areFriends, groupMemberCount, groupRole, isBlockedBetween, isGroupAdmin, isGroupMember, profileOf, summaryOf } from '@/services/local/access'
+import { areFriends, canViewProfile, groupMemberCount, groupRole, isBlockedBetween, isGroupAdmin, isGroupMember, profileOf, settingsOf, summaryOf } from '@/services/local/access'
+import { activityBlock, canSeeEvent, eventView } from '@/services/local/views'
+import { activityEvents, activityWindowStart, dayOf } from '@/services/local/posts.local'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
@@ -42,6 +44,34 @@ const newPostsFor = (db, me, groupId) => {
   return db.groupPosts.filter((p) => p.groupId === groupId && p.authorId !== me && p.createdAt > member.lastSeenAt && visiblePost(db, me)(p)).length
 }
 
+/** Effective notices: place groups only tell about mentions. */
+const notifyOf = (db, me, group) => {
+  const notify = db.groupMembers.find((m) => m.groupId === group.id && m.userId === me)?.notify ?? 'all'
+  return group.kind === 'place' && notify === 'all' ? 'mentions' : notify
+}
+
+const mentionsFor = (db, me, groupId) => {
+  const member = db.groupMembers.find((m) => m.groupId === groupId && m.userId === me)
+  if (!member) return 0
+  const posts = db.groupPosts.filter((p) => p.groupId === groupId)
+  const ids = new Set(posts.map((p) => p.id))
+  return [...posts, ...db.groupReplies.filter((r) => ids.has(r.postId))].filter(
+    (x) => (x.mentions ?? []).includes(me) && x.createdAt > member.lastSeenAt && !isBlockedBetween(db, me, x.authorId),
+  ).length
+}
+
+/** People really mentioned: among `allowed`, not the author, named in the text. */
+const cleanMentions = (db, me, people, allowed, text) =>
+  [...new Set(people ?? [])]
+    .filter((id) => id !== me && allowed.includes(id) && !isBlockedBetween(db, me, id))
+    .filter((id) => {
+      const p = db.profiles.find((x) => x.id === id)
+      return p && text.toLowerCase().includes(`@${p.firstName} ${p.lastName}`.toLowerCase())
+    })
+    .slice(0, 10)
+
+const summariesOf = (db, ids) => (ids ?? []).filter((id) => db.profiles.some((p) => p.id === id)).map((id) => summaryOf(db, id))
+
 const groupView = (db, me, group) => {
   const role = groupRole(db, group.id, me)
   const owner = ownerOf(db, group.id)
@@ -63,7 +93,12 @@ const groupView = (db, me, group) => {
     invitedBy: invite ? summaryOf(db, invite.invitedBy) : null,
     requested: db.groupJoinRequests.some((r) => r.groupId === group.id && r.userId === me),
     requestCount: isGroupAdmin(db, group.id, me) ? db.groupJoinRequests.filter((r) => r.groupId === group.id).length : 0,
-    newPosts: newPostsFor(db, me, group.id),
+    mySettings: (() => {
+      const m = db.groupMembers.find((x) => x.groupId === group.id && x.userId === me)
+      return m ? { profileShare: m.profileShare ?? 'basic', notify: m.notify ?? 'all' } : null
+    })(),
+    newPosts: role && notifyOf(db, me, group) === 'all' ? newPostsFor(db, me, group.id) : 0,
+    mentions: role && notifyOf(db, me, group) !== 'none' ? mentionsFor(db, me, group.id) : 0,
     lastPostAt: role ? (posts.map((p) => p.createdAt).sort().at(-1) ?? null) : null,
     expiresAt:
       role === 'owner' && group.kind === 'user' && !group.firstJoinedAt ? new Date(Date.parse(group.createdAt) + GROUPS.emptyDays * DAY_MS).toISOString() : null,
@@ -99,10 +134,16 @@ const join = (db, group, userId) => {
   if (isGroupMember(db, group.id, userId)) return
   ensure(group.kind === 'place' || groupMemberCount(db, group.id) < GROUPS.maxMembers, 'conflict', `Este grupo ya tiene ${GROUPS.maxMembers} personas, el máximo.`)
   const now = nowIso()
-  db.groupMembers.push({ groupId: group.id, userId, role: 'member', joinedAt: now, lastSeenAt: now })
+  db.groupMembers.push({ groupId: group.id, userId, role: 'member', joinedAt: now, lastSeenAt: now, ...memberDefaults(db, userId) })
   if (!group.firstJoinedAt && group.createdBy !== userId) group.firstJoinedAt = now
   db.groupInvites = db.groupInvites.filter((i) => !(i.groupId === group.id && i.userId === userId))
   db.groupJoinRequests = db.groupJoinRequests.filter((r) => !(r.groupId === group.id && r.userId === userId))
+}
+
+/** What a new member starts with: their defaults from the settings. */
+const memberDefaults = (db, userId) => {
+  const g = settingsOf(db, userId)?.groups
+  return { profileShare: g?.profileShare ?? 'basic', notify: g?.notify ?? 'all' }
 }
 
 const removeGroup = (db, groupId) => {
@@ -169,6 +210,7 @@ const postView = (db, me, post) => {
     groupId: post.groupId,
     author: summaryOf(db, post.authorId),
     text: post.text,
+    mentions: summariesOf(db, post.mentions),
     photo: post.photoUrl ? { url: post.photoUrl, width: post.photoWidth, height: post.photoHeight } : null,
     createdAt: post.createdAt,
     grrCount: grrs.length,
@@ -177,7 +219,7 @@ const postView = (db, me, post) => {
     replies: db.groupReplies
       .filter((r) => r.postId === post.id && visiblePost(db, me)(r))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((r) => ({ id: r.id, author: summaryOf(db, r.authorId), text: r.text, createdAt: r.createdAt, canDelete: r.authorId === me || admin })),
+      .map((r) => ({ id: r.id, author: summaryOf(db, r.authorId), text: r.text, mentions: summariesOf(db, r.mentions), createdAt: r.createdAt, canDelete: r.authorId === me || admin })),
   }
 }
 
@@ -255,7 +297,6 @@ export const localGroupsService = {
       members: inside
         ? db.groupMembers
             .filter((m) => m.groupId === groupId && (m.userId === me || !isBlockedBetween(db, me, m.userId)))
-            .filter((m) => group.kind === 'user' || m.userId === me || m.role !== 'member' || areFriends(db, me, m.userId))
             .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.joinedAt.localeCompare(b.joinedAt))
             .map((m) => ({ person: summaryOf(db, m.userId), role: m.role, joinedAt: m.joinedAt }))
         : [],
@@ -291,7 +332,7 @@ export const localGroupsService = {
       firstJoinedAt: null,
     }
     db.groups.push(group)
-    db.groupMembers.push({ groupId: group.id, userId: me, role: 'owner', joinedAt: now, lastSeenAt: now })
+    db.groupMembers.push({ groupId: group.id, userId: me, role: 'owner', joinedAt: now, lastSeenAt: now, ...memberDefaults(db, me) })
     await commit()
     return groupView(db, me, group)
   },
@@ -332,6 +373,7 @@ export const localGroupsService = {
     for (const id of [...new Set(userIds)].filter((x) => x !== me)) {
       if (isGroupMember(db, groupId, id) || invitationOf(db, groupId, id)) continue
       ensure(areFriends(db, me, id) && !isBlockedBetween(db, me, id), 'forbidden', 'Solo puedes invitar a tus amigos.')
+      ensure(settingsOf(db, id)?.groups?.invites !== 'nobody', 'forbidden', `${profileOf(db, id).firstName} no admite invitaciones a grupos.`)
       // Someone who asked to join and is invited by an administrator is simply in.
       if (db.groupJoinRequests.some((r) => r.groupId === groupId && r.userId === id) && isGroupAdmin(db, groupId, me)) join(db, group, id)
       else db.groupInvites.push({ groupId, userId: id, invitedBy: me, createdAt: nowIso() })
@@ -433,6 +475,57 @@ export const localGroupsService = {
     await commit()
   },
 
+  async setMySettings(groupId, { profileShare, notify }) {
+    validate(['basic', 'info', 'full'].includes(profileShare) && ['all', 'mentions', 'none'].includes(notify) ? null : 'Opción no válida.')
+    const db = await getDb()
+    const me = requireUserId(db)
+    const member = db.groupMembers.find((m) => m.groupId === groupId && m.userId === me)
+    ensure(member, 'not_found', 'No formas parte de este grupo.')
+    Object.assign(member, { profileShare, notify })
+    await commit()
+    return groupView(db, me, db.groups.find((g) => g.id === groupId))
+  },
+
+  /** People's activity (of those you can see), who joined each day and new events. */
+  async activity(groupId, { before = null } = {}) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    memberGroup(db, me, groupId)
+    const since = activityWindowStart()
+    const members = db.groupMembers.filter((m) => m.groupId === groupId)
+    const people = new Set(members.map((m) => m.userId).filter((id) => id !== me && canViewProfile(db, me, id)))
+    const cards = new Map()
+    for (const { person, at } of activityEvents(db, me, people, since)) {
+      const key = `p|${person}|${dayOf(at).day}`
+      if (!cards.has(key) || at > cards.get(key).at) cards.set(key, { kind: 'person', person, at })
+    }
+    for (const m of members.filter((x) => x.joinedAt >= since && (x.userId === me || !isBlockedBetween(db, me, x.userId)))) {
+      const key = `j|${dayOf(m.joinedAt).day}`
+      if (!cards.has(key) || m.joinedAt > cards.get(key).at) cards.set(key, { kind: 'joined', at: m.joinedAt })
+    }
+    for (const e of db.events.filter((x) => x.groupId === groupId && x.createdAt >= since && canSeeEvent(db, me, x))) {
+      cards.set(`e|${e.id}`, { kind: 'event', event: e, at: e.createdAt })
+    }
+    const sorted = [...cards.values()].filter((c) => !before || c.at < before).sort((a, b) => b.at.localeCompare(a.at))
+    const items = sorted.slice(0, GROUPS.pageSize).map((c) => {
+      if (c.kind === 'person') {
+        const { day, from, to } = dayOf(c.at)
+        return { kind: 'person', block: activityBlock(db, me, c.person, { since: from > since ? from : since, until: to, day, withSocial: true, lastActivityAt: c.at }), lastActivityAt: c.at }
+      }
+      if (c.kind === 'joined') {
+        const { day } = dayOf(c.at)
+        const people = members
+          .filter((m) => dayOf(m.joinedAt).day === day && (m.userId === me || !isBlockedBetween(db, me, m.userId)))
+          .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt))
+          .map((m) => summaryOf(db, m.userId))
+        return { kind: 'joined', day, people, lastActivityAt: c.at }
+      }
+      return { kind: 'event', event: eventView(db, me, c.event), lastActivityAt: c.at }
+    })
+    return { items, hasMore: sorted.length > GROUPS.pageSize }
+  },
+
   async markSeen(groupId) {
     const db = await getDb()
     const me = requireUserId(db)
@@ -498,7 +591,7 @@ export const localGroupsService = {
         }
         db.groups.push(group)
         for (const r of requests) {
-          db.groupMembers.push({ groupId: group.id, userId: r.userId, role: 'member', joinedAt: now, lastSeenAt: now })
+          db.groupMembers.push({ groupId: group.id, userId: r.userId, role: 'member', joinedAt: now, lastSeenAt: now, ...memberDefaults(db, r.userId) })
           if (r.userId !== me) db.groupNotices.push({ id: uid('gn'), kind: 'activated', groupId: group.id, userId: r.userId, groupName: group.name, createdAt: now })
         }
         db.placeRequests = db.placeRequests.filter((r) => r.placeKey !== place.key)
@@ -544,7 +637,7 @@ export const localGroupsService = {
     return { items: items.slice(0, GROUPS.pageSize).map((p) => postView(db, me, p)), hasMore: items.length > GROUPS.pageSize }
   },
 
-  async createPost(groupId, { text, photo = null }) {
+  async createPost(groupId, { text, photo = null, mentions = [] }) {
     validate(rules.max(text, LIMITS.groupPost, 'La publicación'), text.trim() || photo ? null : 'Escribe algo o añade una foto.')
     await latency(150, 350)
     const db = await getDb()
@@ -558,8 +651,10 @@ export const localGroupsService = {
       photoUrl: photo?.dataUrl ?? null,
       photoWidth: photo?.width ?? null,
       photoHeight: photo?.height ?? null,
+      mentions: [],
       createdAt: nowIso(),
     }
+    post.mentions = cleanMentions(db, me, mentions, db.groupMembers.filter((m) => m.groupId === groupId).map((m) => m.userId), post.text)
     db.groupPosts.push(post)
     const member = db.groupMembers.find((m) => m.groupId === groupId && m.userId === me)
     member.lastSeenAt = post.createdAt
@@ -580,13 +675,14 @@ export const localGroupsService = {
     await commit()
   },
 
-  async reply(postId, text) {
+  async reply(postId, text, mentions = []) {
     validate(rules.required(text, 'La respuesta'), rules.max(text, LIMITS.groupReply, 'La respuesta'))
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
     const post = visibleGroupPost(db, me, postId)
-    db.groupReplies.push({ id: uid('gr'), postId, authorId: me, text: text.trim(), createdAt: nowIso() })
+    const members = db.groupMembers.filter((m) => m.groupId === post.groupId).map((m) => m.userId)
+    db.groupReplies.push({ id: uid('gr'), postId, authorId: me, text: text.trim(), mentions: cleanMentions(db, me, mentions, members, text.trim()), createdAt: nowIso() })
     await commit()
     return postView(db, me, post)
   },

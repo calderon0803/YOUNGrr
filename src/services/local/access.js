@@ -52,12 +52,29 @@ const allowedBy = (db, viewer, ownerId, visibility) => {
 export const isBlockedBetween = (db, a, b) =>
   (db.blocks ?? []).some((x) => (x.blockerId === a && x.blockedId === b) || (x.blockerId === b && x.blockedId === a))
 
+/**
+ * What `ownerId` shows in the groups they share with `viewer`, for people who
+ * are not friends: 0 name and photo, 1 information, 2 whole profile.
+ */
+export const groupShare = (db, viewer, ownerId) => {
+  if (viewer === ownerId || areFriends(db, viewer, ownerId)) return 0
+  const LEVEL = { basic: 0, info: 1, full: 2 }
+  const mine = new Set((db.groupMembers ?? []).filter((m) => m.userId === viewer).map((m) => m.groupId))
+  return Math.max(0, ...(db.groupMembers ?? []).filter((m) => m.userId === ownerId && mine.has(m.groupId)).map((m) => LEVEL[m.profileShare ?? 'basic']))
+}
+
 export const canViewProfile = (db, viewer, ownerId) =>
-  !isBlockedBetween(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.profileVisibility)
+  !isBlockedBetween(db, viewer, ownerId) &&
+  (allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.profileVisibility) || groupShare(db, viewer, ownerId) === 2)
+
+/** Town, studies, work and birthday: the whole profile, or a group sharing them. */
+export const canViewInfo = (db, viewer, ownerId) =>
+  canViewProfile(db, viewer, ownerId) || (!isBlockedBetween(db, viewer, ownerId) && groupShare(db, viewer, ownerId) >= 1)
 
 /** Who sees the town of a profile (profile and people lists). */
 export const canViewCity = (db, viewer, ownerId) =>
-  canViewProfile(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.cityVisibility ?? 'friends')
+  (canViewProfile(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.cityVisibility ?? 'friends')) ||
+  (!isBlockedBetween(db, viewer, ownerId) && groupShare(db, viewer, ownerId) >= 1)
 
 export const visibleCity = (db, viewer, profile) => (canViewCity(db, viewer, profile.id) ? profile.city : '')
 

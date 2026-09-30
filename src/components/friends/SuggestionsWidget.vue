@@ -26,9 +26,10 @@ onMounted(() => friends.loadSuggestions())
 </script>
 
 <template>
-  <section v-if="total" class="panel suggestions" aria-labelledby="suggestions-title">
+  <section class="panel suggestions" aria-labelledby="suggestions-title">
     <h2 id="suggestions-title" class="panel-title">Quizá conozcas a</h2>
-    <ul class="suggestions__list" role="list">
+    <p v-if="!total && friends.suggestions.status !== 'loading'" class="suggestions__empty">Sin sugerencias por ahora.</p>
+    <ul v-else class="suggestions__list" role="list">
       <li v-for="person in shown" :key="person.id" class="suggestions__item">
         <UserAvatar :person="person" size="sm" />
         <PersonLink class="suggestions__name" :person="person" :title="plural(person.mutualFriends, 'amigo en común', 'amigos en común')" />
@@ -84,6 +85,12 @@ onMounted(() => friends.loadSuggestions())
   &__list {
     margin: 0;
     padding: $space-1 $space-3;
+  }
+
+  &__empty {
+    padding: $space-2 $space-3 $space-3;
+    font-size: $fs-sm;
+    color: $color-text-muted;
   }
 
   &__item {

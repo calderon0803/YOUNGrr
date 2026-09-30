@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue'
-import { Award, Images, Tag, UserPlus } from 'lucide-vue-next'
+import { computed, markRaw } from 'vue'
+import { Award, Film, Images, Music, Tag, Tv, UserPlus } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
 import PhotoStrip from '@/components/photos/PhotoStrip.vue'
 import PostCard from '@/components/feed/PostCard.vue'
+import StarRating from '@/components/tastes/StarRating.vue'
 import { usePhotosStore } from '@/stores/photos'
 import { useFeedStore } from '@/stores/feed'
 import { plural } from '@/utils/text'
@@ -31,7 +32,17 @@ const photos = usePhotosStore()
 const hasStatus = computed(() => !!props.block.statusId && !!feed.posts[props.block.statusId])
 const moreFriends = computed(() => props.block.newFriendsTotal - props.block.newFriends.length)
 const moreUploads = computed(() => (props.block.uploadsTotal ?? props.block.uploadIds.length) - props.block.uploadIds.length)
-const hasMore = computed(() => props.block.uploadIds.length > 0 || props.block.newFriends.length > 0 || props.block.tagged.length > 0 || !!props.block.achievements?.length)
+const hasMore = computed(
+  () =>
+    props.block.uploadIds.length > 0 ||
+    props.block.newFriends.length > 0 ||
+    props.block.tagged.length > 0 ||
+    !!props.block.achievements?.length ||
+    !!props.block.tastes?.length,
+)
+const moreTastes = computed(() => (props.block.tastesTotal ?? 0) - (props.block.tastes?.length ?? 0))
+const TASTE_ICONS = { artist: markRaw(Music), movie: markRaw(Film), series: markRaw(Tv) }
+const TASTE_VERB = { artist: 'Le gusta', movie: 'Ha valorado la película', series: 'Ha valorado la serie' }
 // "Fotógrafo · Oro y Cuadrilla · Plata".
 const achievementText = computed(() => {
   const names = (props.block.achievements ?? []).map((a) => achievementLabel(a.code, a.level))
@@ -99,6 +110,18 @@ const openTagged = (photoId) =>
           </div>
         </li>
 
+        <li v-for="taste in block.tastes ?? []" :key="taste.id" class="block__row">
+          <component :is="TASTE_ICONS[taste.kind]" class="block__icon" aria-hidden="true" />
+          <p class="block__text">
+            {{ TASTE_VERB[taste.kind] }}
+            <RouterLink :to="profileTab('tastes')">{{ taste.title }}</RouterLink>
+            <StarRating v-if="taste.rating" class="block__stars" :model-value="taste.rating" size="sm" />
+          </p>
+        </li>
+        <li v-if="moreTastes > 0" class="block__row block__row--more">
+          <RouterLink :to="profileTab('tastes')">y {{ plural(moreTastes, 'gusto más', 'gustos más') }}</RouterLink>
+        </li>
+
         <li v-if="block.achievements?.length" class="block__row">
           <Award class="block__icon" aria-hidden="true" />
           <p class="block__text">
@@ -131,6 +154,11 @@ const openTagged = (photoId) =>
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0 $space-2;
+  }
+
+  &__stars {
+    margin-left: $space-1;
+    vertical-align: -0.1rem;
   }
 
   &__place {

@@ -12,8 +12,9 @@ import { errorMessage } from '@/services/errors'
 import { LIMITS } from '@/utils/validation'
 import { GROUP_CHAT_MAX } from '@/config/app'
 
-// A group chat's people. Its creator renames it, adds friends and removes
-// people; anyone can leave (the creator's role then goes to the oldest member).
+// A group chat's people. Its creator renames it, invites friends (they join
+// only if they accept) and removes people; anyone can leave (the creator's role
+// then goes to the oldest member).
 
 // PROPS
 const props = defineProps({
@@ -39,7 +40,8 @@ const error = ref('')
 const conversation = computed(() => messages.threads[props.conversationId]?.conversation ?? null)
 const isCreator = computed(() => conversation.value?.createdById === auth.meId)
 const members = computed(() => conversation.value?.members ?? [])
-const room = computed(() => GROUP_CHAT_MAX - members.value.length)
+const invited = computed(() => conversation.value?.invited ?? [])
+const room = computed(() => GROUP_CHAT_MAX - members.value.length - invited.value.length)
 
 // METHODS
 const run = async (action) => {
@@ -118,9 +120,20 @@ watch(
         </ul>
       </section>
 
+      <section v-if="invited.length">
+        <h3 class="group-chat__heading">Invitados, sin responder</h3>
+        <ul class="group-chat__members" role="list">
+          <li v-for="person in invited" :key="person.id" class="group-chat__member">
+            <UserAvatar :person="person" size="sm" />
+            <PersonLink :person="person" @click="emit('close')" />
+            <button v-if="isCreator" type="button" class="group-chat__remove" @click="messages.removeFromGroupChat(conversationId, person.id)">Retirar</button>
+          </li>
+        </ul>
+      </section>
+
       <form v-if="isCreator && room > 0" class="group-chat__add" @submit.prevent="add">
-        <FriendPicker v-model="adding" :excluded="members.map((m) => m.id)" label="Añadir amigos" excluded-label="Ya está" />
-        <button type="submit" class="btn btn--secondary btn--sm" :disabled="busy || !adding.length || adding.length > room">Añadir</button>
+        <FriendPicker v-model="adding" :excluded="[...members, ...invited].map((m) => m.id)" label="Invitar a amigos" excluded-label="Ya está" />
+        <button type="submit" class="btn btn--secondary btn--sm" :disabled="busy || !adding.length || adding.length > room">Invitar</button>
       </form>
 
       <p v-if="error" class="field__error" role="alert">{{ error }}</p>

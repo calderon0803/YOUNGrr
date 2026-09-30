@@ -3,7 +3,8 @@
 // Place groups: communities and provinces exist; towns are asked for until enough people want them.
 import { currentUserId, rpc } from '@/services/supabase/client'
 import { removePhotos, signPhotoUrls, uploadPhoto } from '@/services/supabase/storage'
-import { toSummary } from '@/services/supabase/mappers'
+import { blockPhotoPaths, toActivityBlock, toSummary } from '@/services/supabase/mappers'
+import { eventsWithImages } from '@/services/supabase/events.supabase'
 import { validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { GROUPS } from '@/config/app'
@@ -32,7 +33,11 @@ const toGroup = (json) => ({
   invitedBy: summaryOrNull(json.invited_by),
   requested: !!json.requested,
   requestCount: json.request_count ?? 0,
+  // Your settings in it: what non-friends see of you and your notices.
+  mySettings: json.my_settings ? { profileShare: json.my_settings.profile_share, notify: json.my_settings.notify } : null,
+  // Following your notices for this group.
   newPosts: json.new_posts ?? 0,
+  mentions: json.mentions ?? 0,
   lastPostAt: json.last_post_at ?? null,
   // Only for its owner, while nobody else has joined.
   expiresAt: json.expires_at ?? null,
@@ -50,6 +55,7 @@ const toPost = (json, urls) => ({
   groupId: json.group_id,
   author: toSummary(json.author),
   text: json.text ?? '',
+  mentions: (json.mentions ?? []).map(toSummary),
   photo: json.photo_path ? { url: urls[json.photo_path] ?? null, width: json.photo_width, height: json.photo_height } : null,
   createdAt: json.created_at,
   grrCount: json.grr_count ?? 0,
@@ -59,6 +65,7 @@ const toPost = (json, urls) => ({
     id: r.id,
     author: toSummary(r.author),
     text: r.text,
+    mentions: (r.mentions ?? []).map(toSummary),
     createdAt: r.created_at,
     canDelete: !!r.can_delete,
   })),
@@ -174,6 +181,32 @@ export const supabaseGroupsService = {
     await rpc('set_group_role', { target: groupId, person: userId, new_role: role }, 'No se ha podido cambiar el papel.')
   },
 
+  /** Your settings in a group: what non-friends see of you and your notices. */
+  async setMySettings(groupId, { profileShare, notify }) {
+    return toGroup(await rpc('set_my_group_settings', { target: groupId, profile_share: profileShare, notify }, 'No se han podido guardar tus ajustes.'))
+  },
+
+  /**
+   * The group's news: people's activity blocks (as in the friends' news), who
+   * joined each day and new events. One extra item tells whether there are more.
+   */
+  async activity(groupId, { before = null } = {}) {
+    const items = await rpc('group_activity', { target: groupId, before, page_size: GROUPS.pageSize }, 'No se han podido cargar las novedades del grupo.')
+    const page = items.slice(0, GROUPS.pageSize)
+    const blocks = page.filter((i) => i.kind === 'person').map((i) => i.block)
+    const urls = await signPhotoUrls(blocks.flatMap(blockPhotoPaths))
+    const events = await eventsWithImages(page.filter((i) => i.kind === 'event').map((i) => i.event))
+    const byId = Object.fromEntries(events.map((e) => [e.id, e]))
+    return {
+      items: page.map((i) => {
+        if (i.kind === 'person') return { kind: 'person', block: toActivityBlock(i.block, urls), lastActivityAt: i.last_activity_at }
+        if (i.kind === 'joined') return { kind: 'joined', day: i.day, people: i.people.map(toSummary), lastActivityAt: i.last_activity_at }
+        return { kind: 'event', event: byId[i.event.id], lastActivityAt: i.last_activity_at }
+      }),
+      hasMore: items.length > GROUPS.pageSize,
+    }
+  },
+
   async markSeen(groupId) {
     await rpc('mark_group_seen', { target: groupId }, 'No se ha podido actualizar el grupo.')
   },
@@ -226,14 +259,14 @@ export const supabaseGroupsService = {
   },
 
   /** @param {{ text: string, photo?: { dataUrl: string, width: number, height: number } | null }} input */
-  async createPost(groupId, { text, photo = null }) {
+  async createPost(groupId, { text, photo = null, mentions = [] }) {
     validate(rules.max(text, LIMITS.groupPost, 'La publicación'), text.trim() || photo ? null : 'Escribe algo o añade una foto.')
     const path = photo ? await uploadPhoto(await currentUserId(), photo.dataUrl) : null
     try {
       return one(
         await rpc(
           'create_group_post',
-          { target: groupId, body: text, photo_path: path, photo_width: photo?.width ?? null, photo_height: photo?.height ?? null },
+          { target: groupId, body: text, photo_path: path, photo_width: photo?.width ?? null, photo_height: photo?.height ?? null, mentions },
           'No se ha podido publicar.',
         ),
       )
@@ -248,9 +281,9 @@ export const supabaseGroupsService = {
     await removePhotos([path]).catch(() => {})
   },
 
-  async reply(postId, text) {
+  async reply(postId, text, mentions = []) {
     validate(rules.required(text, 'La respuesta'), rules.max(text, LIMITS.groupReply, 'La respuesta'))
-    return one(await rpc('add_group_reply', { target: postId, body: text }, 'No se ha podido responder.'))
+    return one(await rpc('add_group_reply', { target: postId, body: text, mentions }, 'No se ha podido responder.'))
   },
 
   async deleteReply(replyId) {

@@ -16,6 +16,19 @@ const unreadConversationIds = (db, me) =>
     })
     .map((c) => c.id)
 
+/** One entry per unseen mention in your groups (not in the ones you silenced). */
+const groupMentionIds = (db, me) => {
+  const ids = []
+  for (const m of (db.groupMembers ?? []).filter((x) => x.userId === me && x.notify !== 'none')) {
+    const posts = db.groupPosts.filter((p) => p.groupId === m.groupId)
+    const postIds = new Set(posts.map((p) => p.id))
+    const items = [...posts, ...db.groupReplies.filter((r) => postIds.has(r.postId))]
+    const n = items.filter((x) => (x.mentions ?? []).includes(me) && x.createdAt > m.lastSeenAt && !isBlockedBetween(db, me, x.authorId)).length
+    for (let i = 0; i < n; i++) ids.push(m.groupId)
+  }
+  return ids
+}
+
 export const localNotificationsService = {
   /** Grouped counters for the home page, respecting the user's preferences. */
   async getSummary() {
@@ -35,6 +48,8 @@ export const localNotificationsService = {
       groupInviteIds: (db.groupInvites ?? []).filter((i) => i.userId === me && !isBlockedBetween(db, me, i.invitedBy)).map((i) => i.groupId),
       groupRequestIds: (db.groupJoinRequests ?? []).filter((r) => isGroupAdmin(db, r.groupId, me) && !isBlockedBetween(db, me, r.userId)).map((r) => r.groupId),
       groupNoticeCount: (db.groupNotices ?? []).filter((n) => n.userId === me).length,
+      groupMentionIds: groupMentionIds(db, me),
+      chatInviteIds: (db.conversationInvites ?? []).filter((i) => i.userId === me && !isBlockedBetween(db, me, i.invitedBy)).map((i) => i.conversationId),
       unread: db.notifications
         .filter((n) => n.userId === me && !n.readAt && db.profiles.some((p) => p.id === n.actorId))
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),

@@ -4,8 +4,8 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useGroupsStore } from '@/stores/groups'
 import { groupAvatar } from '@/utils/groups'
 
-// "Tus grupos" in Inicio: your groups with the new posts in their Gallinero,
-// the ones with news first.
+// "Tus grupos" in Inicio: your groups with the new posts in their Gallinero and
+// your mentions (following your notices for each group), the ones with news first.
 
 // STORES
 const groups = useGroupsStore()
@@ -18,7 +18,7 @@ const items = computed(() =>
   groups.mine.ids
     .map((id) => groups.groups[id])
     .filter(Boolean)
-    .sort((a, b) => Number(b.newPosts > 0) - Number(a.newPosts > 0)),
+    .sort((a, b) => Number(b.newPosts + b.mentions > 0) - Number(a.newPosts + a.mentions > 0)),
 )
 const shown = computed(() => items.value.slice(0, SHOWN))
 
@@ -33,6 +33,9 @@ onMounted(() => groups.loadMine())
       <li v-for="group in shown" :key="group.id" class="your-groups__item">
         <UserAvatar :person="groupAvatar(group)" size="xs" />
         <RouterLink class="your-groups__name" :to="{ name: 'group', params: { id: group.id } }">{{ group.name }}</RouterLink>
+        <span v-if="group.mentions" class="your-groups__new your-groups__new--mention">
+          @{{ group.mentions }} <span class="visually-hidden">{{ group.mentions === 1 ? 'mención' : 'menciones' }}</span>
+        </span>
         <span v-if="group.newPosts" class="your-groups__new">
           {{ group.newPosts }} <span class="visually-hidden">{{ group.newPosts === 1 ? 'publicación nueva' : 'publicaciones nuevas' }}</span>
         </span>
@@ -74,6 +77,10 @@ onMounted(() => groups.loadMine())
     font-size: $fs-xs;
     font-weight: 700;
     text-align: center;
+
+    &--mention {
+      background: $color-brand;
+    }
   }
 
   &__empty {

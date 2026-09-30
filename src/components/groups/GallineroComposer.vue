@@ -3,16 +3,19 @@ import { computed, ref, useId } from 'vue'
 import { ImagePlus, X } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import EmojiPicker from '@/components/common/EmojiPicker.vue'
+import MentionMenu from '@/components/common/MentionMenu.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useGroupsStore } from '@/stores/groups'
 import { useToast } from '@/composables/useToast'
 import { useImagePicker } from '@/composables/useImagePicker'
 import { useEmojiInsert } from '@/composables/useEmojiInsert'
+import { useMentions } from '@/composables/useMentions'
 import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
 import { LIMITS } from '@/utils/validation'
 
 // Writes in the Gallinero: a short text (as a tweet) and, optionally, one photo.
+// "@" mentions the people of the group.
 
 // PROPS
 const props = defineProps({
@@ -34,6 +37,7 @@ const inputId = useId()
 const counterId = useId()
 const { processing, read } = useImagePicker()
 const { insert: addEmoji } = useEmojiInsert(input, text, () => LIMITS.groupPost)
+const mention = useMentions(input, text, () => (groups.details[props.groupId]?.members ?? []).map((m) => m.person).filter((p) => p.id !== auth.meId))
 
 // COMPUTED
 const left = computed(() => LIMITS.groupPost - text.value.length)
@@ -50,9 +54,10 @@ const send = async () => {
   if (!canSend.value) return
   sending.value = true
   try {
-    await groups.createPost(props.groupId, { text: text.value, photo: photo.value })
+    await groups.createPost(props.groupId, { text: text.value, photo: photo.value, mentions: mention.mentions.value })
     text.value = ''
     photo.value = null
+    mention.reset()
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -66,6 +71,7 @@ const send = async () => {
     <UserAvatar :person="auth.me" size="sm" />
     <div class="composer__body">
       <label class="visually-hidden" :for="inputId">Escribe en el Gallinero</label>
+      <div class="composer__field">
       <textarea
         :id="inputId"
         ref="input"
@@ -75,7 +81,13 @@ const send = async () => {
         :maxlength="LIMITS.groupPost"
         placeholder="¿Qué se cuece en el grupo?"
         :aria-describedby="counterId"
+        @input="mention.onInput"
+        @click="mention.onInput"
+        @keydown="mention.onKeydown"
+        @blur="mention.close"
       />
+      <MentionMenu :suggestions="mention.suggestions.value" :active="mention.active.value" @pick="mention.choose" />
+      </div>
       <div v-if="photo" class="composer__preview">
         <img :src="photo.dataUrl" alt="Foto que vas a publicar" />
         <button type="button" class="composer__remove" aria-label="Quitar la foto" @click="photo = null">
@@ -114,7 +126,12 @@ const send = async () => {
     min-width: 0;
   }
 
+  &__field {
+    position: relative;
+  }
+
   &__input {
+    width: 100%;
     resize: vertical;
   }
 

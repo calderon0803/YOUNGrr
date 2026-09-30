@@ -2,6 +2,7 @@ import { commit, getDb, latency, resetDb } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
 import {
   canSendRequest,
+  canViewInfo,
   canViewProfile,
   canViewPost,
   friendIdsOf,
@@ -39,15 +40,16 @@ export const localUsersService = {
     const me = requireUserId(db)
     const profile = profileOf(db, userId)
     const visible = canViewProfile(db, me, userId)
+    const info = canViewInfo(db, me, userId)
 
-    // A hidden profile only exposes what's needed to send a friend request.
-    const exposed = visible
-      ? { ...profile }
-      : { ...profile, bio: '', birthday: null, studies: '', work: '', coverPath: null }
+    // A hidden profile only exposes what's needed to send a friend request
+    // (and the information, when a group shares it).
+    const exposed = visible ? { ...profile } : { ...profile, coverPath: null }
+    if (!info) Object.assign(exposed, { bio: '', birthday: null, studies: '', work: '' })
     exposed.city = visibleCity(db, me, profile)
     if (userId !== me) {
       // Others get the birthday without the year.
-      exposed.birthdayDay = visible && profile.birthday ? profile.birthday.slice(5) : null
+      exposed.birthdayDay = info && profile.birthday ? profile.birthday.slice(5) : null
       exposed.birthday = null
       delete exposed.cityLat
       delete exposed.cityLng
@@ -64,6 +66,7 @@ export const localUsersService = {
       postsCount: visible ? db.posts.filter((p) => p.authorId === userId && canViewPost(db, me, p)).length : 0,
       photosCount: visible ? db.photos.filter((p) => p.ownerId === userId).length : 0,
       canViewProfile: visible,
+      canViewInfo: info,
       canSendRequest: canSendRequest(db, me, userId),
       status: visible ? currentStatus(db, userId) : null,
     }
@@ -193,6 +196,9 @@ export const localUsersService = {
       VISIBILITIES.includes(next.privacy.cityVisibility) ? null : 'Opción de privacidad no válida.',
       REQUEST_POLICIES.includes(next.privacy.friendRequests) ? null : 'Opción de solicitudes no válida.',
       THEMES.includes(next.appearance.theme) ? null : 'Tema no válido.',
+      ['basic', 'info', 'full'].includes(next.groups?.profileShare) ? null : 'Opción de grupos no válida.',
+      ['all', 'mentions', 'none'].includes(next.groups?.notify) ? null : 'Opción de grupos no válida.',
+      ['friends', 'nobody'].includes(next.groups?.invites) ? null : 'Opción de grupos no válida.',
     )
     await latency(80, 160)
     const db = await getDb()

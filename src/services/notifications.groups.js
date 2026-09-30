@@ -52,13 +52,20 @@ const singleLink = (me, kind, targetId) => {
   return listLink(me, 'friends')
 }
 
-const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, sharePhotoIds, groupInviteIds = [], groupRequestIds = [], groupNoticeCount = 0 }) => [
+const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, sharePhotoIds, groupInviteIds = [], groupRequestIds = [], groupNoticeCount = 0, groupMentionIds = [], chatInviteIds = [] }) => [
   {
     key: 'messages',
     pref: 'messages',
     count: conversationIds.length,
     label: pick(conversationIds.length, 'mensaje privado nuevo', 'mensajes privados nuevos'),
     link: conversationIds.length === 1 ? `/messages/${conversationIds[0]}` : '/messages',
+  },
+  {
+    key: 'chat_invites',
+    pref: 'messages',
+    count: chatInviteIds.length,
+    label: pick(chatInviteIds.length, 'invitación a un chat de grupo', 'invitaciones a chats de grupo'),
+    link: '/messages',
   },
   {
     key: 'requests',
@@ -87,6 +94,13 @@ const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, shar
     count: groupRequestIds.length,
     label: pick(groupRequestIds.length, 'solicitud para entrar en tus grupos', 'solicitudes para entrar en tus grupos'),
     link: new Set(groupRequestIds).size === 1 ? `/groups/${groupRequestIds[0]}?tab=people` : '/groups',
+  },
+  {
+    key: 'group_mentions',
+    pref: 'groups',
+    count: groupMentionIds.length,
+    label: pick(groupMentionIds.length, 'mención en tus grupos', 'menciones en tus grupos'),
+    link: new Set(groupMentionIds).size === 1 ? `/groups/${groupMentionIds[0]}` : '/groups',
   },
   {
     key: 'group_notices',
@@ -137,6 +151,8 @@ const storedGroups = (me, unread) =>
  *   groupInviteIds?: string[],
  *   groupRequestIds?: string[],
  *   groupNoticeCount?: number,
+ *   groupMentionIds?: string[],
+ *   chatInviteIds?: string[],
  *   unread: { type: string, targetId: string }[],
  * }} state
  */

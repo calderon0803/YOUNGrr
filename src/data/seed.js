@@ -101,6 +101,7 @@ export const buildSeed = () => {
         privacy: { profileVisibility: 'everyone', cityVisibility: 'everyone', friendRequests: 'everyone', ...PRIVACY[key] },
         notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
         appearance: { theme: 'system' },
+        groups: { profileShare: 'basic', notify: 'all', invites: 'friends' },
       },
     ]),
   )
@@ -498,6 +499,19 @@ export const buildSeed = () => {
     groupReplies,
     groupPostGrrs,
     groupNotices: [],
+    tastes: [
+      ['ana', 'movie', '496243', 'Parásitos', 2019, 5, { h: 3 }],
+      ['ana', 'series', '70523', 'Dark', 2017, 4.5, { d: 2 }],
+      ['ana', 'artist', 'mb-vetusta', 'Vetusta Morla', null, null, { d: 6 }],
+      ['pablo', 'movie', '155', 'El caballero oscuro', 2008, 4, { h: 5 }],
+      ['pablo', 'artist', 'mb-leiva', 'Leiva', null, null, { d: 9 }],
+      ['carlos', 'movie', '438631', 'Dune', 2021, 4.5, { d: 4 }],
+      ['carlos', 'series', '1396', 'Breaking Bad', 2008, 5, { d: 12 }],
+      ['carlos', 'artist', 'mb-izal', 'Izal', null, null, { d: 20 }],
+    ].map(([key, kind, externalId, title, year, rating, when], i) => ({
+      id: `ts_${i + 1}`, userId: id(key), kind, source: kind === 'artist' ? 'musicbrainz' : 'tmdb', externalId, title, year,
+      imagePath: null, rating, createdAt: ago(when), updatedAt: ago(when),
+    })),
     // Three people asked for the group of Torrelavega (it needs five).
     placeRequests: ['pablo', 'oscar', 'claudia'].map((key, i) => ({
       placeKey: 'osm-R340131', placeName: 'Torrelavega', parentKey: 'es-cantabria', userId: id(key), createdAt: ago({ d: 3 + i }),

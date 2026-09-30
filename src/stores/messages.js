@@ -63,13 +63,13 @@ export const useMessagesStore = defineStore('messages', () => {
   }
 
   /** Optimistic send: the message shows at once and is marked if it fails. */
-  const send = async (conversationId, text) => {
+  const send = async (conversationId, text, mentions = []) => {
     const state = threads[conversationId]
     if (!state) return
-    const temp = { id: uid('tmp'), conversationId, senderId: useAuthStore().meId, text: text.trim(), createdAt: nowIso(), pending: true }
+    const temp = { id: uid('tmp'), conversationId, senderId: useAuthStore().meId, text: text.trim(), mentions, createdAt: nowIso(), pending: true }
     state.messages = [...state.messages, temp]
     try {
-      const message = await messagesService.sendMessage(conversationId, text)
+      const message = await messagesService.sendMessage(conversationId, text, mentions)
       state.messages = state.messages.map((m) => (m.id === temp.id ? message : m))
       const item = inbox.items.find((c) => c.id === conversationId)
       if (item) {
@@ -113,6 +113,33 @@ export const useMessagesStore = defineStore('messages', () => {
     if (i !== -1) inbox.items[i] = { ...inbox.items[i], ...conversation }
   }
 
+  /** Group chats you are invited to (you join only if you accept). */
+  const chatInvites = reactive({ status: 'idle', error: null, items: [] })
+
+  const loadChatInvites = async () => {
+    chatInvites.status = chatInvites.status === 'success' ? 'success' : 'loading'
+    try {
+      chatInvites.items = await messagesService.chatInvitations()
+      chatInvites.status = 'success'
+    } catch (error) {
+      chatInvites.status = 'error'
+      chatInvites.error = errorMessage(error)
+    }
+  }
+
+  const answerChatInvite = async (conversationId, accept) => {
+    try {
+      await messagesService.answerChatInvite(conversationId, accept)
+      chatInvites.items = chatInvites.items.filter((i) => i.conversation.id !== conversationId)
+      toast.success(accept ? 'Ya estás en el chat.' : 'Invitación rechazada.')
+      if (accept) await loadConversations()
+      return accept
+    } catch (error) {
+      toast.error(errorMessage(error))
+      return false
+    }
+  }
+
   /** Throws on error so the dialog can show it; returns the new chat id. */
   const createGroupChat = async (title, people) => {
     const id = await messagesService.createGroupChat(title, people)
@@ -127,7 +154,7 @@ export const useMessagesStore = defineStore('messages', () => {
 
   const addToGroupChat = async (conversationId, people) => {
     setConversation(await messagesService.addToGroupChat(conversationId, people))
-    toast.success(people.length === 1 ? 'Persona añadida al grupo.' : 'Personas añadidas al grupo.')
+    toast.success(people.length === 1 ? 'Invitación enviada.' : 'Invitaciones enviadas.')
   }
 
   const removeFromGroupChat = async (conversationId, userId) => {
@@ -230,6 +257,9 @@ export const useMessagesStore = defineStore('messages', () => {
     deleteMessage,
     openWith,
     createGroupChat,
+    chatInvites,
+    loadChatInvites,
+    answerChatInvite,
     renameGroupChat,
     addToGroupChat,
     removeFromGroupChat,

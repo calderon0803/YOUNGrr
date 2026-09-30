@@ -49,10 +49,10 @@ const groupEvents = computed(() => events.groupLists[groupId.value] ?? { status:
 const isMember = computed(() => !!group.value?.myRole)
 const isAdmin = computed(() => !!group.value?.canManage)
 const isPlace = computed(() => group.value?.kind === 'place')
-const tab = computed(() => (['news', 'people', 'events'].includes(route.query.tab) ? route.query.tab : 'gallinero'))
+const tab = computed(() => (['gallinero', 'people', 'events'].includes(route.query.tab) ? route.query.tab : 'news'))
 const tabs = computed(() => [
-  { key: 'gallinero', label: 'Gallinero' },
   { key: 'news', label: 'Novedades' },
+  { key: 'gallinero', label: 'Gallinero' },
   { key: 'people', label: 'Personas', count: isAdmin.value ? (groups.details[groupId.value]?.requests.length ?? 0) : 0 },
   { key: 'events', label: 'Eventos' },
 ])
@@ -70,7 +70,7 @@ const eventSections = computed(() =>
 )
 
 // METHODS
-const tabRoute = (key) => ({ query: key === 'gallinero' ? {} : { tab: key } })
+const tabRoute = (key) => ({ query: key === 'news' ? {} : { tab: key } })
 
 const onMenu = async (key) => {
   if (key === 'settings') settingUp.value = true

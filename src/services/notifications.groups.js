@@ -100,7 +100,7 @@ const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, shar
     pref: 'groups',
     count: groupMentionIds.length,
     label: pick(groupMentionIds.length, 'mención en tus grupos', 'menciones en tus grupos'),
-    link: new Set(groupMentionIds).size === 1 ? `/groups/${groupMentionIds[0]}` : '/groups',
+    link: new Set(groupMentionIds).size === 1 ? `/groups/${groupMentionIds[0]}?tab=gallinero` : '/groups',
   },
   {
     key: 'group_notices',

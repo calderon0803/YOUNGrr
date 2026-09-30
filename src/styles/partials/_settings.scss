@@ -21,6 +21,14 @@
     font-weight: 700;
   }
 
+  // Save / undo of the choices of a section.
+  &__actions {
+    display: flex;
+    gap: $space-2;
+    padding: $space-3 $space-4;
+    border-top: 1px solid $color-border;
+  }
+
   // A group of blocks inside a section ("Grupos" in Privacidad).
   &__heading {
     padding: $space-3 $space-4;

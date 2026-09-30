@@ -19,7 +19,7 @@ defineProps({
   <li class="group-item">
     <UserAvatar :person="groupAvatar(group)" size="md" />
     <span class="group-item__body">
-      <RouterLink class="group-item__name" :to="{ name: 'group', params: { id: group.id } }">{{ group.name }}</RouterLink>
+      <RouterLink class="group-item__name" :to="{ name: 'group', params: { id: group.id }, query: showNew && (group.newPosts || group.mentions) ? { tab: 'gallinero' } : {} }">{{ group.name }}</RouterLink>
       <span class="group-item__meta">
         <Lock v-if="group.privacy === 'secret'" aria-hidden="true" />
         {{ groupKindLabel(group) }} · {{ plural(group.memberCount, 'persona', 'personas') }}

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import { useUserStore } from '@/stores/user'
 import { useFriendsStore } from '@/stores/friends'
@@ -66,21 +66,38 @@ const GROUP_QUESTIONS = [
   },
 ]
 
+// The choices are kept here until "Guardar cambios": one request for all of them.
+const draft = reactive({ privacy: {}, groups: {} })
+const saving = ref(false)
+
+// COMPUTED
+const saved = computed(() => ({
+  privacy: { ...user.settings.privacy },
+  groups: { profileShare: 'basic', notify: 'all', invites: 'friends', ...user.settings.groups },
+}))
+const dirty = computed(() => JSON.stringify(draft) !== JSON.stringify(saved.value))
+
 // METHODS
-const updateGroups = (key, value) => {
-  const next = user.draftSettings()
-  next.groups = { ...next.groups, [key]: value }
-  user.updateSettings(next, 'Privacidad actualizada.')
+const reset = () => {
+  draft.privacy = { ...saved.value.privacy }
+  draft.groups = { ...saved.value.groups }
 }
 
-const update = (key, value) => {
+const save = async () => {
+  if (!dirty.value) return
+  saving.value = true
   const next = user.draftSettings()
-  next.privacy[key] = value
-  user.updateSettings(next, 'Privacidad actualizada.')
+  next.privacy = { ...next.privacy, ...draft.privacy }
+  next.groups = { ...draft.groups }
+  await user.updateSettings(next, 'Privacidad actualizada.')
+  saving.value = false
 }
 
 // LIFECYCLE
 onMounted(() => friends.loadBlocked())
+
+// WATCHERS
+watch(saved, reset, { immediate: true })
 </script>
 
 <template>
@@ -92,10 +109,9 @@ onMounted(() => friends.loadBlocked())
         <label v-for="option in q.options" :key="option.value" class="settings-section__option">
           <input
             type="radio"
+            v-model="draft.privacy[q.key]"
             :name="q.key"
             :value="option.value"
-            :checked="user.settings.privacy[q.key] === option.value"
-            @change="update(q.key, option.value)"
           />
           <span>{{ option.label }}</span>
         </label>
@@ -110,15 +126,19 @@ onMounted(() => friends.loadBlocked())
         <label v-for="option in q.options" :key="option.value" class="settings-section__option">
           <input
             type="radio"
+            v-model="draft.groups[q.key]"
             :name="`groups-${q.key}`"
             :value="option.value"
-            :checked="(user.settings.groups?.[q.key] ?? q.options[0].value) === option.value"
-            @change="updateGroups(q.key, option.value)"
           />
           <span>{{ option.label }}</span>
         </label>
       </fieldset>
     </section>
+
+    <div class="settings-section__actions">
+      <button type="button" class="btn btn--primary" :disabled="!dirty || saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar cambios' }}</button>
+      <button v-if="dirty" type="button" class="btn btn--ghost" :disabled="saving" @click="reset">Deshacer</button>
+    </div>
 
     <section class="settings-section__block" aria-labelledby="privacy-blocked">
       <h2 id="privacy-blocked" class="settings-section__title">Personas bloqueadas</h2>

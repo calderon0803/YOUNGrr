@@ -32,7 +32,7 @@ onMounted(() => groups.loadMine())
     <ul v-if="shown.length" class="your-groups__list" role="list">
       <li v-for="group in shown" :key="group.id" class="your-groups__item">
         <UserAvatar :person="groupAvatar(group)" size="xs" />
-        <RouterLink class="your-groups__name" :to="{ name: 'group', params: { id: group.id } }">{{ group.name }}</RouterLink>
+        <RouterLink class="your-groups__name" :to="{ name: 'group', params: { id: group.id }, query: group.newPosts || group.mentions ? { tab: 'gallinero' } : {} }">{{ group.name }}</RouterLink>
         <span v-if="group.mentions" class="your-groups__new your-groups__new--mention">
           @{{ group.mentions }} <span class="visually-hidden">{{ group.mentions === 1 ? 'mención' : 'menciones' }}</span>
         </span>

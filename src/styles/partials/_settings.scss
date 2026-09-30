@@ -55,6 +55,23 @@
     }
   }
 
+  // A row with a switch: the text on the left, the switch on the right.
+  &__option--switch {
+    align-items: center;
+    justify-content: space-between;
+
+    &:has(input:checked) {
+      border-color: $color-border;
+      background: none;
+    }
+
+    .switch {
+      width: 2.5rem;
+      height: 1.4rem;
+      margin-top: 0;
+    }
+  }
+
   &__option-text {
     display: flex;
     flex-direction: column;

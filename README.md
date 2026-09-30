@@ -98,6 +98,24 @@ visita deja en la tabla `visit_marks` solo un SHA-256 de una sal secreta (`app_s
 el visitante y el perfil, que nadie puede leer por la API y que se borra a las 6 horas. El
 navegador, además, no reenvía la visita al recargar.
 
+### Logros
+
+La base de datos calcula los logros a partir de lo que ya existe (fotos, amigos, planes, Grr,
+tablón), así que no se pueden falsear, y un nivel conseguido no se pierde. Los que tienen
+niveles son bronce, plata, oro y platino. Se comprueban al abrir Inicio o tus logros y cada
+noche (pg_cron). Se ven en la columna izquierda del perfil, para quien puede verlo. Durante
+7 días desde que se consigue uno (o un nivel nuevo) se puede compartir, y entonces aparece
+en las Novedades de tus amigos. Los que ya cumplía cada cuenta al estrenarse los logros se dan
+sin opción de compartir, para no llenar las Novedades de golpe.
+
+Los nombres, iconos y textos están en `src/config/achievements.js`; los códigos y umbrales,
+en `yg_achievement_defs()`: si cambias uno, cambia el otro. **Fundador** es para las cuentas
+creadas antes de la versión 1.0.0: al publicarla, fija la fecha con una migración:
+
+```sql
+update app_settings set value = now()::text where key = 'founders_until';
+```
+
 ### Inicio y perfil al estilo Tuenti
 
 - Navegación con pestañas en la barra superior (en móvil, barra inferior).
@@ -227,6 +245,15 @@ protege los datos.
 - **Reportes y moderación.** Se pueden reportar estados, fotos, comentarios, mensajes
   del tablón, perfiles y mensajes privados. Los moderadores (tabla `moderators`) los
   revisan en `/moderation`. Si retiran una foto, también se borra su archivo.
+- **Retiradas y apelaciones.** Retirar contenido tras un reporte lo quita de donde estaba y
+  guarda una copia completa aparte (`moderation_removals`, sin acceso por la API). Su dueño
+  recibe un aviso en Inicio con el motivo (nunca quién reportó) y tiene 14 días para apelar.
+  Los moderadores las resuelven en *Moderación > Apelaciones*: si se acepta, el contenido
+  vuelve con sus comentarios, Grr y etiquetas; si se rechaza o nadie apela, se borra del todo.
+  El archivo de una foto se borra cuando un moderador abre la página de Moderación, porque
+  desde SQL no se pueden borrar archivos de Storage.
+- **Logros.** Solo los calcula la base de datos; nadie puede leer ni escribir la tabla
+  directamente. Los ve quien puede ver el perfil, y solo se anuncian si su dueño los comparte.
 - **Límites de uso.** Cada persona tiene un máximo por minuto de mensajes, comentarios,
   solicitudes, reportes, subidas, búsquedas y sugerencias. Si lo supera, ve «Vas demasiado rápido».
 - **Configuración inicial obligatoria.** Mientras falte cambiar la contraseña
@@ -268,6 +295,10 @@ select * from admin_create_account('correo@ejemplo.com', 'Nombre');
 -- Limpieza de datos sin finalidad (se programa sola con pg_cron si está activado)
 select run_retention();
 
+-- Tareas nocturnas que también programa pg_cron: logros de todos y fin de las retiradas
+select yg_check_all_achievements();
+select yg_purge_removals();
+
 -- Archivos de Storage que ya no usa nadie (bórralos desde el panel de Storage)
 select * from admin_storage_orphans();
 ```
@@ -279,7 +310,7 @@ la política de privacidad: si cambias uno, cambia también el otro.
 
 - **Condiciones de uso** (`/legal/terms`) y **política de privacidad** (`/legal/privacy`), en
   `src/pages/TermsPage.vue` y `src/pages/PrivacyPage.vue`. Se leen sin sesión y durante la
-  configuración inicial.
+  configuración inicial, y con sesión están en el menú de la cuenta y en «Más» (móvil).
 - El responsable y el correo de contacto están en `LEGAL` (`src/config/app.js`).
 - Al registrarse hay que aceptarlos, y la base de datos guarda la versión aceptada. Si los
   cambias, sube la versión en **dos sitios**, `LEGAL.version` y `yg_terms_version()` (con una

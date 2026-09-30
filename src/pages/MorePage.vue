@@ -34,6 +34,8 @@ const events = useEventsStore()
         </li>
         <li><RouterLink class="more__link" :to="{ name: 'search' }">Buscar</RouterLink></li>
         <li><RouterLink class="more__link" :to="{ name: 'settings' }">Configuración</RouterLink></li>
+        <li><RouterLink class="more__link" :to="{ name: 'terms' }">Condiciones de uso</RouterLink></li>
+        <li><RouterLink class="more__link" :to="{ name: 'privacy' }">Privacidad</RouterLink></li>
       </ul>
     </nav>
 

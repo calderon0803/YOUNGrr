@@ -16,6 +16,8 @@ export const purgeLocalUser = (db, id) => {
 
   db.users = db.users.filter((u) => u.id !== id)
   db.profiles = db.profiles.filter((p) => p.id !== id)
+  db.achievements = (db.achievements ?? []).filter((a) => a.userId !== id)
+  db.moderationRemovals = (db.moderationRemovals ?? []).filter((r) => r.ownerId !== id)
   delete db.settings[id]
   db.friendships = db.friendships.filter((f) => f.userA !== id && f.userB !== id)
   db.friendRequests = db.friendRequests.filter((r) => r.fromId !== id && r.toId !== id)
@@ -73,6 +75,7 @@ export const buildLocalExport = (db, id) => {
       })),
     wall_messages_written: db.wallMessages.filter((w) => w.authorId === id).map(({ text, createdAt }) => ({ text, created_at: createdAt })),
     invitations_sent: db.invitations.filter((i) => i.inviterId === id).map(({ email, createdAt, usedBy }) => ({ email, created_at: createdAt, used: !!usedBy })),
+    achievements: (db.achievements ?? []).filter((a) => a.userId === id).map(({ code, level, earnedAt, sharedAt }) => ({ code, level, earned_at: earnedAt, shared_at: sharedAt })),
     reports_filed: db.reports.filter((r) => r.reporterId === id).map(({ targetType, reason, status, createdAt }) => ({ about: targetType, reason, status, created_at: createdAt })),
   }
 }

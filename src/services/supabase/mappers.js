@@ -166,6 +166,7 @@ export const toActivityBlock = (json, urls = {}) => ({
   newFriendsTotal: json.new_friends_total,
   tagged: json.tagged.map((t) => ({ id: t.id, url: urls[t.storage_path] ?? null, width: t.width, height: t.height })),
   taggedTotal: json.tagged_total,
+  achievements: (json.achievements ?? []).map((a) => ({ code: a.code, level: a.level, sharedAt: a.shared_at })),
   ...(json.nearby ? { nearby: { city: json.nearby.city ?? null, distanceKm: json.nearby.distance_km ?? null } } : {}),
 })
 

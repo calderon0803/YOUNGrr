@@ -52,6 +52,8 @@ const load = async () => {
   db.moderators ??= []
   db.blocks ??= []
   db.wallMessages ??= []
+  db.achievements ??= []
+  db.moderationRemovals ??= []
   if (!db.albumPhotos) toDefaultAlbums(db)
   if (!stored) {
     await commit()

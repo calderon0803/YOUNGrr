@@ -83,7 +83,7 @@ export const useFeedStore = defineStore('feed', () => {
     for (const state of [home, nearby]) {
       state.blocks = state.blocks
         .map((b) => ({ ...b, statusId: b.statusId === postId ? null : b.statusId, uploadIds: b.uploadIds.filter((id) => id !== postId) }))
-        .filter((b) => b.statusId || b.uploadIds.length || b.newFriends.length || b.tagged.length)
+        .filter((b) => b.statusId || b.uploadIds.length || b.newFriends.length || b.tagged.length || b.achievements?.length)
     }
     delete posts[postId]
   }

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { Images, Tag, UserPlus } from 'lucide-vue-next'
+import { Award, Images, Tag, UserPlus } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
@@ -10,6 +10,7 @@ import { usePhotosStore } from '@/stores/photos'
 import { useFeedStore } from '@/stores/feed'
 import { formatDistance } from '@/utils/geo'
 import { plural } from '@/utils/text'
+import { achievementLabel } from '@/config/achievements'
 
 // One friend in "Novedades de tus amigos", as in Tuenti: their current status
 // (with its comments) on top and, apart below, what they have done lately in
@@ -28,7 +29,12 @@ const photos = usePhotosStore()
 // COMPUTED
 const hasStatus = computed(() => !!props.block.statusId && !!feed.posts[props.block.statusId])
 const moreFriends = computed(() => props.block.newFriendsTotal - props.block.newFriends.length)
-const hasMore = computed(() => props.block.uploadIds.length > 0 || props.block.newFriends.length > 0 || props.block.tagged.length > 0)
+const hasMore = computed(() => props.block.uploadIds.length > 0 || props.block.newFriends.length > 0 || props.block.tagged.length > 0 || !!props.block.achievements?.length)
+// "Fotógrafo · Oro y Cuadrilla · Plata".
+const achievementText = computed(() => {
+  const names = (props.block.achievements ?? []).map((a) => achievementLabel(a.code, a.level))
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names.at(-1)}` : (names[0] ?? '')
+})
 
 // The town; the distance only replaces it when the person hides the town.
 const placeLabel = computed(() => {
@@ -94,6 +100,14 @@ const openTagged = (photoId) =>
               @open="openTagged"
             />
           </div>
+        </li>
+
+        <li v-if="block.achievements?.length" class="block__row">
+          <Award class="block__icon" aria-hidden="true" />
+          <p class="block__text">
+            {{ block.achievements.length === 1 ? 'Ha conseguido el logro' : 'Ha conseguido los logros' }}
+            <RouterLink :to="{ name: 'profile', params: { id: block.person.id } }">{{ achievementText }}</RouterLink>
+          </p>
         </li>
       </ul>
     </section>

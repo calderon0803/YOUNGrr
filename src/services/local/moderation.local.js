@@ -6,7 +6,7 @@ import { canViewPhoto, canViewPost, canViewProfile, summaryOf } from '@/services
 import { ensure, validate } from '@/services/errors'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { REPORT_REASONS } from '@/config/app'
+import { APPEAL_DAYS, REPORT_REASONS } from '@/config/app'
 
 const COLLECTIONS = { status: 'posts', photo: 'photos', comment: 'comments', wall_message: 'wallMessages', profile: 'profiles', message: 'messages' }
 
@@ -41,6 +41,97 @@ const findTarget = (db, me, kind, id) => {
   return null
 }
 
+const DAY_MS = 86_400_000
+const copy = (value) => structuredClone(value)
+
+/** Everything that goes with a piece of content, to put it back later. */
+const snapshotOf = (db, kind, id) => {
+  const on = (type) => (x) => x.targetType === type && x.targetId === id
+  if (kind === 'status') return { post: db.posts.find((p) => p.id === id), comments: db.comments.filter(on('post')), grrs: db.grrs.filter(on('post')) }
+  if (kind === 'photo') {
+    return {
+      photo: db.photos.find((p) => p.id === id),
+      owners: db.photoOwners.filter((o) => o.photoId === id),
+      tags: db.photoTags.filter((t) => t.photoId === id),
+      comments: db.comments.filter(on('photo')),
+      grrs: db.grrs.filter(on('photo')),
+      albums: db.albumPhotos.filter((ap) => ap.photoId === id),
+      covers: db.albums.filter((a) => a.coverPhotoId === id).map((a) => a.id),
+    }
+  }
+  if (kind === 'comment') return { comment: db.comments.find((c) => c.id === id) }
+  if (kind === 'wall_message') return { wallMessage: db.wallMessages.find((w) => w.id === id) }
+  return { text: db.messages.find((m) => m.id === id)?.text ?? '' }
+}
+
+/** Takes the content (and what goes with it) out, as the database cascades. */
+const takeOut = (db, kind, id) => {
+  const notOn = (type) => (x) => !(x.targetType === type && x.targetId === id)
+  if (kind === 'status') {
+    db.posts = db.posts.filter((p) => p.id !== id)
+    db.comments = db.comments.filter(notOn('post'))
+    db.grrs = db.grrs.filter(notOn('post'))
+  } else if (kind === 'photo') {
+    db.photos = db.photos.filter((p) => p.id !== id)
+    db.photoOwners = db.photoOwners.filter((o) => o.photoId !== id)
+    db.photoTags = db.photoTags.filter((t) => t.photoId !== id)
+    db.comments = db.comments.filter(notOn('photo'))
+    db.grrs = db.grrs.filter(notOn('photo'))
+    db.albumPhotos = db.albumPhotos.filter((ap) => ap.photoId !== id)
+    for (const album of db.albums) if (album.coverPhotoId === id) album.coverPhotoId = null
+  } else if (kind === 'comment') {
+    db.comments = db.comments.filter((c) => c.id !== id)
+  } else if (kind === 'wall_message') {
+    db.wallMessages = db.wallMessages.filter((w) => w.id !== id)
+  } else if (kind === 'message') {
+    const message = db.messages.find((m) => m.id === id)
+    if (message) Object.assign(message, { text: '', deleted: true, deletedAt: nowIso() })
+  }
+}
+
+/** Puts it back; false when it cannot be (a newer status, or its parent is gone). */
+const putBack = (db, removal) => {
+  const d = removal.data
+  if (!d) return false
+  if (removal.contentKind === 'status') {
+    if (db.posts.some((p) => p.authorId === d.post.authorId && (p.kind ?? 'status') === 'status')) return false
+    db.posts.push(d.post)
+    db.comments.push(...d.comments)
+    db.grrs.push(...d.grrs)
+  } else if (removal.contentKind === 'photo') {
+    db.photos.push(d.photo)
+    db.photoOwners.push(...d.owners)
+    db.photoTags.push(...d.tags)
+    db.comments.push(...d.comments)
+    db.grrs.push(...d.grrs)
+    db.albumPhotos.push(...d.albums.filter((ap) => db.albums.some((a) => a.id === ap.albumId)))
+    for (const album of db.albums) if (d.covers.includes(album.id) && !album.coverPhotoId) album.coverPhotoId = d.photo.id
+  } else if (removal.contentKind === 'comment') {
+    const parent = d.comment.targetType === 'post' ? db.posts : db.photos
+    if (!parent.some((x) => x.id === d.comment.targetId)) return false
+    db.comments.push(d.comment)
+  } else if (removal.contentKind === 'wall_message') {
+    db.wallMessages.push(d.wallMessage)
+  } else {
+    const message = db.messages.find((m) => m.id === removal.contentId)
+    if (!message) return false
+    Object.assign(message, { text: d.text, deleted: false, deletedAt: null })
+  }
+  return true
+}
+
+const noticeView = (r) => ({
+  id: r.id,
+  contentKind: r.contentKind,
+  reason: r.reason,
+  removedAt: r.removedAt,
+  appealUntil: r.appealUntil,
+  canAppeal: !r.appealedAt && r.appealUntil > nowIso(),
+  appealedAt: r.appealedAt,
+  decision: r.decision,
+  restored: r.restored,
+})
+
 const requireModerator = (db, me) => ensure(db.moderators.includes(me), 'forbidden', 'No tienes acceso a la moderación.')
 
 export const localModerationService = {
@@ -72,6 +163,82 @@ export const localModerationService = {
     }
     await commit()
   },
+
+  /** Notices about your content removed by moderation, with the appeal state. */
+  async myNotices() {
+    const db = await getDb()
+    const me = requireUserId(db)
+    return db.moderationRemovals
+      .filter((r) => r.ownerId === me && !r.noticeDismissedAt)
+      .sort((a, b) => b.removedAt.localeCompare(a.removedAt))
+      .map(noticeView)
+  },
+
+  /** Not while an appeal waits; before appealing, it gives the appeal up. */
+  async dismissNotice(noticeId) {
+    const db = await getDb()
+    const me = requireUserId(db)
+    const r = db.moderationRemovals.find((x) => x.id === noticeId && x.ownerId === me)
+    if (r && !(r.appealedAt && !r.decision)) r.noticeDismissedAt = nowIso()
+    await commit()
+  },
+
+  async appeal(noticeId, text) {
+    validate(text.trim().length > 500 ? 'La explicación no puede superar los 500 caracteres.' : null)
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const r = db.moderationRemovals.find((x) => x.id === noticeId && x.ownerId === me)
+    ensure(r && !r.appealedAt && !r.noticeDismissedAt && r.appealUntil > nowIso(), 'conflict', 'Ya no se puede apelar esta decisión.')
+    Object.assign(r, { appealText: text.trim(), appealedAt: nowIso() })
+    await commit()
+    return db.moderationRemovals.filter((x) => x.ownerId === me && !x.noticeDismissedAt).map(noticeView)
+  },
+
+  async listAppeals() {
+    await latency()
+    const db = await getDb()
+    requireModerator(db, requireUserId(db))
+    return db.moderationRemovals
+      .filter((r) => r.appealedAt && !r.decision)
+      .sort((a, b) => a.appealedAt.localeCompare(b.appealedAt))
+      .map((r) => {
+        const d = r.data ?? {}
+        return {
+          id: r.id,
+          contentKind: r.contentKind,
+          reason: r.reason,
+          owner: db.profiles.some((p) => p.id === r.ownerId) ? summaryOf(db, r.ownerId) : null,
+          removedAt: r.removedAt,
+          appealText: r.appealText,
+          appealedAt: r.appealedAt,
+          text: d.post?.text ?? d.photo?.caption ?? d.comment?.text ?? d.wallMessage?.text ?? d.text ?? '',
+          photoUrl: d.photo?.url ?? null,
+        }
+      })
+  },
+
+  /** accept: the content goes back (if it can) and the owner is told. */
+  async resolveAppeal(appealId, accept) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    requireModerator(db, me)
+    const r = db.moderationRemovals.find((x) => x.id === appealId && x.appealedAt && !x.decision)
+    ensure(r, 'not_found', 'Esta apelación ya no está pendiente.')
+    const back = accept ? putBack(db, r) : false
+    Object.assign(r, { decision: accept ? 'accepted' : 'rejected', restored: accept ? back : null, decidedBy: me, decidedAt: nowIso(), noticeDismissedAt: null })
+    if (back) {
+      r.data = null
+      const report = db.reports.find((x) => x.id === r.reportId)
+      if (report) report.contentRemoved = false
+    }
+    await commit()
+    return { restored: back }
+  },
+
+  /** The demo keeps photos as data URLs: there are no files to delete. */
+  async cleanUpRemovedFiles() {},
 
   async isModerator() {
     const db = await getDb()
@@ -114,13 +281,27 @@ export const localModerationService = {
     const remove = removeContent && decision === 'resolved'
     if (remove) {
       ensure(report.targetType !== 'profile', 'validation', 'Un perfil no se puede eliminar desde aquí.')
-      if (report.targetType === 'message') {
-        const message = db.messages.find((m) => m.id === report.targetId)
-        if (message) Object.assign(message, { text: '', deleted: true, deletedAt: nowIso() })
-      } else {
-        const key = COLLECTIONS[report.targetType]
-        db[key] = db[key].filter((x) => x.id !== report.targetId)
+      // A copy is kept apart for the appeal, and its owner gets a notice (once).
+      if (report.targetOwnerId && !report.contentRemoved) {
+        const removedAt = nowIso()
+        db.moderationRemovals.push({
+          id: uid('mr'),
+          reportId: report.id,
+          ownerId: report.targetOwnerId,
+          contentKind: report.targetType,
+          contentId: report.targetId,
+          reason: report.reason,
+          data: copy(snapshotOf(db, report.targetType, report.targetId)),
+          removedAt,
+          appealUntil: new Date(Date.parse(removedAt) + APPEAL_DAYS * DAY_MS).toISOString(),
+          appealText: null,
+          appealedAt: null,
+          decision: null,
+          restored: null,
+          noticeDismissedAt: null,
+        })
       }
+      takeOut(db, report.targetType, report.targetId)
     }
     // Every open report on the same content gets the same decision.
     for (const r of db.reports) {

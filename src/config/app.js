@@ -120,6 +120,9 @@ export const TEXT_LIMITS = {
   minAge: 18,
 }
 
+/** Days to appeal a removal of your content, from its notice. */
+export const APPEAL_DAYS = 14
+
 export const REPORT_REASONS = [
   'Es spam',
   'Contenido ofensivo',
@@ -132,8 +135,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-29.2',
-  updatedOn: '29 de septiembre de 2026 (revisión 2)',
+  version: '2026-09-30',
+  updatedOn: '30 de septiembre de 2026',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

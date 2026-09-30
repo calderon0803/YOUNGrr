@@ -18,7 +18,8 @@ const auth = useAuthStore()
 const online = useOnline()
 
 // COMPUTED
-const layout = computed(() => (route.meta.layout === 'auth' || !auth.isAuthenticated ? AuthLayout : AppLayout))
+// Public pages (the legal texts) open inside the app once the account is ready.
+const layout = computed(() => (route.meta.layout === 'auth' || !auth.isAuthenticated || (route.meta.public && auth.needsSetup) ? AuthLayout : AppLayout))
 </script>
 
 <template>

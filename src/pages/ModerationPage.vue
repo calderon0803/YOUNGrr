@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ShieldCheck } from 'lucide-vue-next'
 import AsyncState from '@/components/common/AsyncState.vue'
@@ -7,8 +7,10 @@ import StateMessage from '@/components/common/StateMessage.vue'
 import TabNav from '@/components/common/TabNav.vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import RelativeTime from '@/components/common/RelativeTime.vue'
+import AppealsList from '@/components/moderation/AppealsList.vue'
 import { useModerationStore } from '@/stores/moderation'
 import { useConfirm } from '@/composables/useConfirm'
+import { APPEAL_DAYS } from '@/config/app'
 
 // Reports for moderators: who reported what, why and when, with a copy of the
 // content kept at the time. Only reachable for moderators (router guard) and
@@ -24,6 +26,7 @@ const TABS = [
   { key: 'pending', label: 'Pendientes' },
   { key: 'resolved', label: 'Resueltos' },
   { key: 'dismissed', label: 'Descartados' },
+  { key: 'appeals', label: 'Apelaciones' },
 ]
 const KIND_LABEL = { status: 'Estado', photo: 'Foto', comment: 'Comentario', wall_message: 'Mensaje del tablón', profile: 'Perfil', message: 'Mensaje privado' }
 const notes = reactive({})
@@ -38,17 +41,21 @@ const resolve = async (report, decision, removeContent = false) => {
   if (removeContent) {
     const ok = await confirm({
       title: 'Retirar el contenido',
-      message: 'Se eliminará para todo el mundo. La copia se queda en el reporte. No se puede deshacer.',
+      message: `Dejará de verse para todo el mundo. Su dueño podrá apelar durante ${APPEAL_DAYS} días; si no apela o se rechaza la apelación, se borrará del todo.`,
       confirmLabel: 'Retirar',
       danger: true,
     })
     if (!ok) return
   }
-  await moderation.resolve(report.id, decision, { removeContent, note: notes[report.id] ?? '', storagePath: report.snapshot.storagePath ?? null })
+  await moderation.resolve(report.id, decision, { removeContent, note: notes[report.id] ?? '' })
 }
 
+// LIFECYCLE
+// Final removals (rejected or not appealed in time) lose their photo files.
+onMounted(() => moderation.cleanUpRemovedFiles())
+
 // WATCHERS
-watch(filter, (value) => moderation.loadReports(value), { immediate: true })
+watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), { immediate: true })
 </script>
 
 <template>
@@ -57,7 +64,9 @@ watch(filter, (value) => moderation.loadReports(value), { immediate: true })
       <h1 id="moderation-title" class="panel-title">Moderación</h1>
       <TabNav label="Estado de los reportes" :tabs="TABS" :active="filter" :to="tabRoute" />
 
+      <AppealsList v-if="filter === 'appeals'" />
       <AsyncState
+        v-else
         :status="moderation.reports.status"
         :error="moderation.reports.error"
         :empty="!moderation.reports.items.length"

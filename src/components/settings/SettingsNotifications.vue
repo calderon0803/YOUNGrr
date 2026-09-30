@@ -27,12 +27,18 @@ const toggle = (key, value) => {
     <section class="settings-section__block">
       <fieldset class="settings-section__options">
         <legend class="settings-section__title">Avisarme de</legend>
-        <label v-for="option in OPTIONS" :key="option.key" class="settings-section__option">
-          <input type="checkbox" :checked="user.settings.notifications[option.key]" @change="toggle(option.key, $event.target.checked)" />
+        <label v-for="option in OPTIONS" :key="option.key" class="settings-section__option settings-section__option--switch">
           <span class="settings-section__option-text">
             <span>{{ option.label }}</span>
             <span class="settings-section__option-hint">{{ option.hint }}</span>
           </span>
+          <input
+            type="checkbox"
+            role="switch"
+            class="switch"
+            :checked="user.settings.notifications[option.key]"
+            @change="toggle(option.key, $event.target.checked)"
+          />
         </label>
       </fieldset>
     </section>

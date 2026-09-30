@@ -31,6 +31,8 @@ const query = ref('')
 const accountMenu = computed(() => [
   { key: 'settings', label: 'Configuración' },
   ...(moderation.isModerator ? [{ key: 'moderation', label: 'Moderación' }] : []),
+  { key: 'terms', label: 'Condiciones de uso' },
+  { key: 'privacy', label: 'Privacidad' },
   { key: 'logout', label: 'Salir' },
 ])
 
@@ -51,6 +53,7 @@ const submitSearch = () => {
 const onAccountMenu = (key) => {
   if (key === 'settings') router.push({ name: 'settings' })
   else if (key === 'moderation') router.push({ name: 'moderation' })
+  else if (key === 'terms' || key === 'privacy') router.push({ name: key })
   else auth.logout()
 }
 

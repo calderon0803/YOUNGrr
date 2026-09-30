@@ -66,6 +66,7 @@ export const localPostsService = {
           return photo && canViewPhoto(db, me, photo)
         })
         .map((t) => ({ person: t.userId, at: t.createdAt })),
+      ...(db.achievements ?? []).filter((a) => friends.has(a.userId) && a.sharedAt && a.sharedAt >= since).map((a) => ({ person: a.userId, at: a.sharedAt })),
     ]
     const { people, hasMore } = pageOfPeople(events, before)
     return {

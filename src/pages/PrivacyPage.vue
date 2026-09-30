@@ -45,13 +45,20 @@ import { LIMITS } from '@/utils/validation'
         persona invitada hasta que crea su cuenta.
       </li>
       <li>
+        <strong>Logros:</strong> a partir de lo que ya haces en YOUNGrr (fotos, amigos, planes, Grr, tablón) calculamos
+        los logros que consigues y cuándo. Se ven en tu perfil, para quien puede verlo, y solo aparecen en las Novedades de
+        tus amigos si decides compartirlos.
+      </li>
+      <li>
         <strong>Visitas a perfiles:</strong> para que la misma persona no cuente más de una vez cada 6 horas, cada visita
         deja una marca cifrada con una clave secreta. No contiene tu nombre ni el del perfil, nadie puede consultarla y se
         borra a las 6 horas. Del perfil solo se guarda el total.
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
-        que se pueda revisar. La persona reportada no sabe quién la ha reportado.
+        que se pueda revisar. La persona reportada no sabe quién la ha reportado. Si se retira algo tuyo, deja de verse
+        pero guardamos una copia durante 14 días (o hasta que se resuelva tu apelación) para poder devolvértelo, y un
+        aviso para ti con el motivo. Si apelas, guardamos también tu explicación.
       </li>
       <li>
         <strong>Datos técnicos:</strong> para que el servicio funcione y sea seguro, los proveedores registran datos de
@@ -67,8 +74,9 @@ import { LIMITS } from '@/utils/validation'
         «Cerca de ti» si lo activas): es necesario para cumplir las condiciones de uso que aceptas (art. 6.1.b RGPD).
       </li>
       <li>
-        <strong>Seguridad y convivencia</strong> (comprobar la edad, límites de uso, bloqueos, revisar reportes y retirar
-        contenido que incumple las normas): interés legítimo en mantener una red segura (art. 6.1.f RGPD).
+        <strong>Seguridad y convivencia</strong> (comprobar la edad, límites de uso, bloqueos, revisar reportes, retirar
+        contenido que incumple las normas y atender las apelaciones): interés legítimo en mantener una red segura
+        (art. 6.1.f RGPD).
       </li>
     </ul>
     <p>
@@ -84,7 +92,7 @@ import { LIMITS } from '@/utils/validation'
     <p>
       Cualquier persona con cuenta puede ver tu nombre y tu foto de perfil. El resto de tu perfil y de lo que publicas lo
       ve quien permitas en <em>Configuración &gt; Privacidad</em>. Los mensajes privados solo los ven las personas de la
-      conversación. Quien modera solo accede al contenido que se ha reportado.
+      conversación. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
     </p>
     <ul>
       <li>
@@ -96,6 +104,10 @@ import { LIMITS } from '@/utils/validation'
         <strong>Eventos públicos:</strong> un evento público lo ven los amigos de quien lo organiza y los amigos de sus
         amigos, incluida la lista de quién va. Si te apuntas a uno, esas personas verán tu nombre y tu respuesta. Los
         eventos con invitación solo los ven quien los organiza y las personas invitadas.
+      </li>
+      <li>
+        <strong>Logros:</strong> los ve quien puede ver tu perfil. En las Novedades de tus amigos solo aparecen los que tú
+        decides compartir.
       </li>
       <li>
         <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro, sus eventos
@@ -130,6 +142,8 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Reportes ya revisados, con su copia del contenido</td><td>Al año de la decisión</td></tr>
         <tr><td>Recuento de acciones por minuto</td><td>En una hora</td></tr>
         <tr><td>Marca de visita a un perfil</td><td>A las 6 horas</td></tr>
+        <tr><td>Copia de contenido retirado</td><td>A los 14 días, o al resolverse la apelación</td></tr>
+        <tr><td>Aviso de contenido retirado y apelación</td><td>Al cerrarlo, una vez resuelto</td></tr>
       </tbody>
     </table>
     <p>
@@ -142,7 +156,7 @@ import { LIMITS } from '@/utils/validation'
     <h2>Tus derechos</h2>
     <p>Puedes ejercerlos desde la propia app o escribiendo a <a :href="`mailto:${LEGAL.contactEmail}`">{{ LEGAL.contactEmail }}</a>:</p>
     <ul>
-      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
+      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
       <li><strong>Rectificación:</strong> puedes editar tu perfil y tu contenido en cualquier momento.</li>
       <li><strong>Supresión:</strong> <em>Configuración &gt; Cuenta &gt; Eliminar mi cuenta</em>.</li>
       <li><strong>Oposición y limitación:</strong> por correo, explicando tu caso.</li>

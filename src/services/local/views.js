@@ -83,6 +83,13 @@ export const activityBlock = (db, me, personId, { since, withSocial, lastActivit
     newFriendsTotal: friendships.length,
     tagged: tags.slice(0, ACTIVITY_LIMITS.tagged).map(({ photo }) => ({ id: photo.id, url: photo.url, width: photo.width, height: photo.height })),
     taggedTotal: tags.length,
+    // Achievements the person chose to share lately.
+    achievements: withSocial
+      ? (db.achievements ?? [])
+          .filter((a) => a.userId === personId && a.sharedAt && a.sharedAt >= since)
+          .sort((a, b) => b.sharedAt.localeCompare(a.sharedAt))
+          .map(({ code, level, sharedAt }) => ({ code, level, sharedAt }))
+      : [],
   }
 }
 

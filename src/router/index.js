@@ -14,8 +14,8 @@ const routes = [
   // Opened from the email link: Supabase signs the person in for the change.
   { path: '/reset-password', name: 'reset-password', component: () => import('@/pages/ResetPasswordPage.vue'), meta: { layout: 'auth', title: 'Nueva contraseña' } },
   // Readable by everyone, also while completing the account (to accept them).
-  { path: '/legal/terms', name: 'terms', component: () => import('@/pages/TermsPage.vue'), meta: { public: true, layout: 'auth', title: 'Condiciones de uso' } },
-  { path: '/legal/privacy', name: 'privacy', component: () => import('@/pages/PrivacyPage.vue'), meta: { public: true, layout: 'auth', title: 'Política de privacidad' } },
+  { path: '/legal/terms', name: 'terms', component: () => import('@/pages/TermsPage.vue'), meta: { public: true, title: 'Condiciones de uso' } },
+  { path: '/legal/privacy', name: 'privacy', component: () => import('@/pages/PrivacyPage.vue'), meta: { public: true, title: 'Política de privacidad' } },
   { path: '/register', name: 'register', component: () => import('@/pages/RegisterPage.vue'), meta: { guest: true, layout: 'auth', title: 'Crear cuenta' } },
 
   app('/setup', 'setup', () => import('@/pages/SetupPage.vue'), { layout: 'auth', title: 'Completa tu perfil' }),

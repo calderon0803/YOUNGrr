@@ -34,6 +34,19 @@
   --c-danger: #{p.$red-700};
   --c-danger-soft: #{p.$red-100};
 
+  --c-bronze: #{p.$bronze-700};
+  --c-bronze-soft: #{p.$bronze-100};
+  --c-bronze-border: #{p.$bronze-400};
+  --c-silver: #{p.$silver-700};
+  --c-silver-soft: #{p.$silver-100};
+  --c-silver-border: #{p.$silver-400};
+  --c-gold: #{p.$gold-700};
+  --c-gold-soft: #{p.$gold-100};
+  --c-gold-border: #{p.$gold-400};
+  --c-platinum: #{p.$platinum-700};
+  --c-platinum-soft: #{p.$platinum-100};
+  --c-platinum-border: #{p.$platinum-400};
+
   --c-focus: #{p.$blue-500};
   --c-overlay: #{rgba(p.$ink-950, 0.55)};
   --c-viewer-bg: #{rgba(p.$ink-950, 0.94)};
@@ -78,6 +91,19 @@
   --c-success-soft: #{p.$green-dark-soft};
   --c-danger: #{p.$red-300};
   --c-danger-soft: #{p.$red-dark-soft};
+
+  --c-bronze: #{p.$bronze-400};
+  --c-bronze-soft: #{p.$bronze-dark-soft};
+  --c-bronze-border: #{p.$bronze-700};
+  --c-silver: #{p.$silver-400};
+  --c-silver-soft: #{p.$silver-dark-soft};
+  --c-silver-border: #{p.$silver-700};
+  --c-gold: #{p.$gold-400};
+  --c-gold-soft: #{p.$gold-dark-soft};
+  --c-gold-border: #{p.$gold-700};
+  --c-platinum: #{p.$platinum-400};
+  --c-platinum-soft: #{p.$platinum-dark-soft};
+  --c-platinum-border: #{p.$platinum-700};
 
   --c-focus: #{p.$blue-300};
   --c-overlay: #{rgba(p.$black, 0.65)};

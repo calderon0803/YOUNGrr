@@ -50,5 +50,81 @@ export const useModerationStore = defineStore('moderation', () => {
     }
   }
 
-  return { isModerator, reports, checkModerator, report, loadReports, resolve }
+  /** Notices about your own content removed by moderation (Inicio). */
+  const notices = ref([])
+
+  const loadNotices = async () => {
+    try {
+      notices.value = await moderationService.myNotices()
+    } catch {
+      // Informative only: they show up next time.
+    }
+  }
+
+  const dismissNotice = async (noticeId) => {
+    notices.value = notices.value.filter((n) => n.id !== noticeId)
+    try {
+      await moderationService.dismissNotice(noticeId)
+    } catch {
+      // It comes back next time if it could not be dismissed.
+    }
+  }
+
+  /** Throws on error so the dialog can show it. */
+  const appeal = async (noticeId, text) => {
+    notices.value = await moderationService.appeal(noticeId, text)
+    toast.success('Apelación enviada. Te avisaremos cuando la revisemos.')
+  }
+
+  // ---- Moderators: appeals ----------------------------------------------------------------
+  const appeals = reactive({ status: 'idle', error: null, items: [] })
+
+  const loadAppeals = async () => {
+    appeals.status = 'loading'
+    appeals.error = null
+    try {
+      appeals.items = await moderationService.listAppeals()
+      appeals.status = 'success'
+    } catch (error) {
+      appeals.status = 'error'
+      appeals.error = errorMessage(error)
+    }
+  }
+
+  const resolveAppeal = async (appealId, accept) => {
+    try {
+      const { restored } = await moderationService.resolveAppeal(appealId, accept)
+      appeals.items = appeals.items.filter((a) => a.id !== appealId)
+      if (!accept) toast.success('Apelación rechazada. Se lo hemos comunicado.')
+      else toast.success(restored ? 'Apelación aceptada: el contenido ha vuelto a su sitio.' : 'Apelación aceptada, pero el contenido no se ha podido restaurar.')
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
+  /** Deletes the files of final removals; housekeeping, tried on each visit. */
+  const cleanUpRemovedFiles = async () => {
+    try {
+      await moderationService.cleanUpRemovedFiles()
+    } catch {
+      // Tried again next time.
+    }
+  }
+
+  return {
+    isModerator,
+    reports,
+    notices,
+    appeals,
+    checkModerator,
+    report,
+    loadReports,
+    resolve,
+    loadNotices,
+    dismissNotice,
+    appeal,
+    loadAppeals,
+    resolveAppeal,
+    cleanUpRemovedFiles,
+  }
 })

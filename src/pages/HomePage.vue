@@ -11,6 +11,8 @@ import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
 import PublicEventsWidget from '@/components/events/PublicEventsWidget.vue'
+import AchievementsToShare from '@/components/achievements/AchievementsToShare.vue'
+import ModerationNotices from '@/components/moderation/ModerationNotices.vue'
 import CalendarWidget from '@/components/events/CalendarWidget.vue'
 import InviteWidget from '@/components/friends/InviteWidget.vue'
 import { useFeedStore } from '@/stores/feed'
@@ -78,6 +80,7 @@ watch(locationKey, () => {
 
     <section class="home__center panel" aria-labelledby="feed-title">
       <h2 id="feed-title" class="panel-title">Novedades de tus amigos</h2>
+      <ModerationNotices />
       <StatusLine />
       <TabNav class="home__tabs" label="Qué novedades ver" :tabs="TABS" :active="tab" :to="tabRoute" />
       <NearbyRadius
@@ -133,6 +136,7 @@ watch(locationKey, () => {
     </section>
 
     <aside class="home__right" aria-label="Personas que quizá conozcas y planes públicos">
+      <AchievementsToShare />
       <SuggestionsWidget />
       <PublicEventsWidget />
     </aside>

@@ -5,6 +5,7 @@ import { Camera, MessageCircle, Pencil } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import FriendshipButton from '@/components/friends/FriendshipButton.vue'
 import ReportDialog from '@/components/feed/ReportDialog.vue'
+import ProfileAchievements from '@/components/achievements/ProfileAchievements.vue'
 import { useUserStore } from '@/stores/user'
 import { useMessagesStore } from '@/stores/messages'
 import { useFriendsStore } from '@/stores/friends'
@@ -163,6 +164,8 @@ onMounted(() => {
       <p v-else class="aside__empty">{{ isSelf ? 'Todavía no tienes amigos.' : 'Todavía no tiene amigos.' }}</p>
       <RouterLink v-if="view.friendsCount > 9" class="aside__all" :to="{ query: { tab: 'friends' } }">Ver todos</RouterLink>
     </section>
+
+    <ProfileAchievements v-if="view.canViewProfile" class="aside__block" :user-id="profile.id" :is-self="isSelf" :first-name="profile.firstName" />
   </aside>
 </template>
 

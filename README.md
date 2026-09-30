@@ -123,9 +123,11 @@ update app_settings set value = now()::text where key = 'founders_until';
   visitas; en el centro las novedades de tus amigos en formato compacto (miniaturas y
   "Grr · Comentar" como enlaces); a la derecha, próximos planes, cumpleaños y sugerencias.
 - **Novedades de tus amigos** no es un muro de publicaciones: es la actividad de tus
-  amigos, un bloque por persona (como en Tuenti) con su estado y lo que han hecho en los
-  últimos 30 días: fotos subidas, nuevas amistades y fotos en las que les han
-  etiquetado. Los bloques se ordenan por la actividad más reciente.
+  amigos de los últimos 30 días, con **una tarjeta por amigo y día** (hora de España): lo
+  nuevo crea una tarjeta arriba y las de otros días se quedan como estaban. Cada tarjeta
+  lleva el estado si lo puso ese día y lo que hizo: fotos subidas (3 y «y N subidas más»),
+  nuevas amistades, fotos en las que le han etiquetado y logros compartidos. Las tarjetas
+  se ordenan por su actividad más reciente.
 - **Estado**: una frase breve (140 caracteres) y solo uno a la vez. Se cambia en la línea
   de la portada; el nuevo sustituye al anterior (con sus comentarios y Grr) y dejarla vacía
   lo borra. Admite comentarios y Grr, y se muestra bajo tu nombre en el perfil.
@@ -243,8 +245,12 @@ protege los datos.
   y de aparecer en búsquedas y sugerencias. La otra persona no recibe ningún aviso. La
   lista está en *Configuración > Privacidad*.
 - **Reportes y moderación.** Se pueden reportar estados, fotos, comentarios, mensajes
-  del tablón, perfiles y mensajes privados. Los moderadores (tabla `moderators`) los
-  revisan en `/moderation`. Si retiran una foto, también se borra su archivo.
+  del tablón, perfiles y mensajes privados. Reportar no oculta nada. Un contenido llega a
+  moderación cuando lo reportan 10 personas distintas (`app_settings.report_threshold`; los
+  mensajes privados, con 1) y aparece una sola vez, con el número de reportes y sus motivos,
+  sin quién los hizo. Los moderadores (tabla `moderators`) lo revisan en `/moderation` y ven
+  un contador en el menú de la cuenta. Los reportes que no llegan al mínimo se borran a los
+  90 días.
 - **Retiradas y apelaciones.** Retirar contenido tras un reporte lo quita de donde estaba y
   guarda una copia completa aparte (`moderation_removals`, sin acceso por la API). Su dueño
   recibe un aviso en Inicio con el motivo (nunca quién reportó) y tiene 14 días para apelar.

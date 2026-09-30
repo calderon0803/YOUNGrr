@@ -60,8 +60,9 @@ import { LIMITS } from '@/utils/validation'
       contener desnudos o contenido sexual. Es un filtro automático y puede equivocarse en ambos sentidos.
     </p>
     <p>
-      Puedes reportar contenido y perfiles, y bloquear a cualquier persona. Quien modera revisa los reportes y puede
-      retirar el contenido que incumpla estas normas. Si retiramos algo tuyo, te avisamos en la app con el motivo (nunca
+      Puedes reportar contenido y perfiles, y bloquear a cualquier persona. Reportar no oculta nada: el contenido llega a
+      moderación cuando lo reportan 10 personas distintas (un mensaje privado, con un solo reporte). Quien modera lo
+      revisa y puede retirar el contenido que incumpla estas normas. Si retiramos algo tuyo, te avisamos en la app con el motivo (nunca
       de quién lo reportó) y tienes 14 días para apelar desde ese aviso: mientras tanto el contenido deja de verse pero se
       guarda, y si tienes razón vuelve a su sitio. Si no apelas o se rechaza la apelación, se borra del todo. Si los incumplimientos son graves o se repiten, podemos suspender o
       eliminar la cuenta. Si no estás de acuerdo con una decisión sobre tu cuenta, escribe a

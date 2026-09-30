@@ -35,6 +35,7 @@ let poll = null
 const refreshBadges = () => {
   notifications.loadSummary()
   messages.refreshUnread()
+  moderation.loadPendingCount()
 }
 
 const onVisibility = () => {
@@ -47,7 +48,7 @@ onMounted(() => {
   friends.loadRequests()
   events.loadEvents()
   user.loadSettings().catch(() => {})
-  moderation.checkModerator()
+  moderation.checkModerator().then(() => moderation.loadPendingCount())
   friends.loadBlocked()
   user.cleanOldProfileImages()
   poll = setInterval(refreshBadges, BADGE_POLL_INTERVAL_MS)

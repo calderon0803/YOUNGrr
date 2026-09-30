@@ -159,9 +159,12 @@ export const toPost = (json, urls = {}) => ({
  */
 export const toActivityBlock = (json, urls = {}) => ({
   person: toSummary(json.person),
+  // One card per person and day (YYYY-MM-DD, Spanish time).
+  day: json.day,
   lastActivityAt: json.last_activity_at,
   status: json.status ? toPost(json.status, urls) : null,
   uploads: json.uploads.map((p) => toPost(p, urls)),
+  uploadsTotal: json.uploads_total ?? json.uploads.length,
   newFriends: json.new_friends.map((f) => ({ person: toSummary(f.person), createdAt: f.created_at })),
   newFriendsTotal: json.new_friends_total,
   tagged: json.tagged.map((t) => ({ id: t.id, url: urls[t.storage_path] ?? null, width: t.width, height: t.height })),

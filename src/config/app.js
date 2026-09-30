@@ -125,6 +125,13 @@ export const TEXT_LIMITS = {
   minAge: 18,
 }
 
+/**
+ * Different people who must report something before it reaches moderation
+ * (1 for private messages, which only two people see). The database has its
+ * own value in app_settings.report_threshold; this one is for the demo.
+ */
+export const REPORT_THRESHOLD = 10
+
 /** Days to appeal a removal of your content, from its notice. */
 export const APPEAL_DAYS = 14
 
@@ -140,8 +147,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30',
-  updatedOn: '30 de septiembre de 2026',
+  version: '2026-09-30.2',
+  updatedOn: '30 de septiembre de 2026 (revisión 2)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

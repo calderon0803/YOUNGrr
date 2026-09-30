@@ -55,27 +55,31 @@ export const postView = (db, me, post, { commentPreview = COMMENT_PREVIEW } = {}
  * uploads and, for friends, new friendships and photos where they were tagged
  * (that the viewer can see). Same shape as activity_block_json().
  */
-export const activityBlock = (db, me, personId, { since, withSocial, lastActivityAt }) => {
+export const activityBlock = (db, me, personId, { since, until = null, day = null, withSocial, lastActivityAt }) => {
   const newest = (a, b) => b.createdAt.localeCompare(a.createdAt)
-  const status = db.posts.find((p) => p.authorId === personId && (p.kind ?? 'status') === 'status')
-  const uploads = db.posts.filter((p) => p.authorId === personId && p.kind === 'album_upload' && p.createdAt >= since).sort(newest)
+  // A day card only holds what happened in [since, until).
+  const inRange = (at) => at >= since && (!until || at < until)
+  const status = db.posts.find((p) => p.authorId === personId && (p.kind ?? 'status') === 'status' && (!until || inRange(p.createdAt)))
+  const uploads = db.posts.filter((p) => p.authorId === personId && p.kind === 'album_upload' && inRange(p.createdAt)).sort(newest)
   const friendships = withSocial
     ? db.friendships
-        .filter((f) => [f.userA, f.userB].includes(personId) && ![f.userA, f.userB].includes(me) && f.createdAt >= since)
+        .filter((f) => [f.userA, f.userB].includes(personId) && ![f.userA, f.userB].includes(me) && inRange(f.createdAt))
         .sort(newest)
     : []
   const tags = withSocial
     ? db.photoTags
-        .filter((t) => t.userId === personId && t.createdAt >= since)
+        .filter((t) => t.userId === personId && inRange(t.createdAt))
         .map((t) => ({ tag: t, photo: db.photos.find((p) => p.id === t.photoId) }))
         .filter(({ photo }) => photo && canViewPhoto(db, me, photo))
         .sort((a, b) => newest(a.tag, b.tag))
     : []
   return {
     person: summaryOf(db, personId),
+    day,
     lastActivityAt,
     status: status ? postView(db, me, status) : null,
     uploads: uploads.slice(0, ACTIVITY_LIMITS.uploads).map((p) => postView(db, me, p)),
+    uploadsTotal: uploads.length,
     newFriends: friendships.slice(0, ACTIVITY_LIMITS.newFriends).map((f) => ({
       person: summaryOf(db, f.userA === personId ? f.userB : f.userA),
       createdAt: f.createdAt,
@@ -86,7 +90,7 @@ export const activityBlock = (db, me, personId, { since, withSocial, lastActivit
     // Achievements the person chose to share lately.
     achievements: withSocial
       ? (db.achievements ?? [])
-          .filter((a) => a.userId === personId && a.sharedAt && a.sharedAt >= since)
+          .filter((a) => a.userId === personId && a.sharedAt && inRange(a.sharedAt))
           .sort((a, b) => b.sharedAt.localeCompare(a.sharedAt))
           .map(({ code, level, sharedAt }) => ({ code, level, sharedAt }))
       : [],

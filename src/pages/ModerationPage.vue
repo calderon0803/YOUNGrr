@@ -11,6 +11,7 @@ import AppealsList from '@/components/moderation/AppealsList.vue'
 import { useModerationStore } from '@/stores/moderation'
 import { useConfirm } from '@/composables/useConfirm'
 import { APPEAL_DAYS } from '@/config/app'
+import { plural } from '@/utils/text'
 
 // Reports for moderators: who reported what, why and when, with a copy of the
 // content kept at the time. Only reachable for moderators (router guard) and
@@ -35,6 +36,13 @@ const notes = reactive({})
 const filter = computed(() => (TABS.some((t) => t.key === route.query.estado) ? route.query.estado : 'pending'))
 
 // METHODS
+// "Es spam (6) · Contenido ofensivo (4)", most frequent first.
+const reasonsText = (report) =>
+  Object.entries(report.reasons)
+    .sort((a, b) => b[1] - a[1])
+    .map(([reason, n]) => `${reason} (${n})`)
+    .join(' · ')
+
 const tabRoute = (key) => ({ query: key === 'pending' ? {} : { estado: key } })
 
 const resolve = async (report, decision, removeContent = false) => {
@@ -80,16 +88,14 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
           <li v-for="report in moderation.reports.items" :key="report.id" class="report">
             <p class="report__head">
               <span class="report__kind">{{ KIND_LABEL[report.targetType] }}</span>
-              <span>Motivo: <strong>{{ report.reason }}</strong></span>
-              <RelativeTime class="report__when" :value="report.createdAt" />
+              <strong>{{ plural(report.reportCount, 'reporte', 'reportes') }}</strong>
+              <span class="report__reasons">{{ reasonsText(report) }}</span>
+              <RelativeTime class="report__when" :value="report.lastReportedAt" />
             </p>
 
             <p class="report__who">
               De:
               <PersonLink v-if="report.targetOwner" :person="report.targetOwner" />
-              <em v-else>cuenta eliminada</em>
-              · Reportado por:
-              <PersonLink v-if="report.reporter" :person="report.reporter" />
               <em v-else>cuenta eliminada</em>
             </p>
 
@@ -177,6 +183,7 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
   }
 
   &__when,
+  &__reasons,
   &__who,
   &__muted {
     font-size: $fs-sm;

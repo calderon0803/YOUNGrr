@@ -6,7 +6,7 @@ import { canViewPhoto, canViewPost, canViewProfile, summaryOf } from '@/services
 import { ensure, validate } from '@/services/errors'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { APPEAL_DAYS, REPORT_REASONS } from '@/config/app'
+import { APPEAL_DAYS, REPORT_REASONS, REPORT_THRESHOLD } from '@/config/app'
 
 const COLLECTIONS = { status: 'posts', photo: 'photos', comment: 'comments', wall_message: 'wallMessages', profile: 'profiles', message: 'messages' }
 
@@ -120,6 +120,25 @@ const putBack = (db, removal) => {
   return true
 }
 
+const person = (db, id) => (id && db.profiles.some((p) => p.id === id) ? summaryOf(db, id) : null)
+
+const thresholdFor = (kind) => (kind === 'message' ? 1 : REPORT_THRESHOLD)
+
+/** Reports grouped by content, newest group first; pending groups need the minimum. */
+const reportGroups = (db, filter) => {
+  const groups = new Map()
+  for (const r of db.reports) {
+    if (!r.targetType || (filter !== 'all' && r.status !== filter)) continue
+    const key = `${r.targetType}:${r.targetId}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(r)
+  }
+  return [...groups.values()]
+    .map((g) => g.sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
+    .filter((g) => filter !== 'pending' || g.length >= thresholdFor(g[0].targetType))
+    .sort((a, b) => b.at(-1).createdAt.localeCompare(a.at(-1).createdAt))
+}
+
 const noticeView = (r) => ({
   id: r.id,
   contentKind: r.contentKind,
@@ -156,10 +175,6 @@ export const localModerationService = {
         status: 'pending',
         createdAt: nowIso(),
       })
-    }
-    // A reported status stops appearing for the reporter.
-    if (kind === 'status' && !db.hiddenPosts.some((h) => h.userId === me && h.postId === targetId)) {
-      db.hiddenPosts.push({ userId: me, postId: targetId })
     }
     await commit()
   },
@@ -245,30 +260,39 @@ export const localModerationService = {
     return db.moderators.includes(requireUserId(db))
   },
 
+  /** One entry per reported content; pending ones only once they reach the minimum. */
   async listReports(filter = 'pending') {
     await latency()
     const db = await getDb()
     requireModerator(db, requireUserId(db))
-    const person = (id) => (id && db.profiles.some((p) => p.id === id) ? summaryOf(db, id) : null)
-    return db.reports
-      .filter((r) => r.targetType && (filter === 'all' || r.status === filter))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map((r) => ({
-        id: r.id,
-        targetType: r.targetType,
-        targetId: r.targetId,
-        reason: r.reason,
-        createdAt: r.createdAt,
-        status: r.status,
-        snapshot: { text: r.snapshot?.text ?? '', name: r.snapshot?.name ?? null, photoUrl: r.snapshot?.photoUrl ?? null },
-        contentExists: db[COLLECTIONS[r.targetType]].some((x) => x.id === r.targetId),
-        contentRemoved: !!r.contentRemoved,
-        reporter: person(r.reporterId),
-        targetOwner: person(r.targetOwnerId),
-        resolvedBy: person(r.resolvedBy),
-        resolvedAt: r.resolvedAt ?? null,
-        resolutionNote: r.resolutionNote ?? '',
-      }))
+    return reportGroups(db, filter).map((group) => {
+      const newest = group.at(-1)
+      const reasons = {}
+      for (const r of group) reasons[r.reason] = (reasons[r.reason] ?? 0) + 1
+      return {
+        id: newest.id,
+        targetType: newest.targetType,
+        targetId: newest.targetId,
+        reportCount: group.length,
+        reasons,
+        createdAt: group[0].createdAt,
+        lastReportedAt: newest.createdAt,
+        status: newest.status,
+        snapshot: { text: newest.snapshot?.text ?? '', name: newest.snapshot?.name ?? null, photoUrl: newest.snapshot?.photoUrl ?? null },
+        contentExists: db[COLLECTIONS[newest.targetType]].some((x) => x.id === newest.targetId),
+        contentRemoved: group.some((r) => r.contentRemoved),
+        targetOwner: person(db, newest.targetOwnerId),
+        resolvedBy: person(db, newest.resolvedBy),
+        resolvedAt: newest.resolvedAt ?? null,
+        resolutionNote: newest.resolutionNote ?? '',
+      }
+    })
+  },
+
+  async pendingCount() {
+    const db = await getDb()
+    requireModerator(db, requireUserId(db))
+    return reportGroups(db, 'pending').length + db.moderationRemovals.filter((r) => r.appealedAt && !r.decision).length
   },
 
   async resolveReport(reportId, decision, { removeContent = false, note = '' } = {}) {

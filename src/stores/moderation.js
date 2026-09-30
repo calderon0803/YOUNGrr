@@ -21,6 +21,18 @@ export const useModerationStore = defineStore('moderation', () => {
     return isModerator.value
   }
 
+  /** Content with enough reports plus pending appeals (menu counter). */
+  const pendingCount = ref(0)
+
+  const loadPendingCount = async () => {
+    if (!isModerator.value) return
+    try {
+      pendingCount.value = await moderationService.pendingCount()
+    } catch {
+      // Keeps the last value; it is refreshed again soon.
+    }
+  }
+
   /** Throws on error so the dialog can show it. */
   const report = async (kind, targetId, reason) => {
     await moderationService.reportContent(kind, targetId, reason)
@@ -44,7 +56,7 @@ export const useModerationStore = defineStore('moderation', () => {
     try {
       await moderationService.resolveReport(reportId, decision, options)
       toast.success(decision === 'dismissed' ? 'Reporte descartado.' : 'Reporte resuelto.')
-      await loadReports()
+      await Promise.all([loadReports(), loadPendingCount()])
     } catch (error) {
       toast.error(errorMessage(error))
     }
@@ -95,6 +107,7 @@ export const useModerationStore = defineStore('moderation', () => {
     try {
       const { restored } = await moderationService.resolveAppeal(appealId, accept)
       appeals.items = appeals.items.filter((a) => a.id !== appealId)
+      loadPendingCount()
       if (!accept) toast.success('Apelación rechazada. Se lo hemos comunicado.')
       else toast.success(restored ? 'Apelación aceptada: el contenido ha vuelto a su sitio.' : 'Apelación aceptada, pero el contenido no se ha podido restaurar.')
     } catch (error) {
@@ -113,6 +126,8 @@ export const useModerationStore = defineStore('moderation', () => {
 
   return {
     isModerator,
+    pendingCount,
+    loadPendingCount,
     reports,
     notices,
     appeals,

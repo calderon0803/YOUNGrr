@@ -100,3 +100,21 @@ export const shortDayMonth = (date) => {
   const value = eventDateTime(date, '00:00')
   return `${value.getDate()} ${SHORT_MONTHS[value.getMonth()]}`
 }
+
+const weekdayOnly = new Intl.DateTimeFormat('es-ES', { weekday: 'long' })
+
+/** "Hoy", "Ayer", "Lunes" (this week) or "28 de septiembre" for a local YYYY-MM-DD date. */
+export const dayLabel = (date, now = new Date()) => {
+  const days = -daysUntil(date, now)
+  if (days <= 0) return 'Hoy'
+  if (days === 1) return 'Ayer'
+  const value = eventDateTime(date, '12:00')
+  const text = days < 7 ? weekdayOnly.format(value) : dayMonth.format(value)
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`
+}
+
+/** "ago 2022": month and year, for short dates such as "Miembro desde". */
+export const monthYear = (iso) => {
+  const value = new Date(iso)
+  return `${SHORT_MONTHS[value.getMonth()]} ${value.getFullYear()}`
+}

@@ -44,7 +44,7 @@ watch(sentinel, observe)
     </template>
 
     <TransitionGroup tag="div" name="activity-list" class="activity-list">
-      <ActivityBlock v-for="block in list.blocks" :key="block.person.id" :block="block" />
+      <ActivityBlock v-for="block in list.blocks" :key="`${block.person.id}:${block.day}`" :block="block" />
     </TransitionGroup>
 
     <div v-if="list.hasMore" ref="sentinel" class="activity-list__more">

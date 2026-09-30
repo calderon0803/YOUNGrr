@@ -30,7 +30,7 @@ const query = ref('')
 // "Moderación" only for moderators (the page and the data are protected anyway).
 const accountMenu = computed(() => [
   { key: 'settings', label: 'Configuración' },
-  ...(moderation.isModerator ? [{ key: 'moderation', label: 'Moderación' }] : []),
+  ...(moderation.isModerator ? [{ key: 'moderation', label: 'Moderación', count: moderation.pendingCount, badge: 'pendientes de revisar' }] : []),
   { key: 'terms', label: 'Condiciones de uso' },
   { key: 'privacy', label: 'Privacidad' },
   { key: 'logout', label: 'Salir' },

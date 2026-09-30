@@ -11,6 +11,7 @@ import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import NotificationSummary from '@/components/notifications/NotificationSummary.vue'
 import SuggestionsWidget from '@/components/friends/SuggestionsWidget.vue'
 import PublicEventsWidget from '@/components/events/PublicEventsWidget.vue'
+import YourGroupsWidget from '@/components/groups/YourGroupsWidget.vue'
 import AchievementsToShare from '@/components/achievements/AchievementsToShare.vue'
 import ModerationNotices from '@/components/moderation/ModerationNotices.vue'
 import CalendarWidget from '@/components/events/CalendarWidget.vue'
@@ -72,8 +73,9 @@ watch(locationKey, () => {
   <div class="home">
     <h1 class="visually-hidden">Inicio</h1>
 
-    <aside class="home__left" aria-label="Tus novedades, invitaciones y calendario">
+    <aside class="home__left" aria-label="Tus novedades, grupos, invitaciones y calendario">
       <NotificationSummary />
+      <YourGroupsWidget />
       <InviteWidget />
       <CalendarWidget />
     </aside>

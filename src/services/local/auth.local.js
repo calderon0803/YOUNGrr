@@ -97,7 +97,7 @@ export const localAuthService = {
     })
     db.settings[id] = {
       privacy: { profileVisibility: 'everyone', cityVisibility: 'friends', distanceVisibility: 'friends', friendRequests: 'everyone' },
-      notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true },
+      notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
       appearance: { theme: 'system' },
       nearby: { radiusKm: NEARBY_DEFAULT_RADIUS_KM },
     }

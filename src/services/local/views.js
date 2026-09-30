@@ -1,5 +1,5 @@
 // Builds the view models the UI consumes (joins + counters), as a SQL view would.
-import { areFriends, canViewPhoto, canViewProfile, friendIdsOf, isBlockedBetween, mutualFriends, pendingOwnerInvite, photoOwnerIds, summaryOf } from '@/services/local/access'
+import { areFriends, canViewPhoto, canViewProfile, friendIdsOf, isBlockedBetween, isGroupMember, mutualFriends, pendingOwnerInvite, photoOwnerIds, summaryOf } from '@/services/local/access'
 import { ACTIVITY_LIMITS, ALBUM_UPLOAD_PREVIEW, COMMENT_PREVIEW } from '@/config/app'
 
 const byDateAsc = (a, b) => a.createdAt.localeCompare(b.createdAt)
@@ -159,8 +159,10 @@ export const eventView = (db, me, event) => {
   const counts = { going: 0, maybe: 0, declined: 0, pending: 0 }
   for (const m of all) if (inside || m.status === 'going' || m.status === 'maybe') counts[m.status] += 1
 
+  const group = event.groupId ? db.groups?.find((g) => g.id === event.groupId) : null
   return {
     ...event,
+    group: group ? { id: group.id, name: group.name } : null,
     creator: summaryOf(db, event.creatorId),
     isCreator: event.creatorId === me,
     myStatus: all.find((m) => m.userId === me)?.status ?? null,
@@ -174,7 +176,8 @@ export const eventView = (db, me, event) => {
 /** Creator or invited (or joined). */
 export const isInEvent = (db, me, event) => event.creatorId === me || db.eventMembers.some((m) => m.eventId === event.id && m.userId === me)
 
-/** Also public events of your friends and friends of friends (unless blocked). */
+/** Also public events of your friends and friends of friends, and your groups' events (unless blocked). */
 export const canSeeEvent = (db, me, event) =>
   isInEvent(db, me, event) ||
+  (!!event.groupId && isGroupMember(db, event.groupId, me) && !isBlockedBetween(db, me, event.creatorId)) ||
   (!!event.isPublic && !isBlockedBetween(db, me, event.creatorId) && (areFriends(db, me, event.creatorId) || mutualFriends(db, me, event.creatorId) > 0))

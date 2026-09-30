@@ -1,9 +1,10 @@
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ImagePlus, X } from 'lucide-vue-next'
 import BaseModal from '@/components/common/BaseModal.vue'
 import FriendPicker from '@/components/events/FriendPicker.vue'
 import { useEventsStore } from '@/stores/events'
+import { useGroupsStore } from '@/stores/groups'
 import { useImagePicker } from '@/composables/useImagePicker'
 import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
@@ -15,18 +16,22 @@ const props = defineProps({
   open: { type: Boolean, required: true },
   /** Event to edit; null to create. */
   event: { type: Object, default: null },
+  /** Creating from a group's page: { id, name }, an event of that group. */
+  group: { type: Object, default: null },
 })
 
 const emit = defineEmits(['close', 'saved'])
 
 // STORES
 const events = useEventsStore()
+const groups = useGroupsStore()
 
 // DATA
-const form = reactive({ title: '', description: '', imageUrl: null, date: '', time: '21:00', location: '', isPublic: false })
+const form = reactive({ title: '', description: '', imageUrl: null, date: '', time: '21:00', location: '', visibility: 'invite', groupId: '' })
 const VISIBILITY = [
-  { value: false, label: 'Con invitación', hint: 'Solo lo ven las personas que invites.' },
-  { value: true, label: 'Público', hint: 'Lo ven tus amigos y los amigos de tus amigos, con la lista de quién va, y pueden apuntarse sin invitación.' },
+  { value: 'invite', label: 'Con invitación', hint: 'Solo lo ven las personas que invites.' },
+  { value: 'public', label: 'Público', hint: 'Lo ven tus amigos y los amigos de tus amigos, con la lista de quién va, y pueden apuntarse sin invitación.' },
+  { value: 'group', label: 'De un grupo', hint: 'Lo ven las personas del grupo, y pueden apuntarse sin invitación.' },
 ]
 const invitees = ref([])
 const errors = reactive({})
@@ -34,6 +39,16 @@ const saving = ref(false)
 const serverError = ref('')
 const fileInput = ref(null)
 const { processing, read } = useImagePicker()
+
+// COMPUTED
+// The group of the event is chosen when creating it and does not change.
+const fixedGroup = computed(() => props.event?.group ?? props.group)
+const myGroups = computed(() => groups.mine.ids.map((id) => groups.groups[id]).filter(Boolean))
+const options = computed(() => {
+  if (props.event?.group) return VISIBILITY.filter((o) => o.value === 'group')
+  if (props.event) return VISIBILITY.filter((o) => o.value !== 'group')
+  return fixedGroup.value || myGroups.value.length ? VISIBILITY : VISIBILITY.filter((o) => o.value !== 'group')
+})
 
 // METHODS
 const pickImage = async (event) => {
@@ -47,7 +62,14 @@ const validateForm = () => {
   errors.date = rules.date(form.date)
   errors.time = rules.time(form.time)
   errors.location = firstError(rules.required(form.location, 'La ubicación'), rules.max(form.location, LIMITS.eventLocation, 'La ubicación'))
+  errors.group = form.visibility === 'group' && !fixedGroup.value && !form.groupId ? 'Elige el grupo.' : null
   return !Object.values(errors).some(Boolean)
+}
+
+const toInput = () => {
+  const { visibility, groupId, ...rest } = form
+  const group = visibility === 'group' ? (fixedGroup.value?.id ?? groupId) : null
+  return { ...rest, isPublic: visibility === 'public', groupId: group }
 }
 
 const save = async () => {
@@ -56,10 +78,10 @@ const save = async () => {
   saving.value = true
   try {
     if (props.event) {
-      await events.updateEvent(props.event.id, { ...form })
+      await events.updateEvent(props.event.id, toInput())
       emit('saved', props.event)
     } else {
-      emit('saved', await events.createEvent({ ...form }, invitees.value))
+      emit('saved', await events.createEvent(toInput(), invitees.value))
     }
     emit('close')
   } catch (e) {
@@ -82,8 +104,10 @@ watch(
       date: e?.date ?? toDateInput(new Date(Date.now() + 7 * 86_400_000)),
       time: e?.time ?? '21:00',
       location: e?.location ?? '',
-      isPublic: e?.isPublic ?? false,
+      visibility: fixedGroup.value ? 'group' : e?.isPublic ? 'public' : 'invite',
+      groupId: '',
     })
+    if (!props.event && !props.group && groups.mine.status === 'idle') groups.loadMine()
     invitees.value = []
     Object.keys(errors).forEach((k) => (errors[k] = null))
     serverError.value = ''
@@ -137,14 +161,23 @@ watch(
 
       <fieldset class="field event-visibility">
         <legend class="field__label">¿Quién puede verlo?</legend>
-        <label v-for="option in VISIBILITY" :key="String(option.value)" class="event-visibility__option">
-          <input v-model="form.isPublic" type="radio" name="event-visibility" :value="option.value" />
+        <label v-for="option in options" :key="option.value" class="event-visibility__option">
+          <input v-model="form.visibility" type="radio" name="event-visibility" :value="option.value" />
           <span>
-            <strong>{{ option.label }}</strong>
+            <strong>{{ option.value === 'group' && fixedGroup ? `Del grupo «${fixedGroup.name}»` : option.label }}</strong>
             <span class="event-visibility__hint">{{ option.hint }}</span>
           </span>
         </label>
       </fieldset>
+
+      <div v-if="form.visibility === 'group' && !fixedGroup" class="field">
+        <label class="field__label" for="ev-group">Grupo</label>
+        <select id="ev-group" v-model="form.groupId" class="select" :aria-invalid="!!errors.group || undefined" aria-describedby="ev-group-error">
+          <option value="" disabled>Elige uno de tus grupos</option>
+          <option v-for="g in myGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
+        </select>
+        <p id="ev-group-error" class="field__error">{{ errors.group }}</p>
+      </div>
 
       <div class="field">
         <label class="field__label" for="ev-description">Descripción</label>

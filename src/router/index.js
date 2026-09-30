@@ -31,6 +31,8 @@ const routes = [
   app('/albums/:id', 'album', () => import('@/pages/AlbumPage.vue'), { title: 'Álbum' }),
   app('/events', 'events', () => import('@/pages/EventsPage.vue'), { title: 'Eventos' }),
   app('/events/:id', 'event', () => import('@/pages/EventPage.vue'), { title: 'Evento' }),
+  app('/groups', 'groups', () => import('@/pages/GroupsPage.vue'), { title: 'Grupos' }),
+  app('/groups/:id', 'group', () => import('@/pages/GroupPage.vue'), { title: 'Grupo' }),
   app('/messages', 'messages', () => import('@/pages/MessagesPage.vue'), { title: 'Mensajes' }),
   app('/messages/:id', 'conversation', () => import('@/pages/MessagesPage.vue'), { title: 'Mensajes' }),
   // Notifications live on the home page as grouped counters.

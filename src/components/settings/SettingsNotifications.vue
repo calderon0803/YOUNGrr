@@ -10,6 +10,7 @@ const OPTIONS = [
   { key: 'comments', label: 'Comentarios', hint: 'Cuando comentan algo tuyo.' },
   { key: 'friendRequests', label: 'Solicitudes de amistad', hint: 'Solicitudes recibidas y aceptadas.' },
   { key: 'events', label: 'Eventos', hint: 'Invitaciones a planes.' },
+  { key: 'groups', label: 'Grupos', hint: 'Invitaciones a grupos, solicitudes para entrar en los tuyos y avisos.' },
   { key: 'messages', label: 'Mensajes', hint: 'Mensajes nuevos de tus amigos.' },
   { key: 'tags', label: 'Fotos', hint: 'Cuando te etiquetan o te invitan a compartir una fotografía.' },
 ]
@@ -36,7 +37,7 @@ const toggle = (key, value) => {
             type="checkbox"
             role="switch"
             class="switch"
-            :checked="user.settings.notifications[option.key]"
+            :checked="user.settings.notifications[option.key] !== false"
             @change="toggle(option.key, $event.target.checked)"
           />
         </label>

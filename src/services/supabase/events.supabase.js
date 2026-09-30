@@ -32,6 +32,8 @@ const toEvent = (json, urls) => ({
   location: json.location,
   // Public: the creator's friends and friends of friends see it and can join.
   isPublic: !!json.is_public,
+  // An event of a group: its members see it and join by answering.
+  group: json.group ? { id: json.group.id, name: json.group.name } : null,
   createdAt: json.created_at,
   updatedAt: json.updated_at,
   creator: toSummary(json.creator),
@@ -70,6 +72,11 @@ export const supabaseEventsService = {
     return eventsWithImages(await rpc('public_events', { max_results: limit }, 'No se han podido cargar los eventos.'))
   },
 
+  /** A group's events, for its members. */
+  async listGroupEvents(groupId) {
+    return splitEvents(await eventsWithImages(await rpc('list_group_events', { target: groupId }, 'No se han podido cargar los eventos del grupo.')))
+  },
+
   async getEvent(eventId) {
     return one(await rpc('get_event', { target: eventId }, 'No se ha podido cargar el evento.'))
   },
@@ -78,7 +85,7 @@ export const supabaseEventsService = {
     validateEvent(input)
     const imagePath = isNewImage(input.imageUrl) ? await uploadPhoto(await currentUserId(), input.imageUrl) : null
     try {
-      return one(await rpc('create_event', { ...params(input, imagePath), invitees: inviteeIds }, 'No se ha podido crear el evento.'))
+      return one(await rpc('create_event', { ...params(input, imagePath), invitees: inviteeIds, group_id: input.groupId ?? null }, 'No se ha podido crear el evento.'))
     } catch (error) {
       await removePhotos([imagePath]).catch(() => {})
       throw error

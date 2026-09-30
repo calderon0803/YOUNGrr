@@ -81,6 +81,7 @@ export const toSettings = (row) => ({
     events: row.notify_events,
     messages: row.notify_messages,
     tags: row.notify_tags,
+    groups: row.notify_groups ?? true,
   },
   appearance: { theme: row.theme },
   nearby: { radiusKm: row.nearby_radius_km },
@@ -97,6 +98,7 @@ export const fromSettings = (settings) => ({
   notify_events: settings.notifications.events,
   notify_messages: settings.notifications.messages,
   notify_tags: settings.notifications.tags,
+  notify_groups: settings.notifications.groups ?? true,
   theme: settings.appearance.theme,
   nearby_radius_km: settings.nearby.radiusKm,
 })

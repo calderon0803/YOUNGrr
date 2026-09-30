@@ -20,6 +20,8 @@ const WHAT = {
   comment: 'un comentario tuyo',
   wall_message: 'un mensaje tuyo en un tablón',
   message: 'un mensaje privado tuyo',
+  group_post: 'una publicación tuya en el Gallinero de un grupo',
+  group_reply: 'una respuesta tuya en el Gallinero de un grupo',
 }
 const appealing = ref(null)
 const text = ref('')

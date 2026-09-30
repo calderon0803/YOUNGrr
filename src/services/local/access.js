@@ -125,3 +125,15 @@ export const personView = (db, me, id) => {
     canSendRequest: canSendRequest(db, me, id),
   }
 }
+
+// ---- Groups ------------------------------------------------------------------
+
+/** 'owner' | 'admin' | 'member', or null when not in the group. */
+export const groupRole = (db, groupId, userId) =>
+  (db.groupMembers ?? []).find((m) => m.groupId === groupId && m.userId === userId)?.role ?? null
+
+export const isGroupMember = (db, groupId, userId) => groupRole(db, groupId, userId) !== null
+
+export const isGroupAdmin = (db, groupId, userId) => ['owner', 'admin'].includes(groupRole(db, groupId, userId))
+
+export const groupMemberCount = (db, groupId) => (db.groupMembers ?? []).filter((m) => m.groupId === groupId).length

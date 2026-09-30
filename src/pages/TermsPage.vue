@@ -40,6 +40,13 @@ import { LIMITS } from '@/utils/validation'
       Un evento público lo ven los amigos de tus amigos, aunque no te conozcan, y también quién va. No pongas en él datos que
       no quieras que vea esa gente, como la dirección de tu casa.
     </p>
+    <p>
+      En un grupo, lo que publicas en su Gallinero lo ven todas sus personas, aunque no sean tus amigas. Quien crea un
+      grupo es su propietario: nombra a quien lo administra, y quienes lo administran aceptan a quien pide entrar, quitan
+      personas y pueden borrar lo publicado que no encaje en el grupo. Cada persona puede crear hasta 10 grupos, de hasta
+      200 personas; un grupo al que no se une nadie en 7 días se elimina solo. Las normas de convivencia se aplican
+      igual dentro de los grupos.
+    </p>
 
     <h2>Normas de convivencia</h2>
     <p>No está permitido:</p>
@@ -61,7 +68,7 @@ import { LIMITS } from '@/utils/validation'
     </p>
     <p>
       Puedes reportar contenido y perfiles, y bloquear a cualquier persona. Reportar no oculta nada: el contenido llega a
-      moderación cuando lo reportan 10 personas distintas (un mensaje privado, con un solo reporte, o con dos en un chat de grupo de más de 5 personas). Quien modera lo
+      moderación cuando lo reportan 10 personas distintas (un mensaje privado, con un solo reporte, o con dos en un chat de grupo de más de 5 personas; en el Gallinero de un grupo, el 30% de sus personas, entre 3 y 10). Quien modera lo
       revisa y puede retirar el contenido que incumpla estas normas. Si retiramos algo tuyo, te avisamos en la app con el motivo (nunca
       de quién lo reportó) y tienes 14 días para apelar desde ese aviso: mientras tanto el contenido deja de verse pero se
       guarda, y si tienes razón vuelve a su sitio. Si no apelas o se rechaza la apelación, se borra del todo. Si los incumplimientos son graves o se repiten, podemos suspender o

@@ -1,6 +1,7 @@
 // Account deletion and data export for the local demo backend (same result as
 // delete_my_account() and export_my_data() in the database).
 import { leaveGroupChat } from '@/services/local/messages.local'
+import { leaveGroup } from '@/services/local/groups.local'
 
 const fullNameOf = (db, id) => {
   const p = db.profiles.find((x) => x.id === id)
@@ -15,6 +16,16 @@ export const purgeLocalUser = (db, id) => {
   // Direct chats go for both people; group chats go on without this person.
   for (const c of db.conversations.filter((x) => x.kind === 'group' && x.memberIds.includes(id))) leaveGroupChat(db, id, c)
   db.messages = db.messages.filter((m) => m.senderId !== id)
+  // Groups go on too (the owner's role passes on); their posts go with the account.
+  for (const m of (db.groupMembers ?? []).filter((x) => x.userId === id)) leaveGroup(db, id, m.groupId)
+  const groupPostIds = new Set((db.groupPosts ?? []).filter((p) => p.authorId === id).map((p) => p.id))
+  db.groupPosts = (db.groupPosts ?? []).filter((p) => !groupPostIds.has(p.id))
+  db.groupReplies = (db.groupReplies ?? []).filter((r) => r.authorId !== id && !groupPostIds.has(r.postId))
+  db.groupPostGrrs = (db.groupPostGrrs ?? []).filter((g) => g.userId !== id && !groupPostIds.has(g.postId))
+  db.groupInvites = (db.groupInvites ?? []).filter((i) => i.userId !== id && i.invitedBy !== id)
+  db.groupJoinRequests = (db.groupJoinRequests ?? []).filter((r) => r.userId !== id)
+  db.groupNotices = (db.groupNotices ?? []).filter((n) => n.userId !== id)
+  for (const g of db.groups ?? []) if (g.createdBy === id) g.createdBy = null
   const conversationIds = new Set(db.conversations.filter((c) => c.kind !== 'group' && c.memberIds.includes(id)).map((c) => c.id))
   const gone = (targetType, targetId) => (targetType === 'post' ? postIds.has(targetId) : photoIds.has(targetId))
 
@@ -79,6 +90,23 @@ export const buildLocalExport = (db, id) => {
             created_at: m.createdAt,
           })),
       })),
+    groups: (db.groupMembers ?? [])
+      .filter((m) => m.userId === id)
+      .map((m) => {
+        const group = db.groups.find((g) => g.id === m.groupId)
+        return { name: group?.name, privacy: group?.privacy, role: m.role, joined_at: m.joinedAt }
+      }),
+    group_posts: (db.groupPosts ?? [])
+      .filter((p) => p.authorId === id)
+      .map((p) => ({ group: db.groups.find((g) => g.id === p.groupId)?.name, text: p.text, has_photo: !!p.photoUrl, created_at: p.createdAt })),
+    group_replies: (db.groupReplies ?? []).filter((r) => r.authorId === id).map(({ text, createdAt }) => ({ text, created_at: createdAt })),
+    group_grrs: (db.groupPostGrrs ?? []).filter((g) => g.userId === id).map(({ createdAt }) => ({ created_at: createdAt })),
+    group_requests: (db.groupJoinRequests ?? [])
+      .filter((r) => r.userId === id)
+      .map((r) => ({ group: db.groups.find((g) => g.id === r.groupId)?.name, created_at: r.createdAt })),
+    group_invitations_received: (db.groupInvites ?? [])
+      .filter((i) => i.userId === id)
+      .map((i) => ({ group: db.groups.find((g) => g.id === i.groupId)?.name, created_at: i.createdAt })),
     wall_messages_written: db.wallMessages.filter((w) => w.authorId === id).map(({ text, createdAt }) => ({ text, created_at: createdAt })),
     invitations_sent: db.invitations.filter((i) => i.inviterId === id).map(({ email, createdAt, usedBy }) => ({ email, created_at: createdAt, used: !!usedBy })),
     achievements: (db.achievements ?? []).filter((a) => a.userId === id).map(({ code, level, earnedAt, sharedAt }) => ({ code, level, earned_at: earnedAt, shared_at: sharedAt })),

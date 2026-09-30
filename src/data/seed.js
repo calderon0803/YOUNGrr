@@ -115,7 +115,7 @@ export const buildSeed = () => {
       id(key),
       {
         privacy: { profileVisibility: 'everyone', cityVisibility: 'everyone', distanceVisibility: 'everyone', friendRequests: 'everyone', ...PRIVACY[key] },
-        notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true },
+        notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
         appearance: { theme: 'system' },
         nearby: { radiusKm: NEARBY_DEFAULT_RADIUS_KM },
       },
@@ -321,6 +321,8 @@ export const buildSeed = () => {
     E('partido', 'pablo', 'Partido del domingo', 'Pachanga de siempre. Traed peto blanco y peto azul.', inDays(2), '11:00', 'Campo de La Albericia', ago({ h: 4 })),
     // Public: Carlos does not know Miguel directly, but they have friends in common.
     { ...E('surf', 'miguel', 'Quedada de surf en Somo', 'Mañana de olas y bocadillos en la playa. Hay tablas de sobra para quien quiera probar.', inDays(6), '10:00', 'Playa de Somo', ago({ d: 1 })), isPublic: true },
+    // An event of the group "La cuadrilla del Sardinero".
+    { ...E('ruta', 'pablo', 'Ruta al Castro Valnera', 'Subida tranquila, unas 5 horas. Botas y bocadillo.', inDays(9), '08:30', 'Aparcamiento de Las Estacas de Trueba', ago({ h: 20 })), groupId: 'g_cuadrilla' },
     E('concierto', 'laura', 'Concierto en la campa', 'Semana Grande, grupo local y verbena después.', toDateInput(new Date(Date.now() - 45 * DAY)), '22:30', 'Campa de La Magdalena', ago({ d: 60 })),
   ]
 
@@ -340,6 +342,8 @@ export const buildSeed = () => {
     M('cumple-sara', 'miguel', 'maybe', 'sara', ago({ h: 10 })),
     M('surf', 'miguel', 'going', 'miguel', ago({ d: 1 })),
     M('surf', 'sara', 'maybe', 'sara', ago({ h: 12 })),
+    M('ruta', 'pablo', 'going', 'pablo', ago({ h: 20 })),
+    M('ruta', 'ana', 'going', 'ana', ago({ h: 18 })),
     M('partido', 'pablo', 'going', 'pablo', ago({ h: 4 })),
     M('partido', 'carlos', 'going', 'pablo', ago({ h: 3 })),
     M('partido', 'javi', 'going', 'pablo', ago({ h: 3 })),
@@ -414,6 +418,48 @@ export const buildSeed = () => {
     N('friend_accepted', 'javi', id('javi'), ago({ d: 7 }), true),
   ]
 
+  // ---- Groups -------------------------------------------------------------
+
+  const groups = [
+    { id: 'g_cuadrilla', kind: 'user', privacy: 'closed', name: 'La cuadrilla del Sardinero', description: 'Planes, fotos y quedadas de siempre.', createdBy: id('carlos'), createdAt: ago({ d: 40 }), updatedAt: ago({ d: 40 }), firstJoinedAt: ago({ d: 40 }) },
+    { id: 'g_analogica', kind: 'user', privacy: 'closed', name: 'Fotografía analógica Cantabria', description: 'Carretes, revelados y salidas a hacer fotos.', createdBy: id('ana'), createdAt: ago({ d: 20 }), updatedAt: ago({ d: 20 }), firstJoinedAt: ago({ d: 19 }) },
+    { id: 'g_monte', kind: 'user', privacy: 'closed', name: 'Montañeros de Cantabria', description: 'Rutas por los Picos y el Pas cada fin de semana.', createdBy: id('ruben'), createdAt: ago({ d: 90 }), updatedAt: ago({ d: 90 }), firstJoinedAt: ago({ d: 88 }) },
+  ]
+
+  const GM = (group, user, role, joinedDays, seenHours = 0) => ({ groupId: `g_${group}`, userId: id(user), role, joinedAt: ago({ d: joinedDays }), lastSeenAt: ago({ h: seenHours }) })
+
+  const groupMembers = [
+    GM('cuadrilla', 'carlos', 'owner', 40, 3),
+    GM('cuadrilla', 'ana', 'admin', 40),
+    GM('cuadrilla', 'pablo', 'member', 39),
+    GM('cuadrilla', 'laura', 'member', 30),
+    GM('cuadrilla', 'javi', 'member', 6),
+    GM('analogica', 'ana', 'owner', 20),
+    GM('analogica', 'laura', 'member', 19),
+    GM('analogica', 'irene', 'member', 3),
+    GM('monte', 'ruben', 'owner', 90),
+    GM('monte', 'hugo', 'member', 88),
+  ]
+
+  const groupPosts = [
+    { id: 'gp_1', groupId: 'g_cuadrilla', authorId: id('ana'), text: '¿Quién se apunta a la ruta del Castro Valnera? Pablo ha creado el evento 🥾', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ h: 1 }) },
+    { id: 'gp_2', groupId: 'g_cuadrilla', authorId: id('pablo'), text: 'Atardecer desde la Magdalena ayer', photoUrl: photoUrl('gallinero-atardecer'), photoWidth: 1200, photoHeight: 800, createdAt: ago({ h: 6 }) },
+    { id: 'gp_3', groupId: 'g_cuadrilla', authorId: id('laura'), text: 'Recordad que el sábado es el cumple de Sara, ¿hacemos bote para el regalo?', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ d: 2 }) },
+    { id: 'gp_4', groupId: 'g_analogica', authorId: id('ana'), text: 'He revelado el carrete de Lisboa, ¡quedaron geniales!', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ d: 1 }) },
+  ]
+
+  const groupReplies = [
+    { id: 'gr_1', postId: 'gp_2', authorId: id('carlos'), text: 'Qué pasada de colores', createdAt: ago({ h: 5 }) },
+    { id: 'gr_2', postId: 'gp_2', authorId: id('laura'), text: 'La próxima vez avisad 😄', createdAt: ago({ h: 4 }) },
+    { id: 'gr_3', postId: 'gp_3', authorId: id('carlos'), text: 'Yo pongo 10 €', createdAt: ago({ d: 2 }) },
+  ]
+
+  const groupPostGrrs = [
+    { postId: 'gp_2', userId: id('carlos'), createdAt: ago({ h: 5 }) },
+    { postId: 'gp_2', userId: id('ana'), createdAt: ago({ h: 5 }) },
+    { postId: 'gp_3', userId: id('pablo'), createdAt: ago({ d: 2 }) },
+  ]
+
   return {
     version: 1,
     users,
@@ -439,6 +485,15 @@ export const buildSeed = () => {
     wallMessages,
     hiddenPosts: [],
     reports: [],
+    groups,
+    groupMembers,
+    // Ana invites Carlos to her group; Nerea asks to join Carlos's.
+    groupInvites: [{ groupId: 'g_analogica', userId: id('carlos'), invitedBy: id('ana'), createdAt: ago({ h: 9 }) }],
+    groupJoinRequests: [{ groupId: 'g_cuadrilla', userId: id('nerea'), createdAt: ago({ h: 2 }) }],
+    groupPosts,
+    groupReplies,
+    groupPostGrrs,
+    groupNotices: [],
     // Carlos invited Javi (now friends) and has one invitation still pending.
     invitations: [
       { id: 'inv_javi', token: 'demo-javi', inviterId: id('carlos'), email: 'javi@demo.youngrr.app', createdAt: ago({ d: 8 }), expiresAt: ago({ d: -22 }), usedBy: id('javi'), usedAt: ago({ d: 7 }) },

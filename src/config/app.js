@@ -14,7 +14,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v20',
+  db: 'youngrr:db:v21',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -32,9 +32,15 @@ export const BREAKPOINTS = { tablet: 768, desktop: 1200 }
 /** Chat windows that fit next to the chat panel. */
 export const CHAT_MAX_WINDOWS = { tablet: 1, desktop: 3 }
 /** How often open chats check for new messages. */
+export const CHAT_POLL_INTERVAL_MS = 10_000
 /** People in a group chat, its creator included. */
 export const GROUP_CHAT_MAX = 20
-export const CHAT_POLL_INTERVAL_MS = 10_000
+
+/**
+ * Groups (also enforced by the database): members, groups one person can have
+ * created, days a group nobody joined lasts, and Gallinero posts per page.
+ */
+export const GROUPS = { maxMembers: 200, maxCreated: 10, emptyDays: 7, pageSize: 10 }
 
 /** Browser chrome color per theme (matches $blue-600 / $blue-850). */
 export const THEME_COLORS = { light: '#2350a0', dark: '#142a57' }
@@ -113,6 +119,11 @@ export const TEXT_LIMITS = {
   wallText: 500,
   messageText: 2000,
   groupChatTitle: 60,
+  groupName: 60,
+  groupDescription: 500,
+  // The Gallinero: short posts, as a tweet.
+  groupPost: 280,
+  groupReply: 280,
   name: 40,
   city: 60,
   bio: 300,
@@ -150,8 +161,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30.3',
-  updatedOn: '30 de septiembre de 2026 (revisión 3)',
+  version: '2026-09-30.4',
+  updatedOn: '30 de septiembre de 2026 (revisión 4)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

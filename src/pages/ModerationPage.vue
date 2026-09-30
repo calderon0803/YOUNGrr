@@ -29,7 +29,16 @@ const TABS = [
   { key: 'dismissed', label: 'Descartados' },
   { key: 'appeals', label: 'Apelaciones' },
 ]
-const KIND_LABEL = { status: 'Estado', photo: 'Foto', comment: 'Comentario', wall_message: 'Mensaje del tablón', profile: 'Perfil', message: 'Mensaje privado' }
+const KIND_LABEL = {
+  status: 'Estado',
+  photo: 'Foto',
+  comment: 'Comentario',
+  wall_message: 'Mensaje del tablón',
+  profile: 'Perfil',
+  message: 'Mensaje privado',
+  group_post: 'Publicación del Gallinero',
+  group_reply: 'Respuesta del Gallinero',
+}
 const notes = reactive({})
 
 // COMPUTED
@@ -101,6 +110,7 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
 
             <blockquote class="report__content">
               <p v-if="report.snapshot.name"><strong>{{ report.snapshot.name }}</strong></p>
+              <p v-if="report.snapshot.group" class="report__muted">En el grupo «{{ report.snapshot.group }}»</p>
               <img v-if="report.snapshot.photoUrl" :src="report.snapshot.photoUrl" alt="Foto reportada" class="report__photo" />
               <p v-if="report.snapshot.text" class="user-text">{{ report.snapshot.text }}</p>
               <p v-if="!report.snapshot.text && !report.snapshot.photoUrl && !report.snapshot.name" class="report__muted">Sin contenido guardado.</p>

@@ -11,7 +11,7 @@ import { REPORT_REASONS } from '@/config/app'
 // PROPS
 const props = defineProps({
   open: { type: Boolean, required: true },
-  /** 'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message' */
+  /** 'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message' | 'group_post' | 'group_reply' */
   kind: { type: String, default: 'status' },
   targetId: { type: String, required: true },
 })

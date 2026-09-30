@@ -81,6 +81,7 @@ watch(eventId, (id) => events.loadEvent(id), { immediate: true })
               <UserAvatar :person="event.creator" size="xs" />
               <span>Organiza <PersonLink :person="event.creator" /></span>
               <span v-if="event.isPublic" class="event__public">Público</span>
+              <RouterLink v-if="event.group" class="event__public" :to="{ name: 'group', params: { id: event.group.id } }">Del grupo «{{ event.group.name }}»</RouterLink>
             </p>
           </div>
           <DropdownMenu v-if="event.isCreator" label="Opciones del evento" :items="MENU" @select="onMenu" />
@@ -97,8 +98,8 @@ watch(eventId, (id) => events.loadEvent(id), { immediate: true })
           </div>
         </dl>
 
-        <!-- Invited people answer; in a public event anyone who sees it joins by answering. -->
-        <div v-if="!event.isCreator && (event.myStatus || event.isPublic) && !past" class="event__rsvp">
+        <!-- Invited people answer; in a public or group event anyone who sees it joins by answering. -->
+        <div v-if="!event.isCreator && (event.myStatus || event.isPublic || event.group) && !past" class="event__rsvp">
           <RsvpControl :event="event" />
         </div>
 

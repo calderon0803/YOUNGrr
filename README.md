@@ -98,6 +98,29 @@ visita deja en la tabla `visit_marks` solo un SHA-256 de una sal secreta (`app_s
 el visitante y el perfil, que nadie puede leer por la API y que se borra a las 6 horas. El
 navegador, además, no reenvía la visita al recargar.
 
+### Grupos
+
+Sección «Grupos» en la cabecera y en la barra inferior del móvil, y un bloque «Tus grupos» en
+Inicio con las publicaciones nuevas de cada uno (lo de los grupos no se mezcla con las
+Novedades de tus amigos).
+
+- **Cerrados o secretos.** Un grupo cerrado lo encuentra cualquiera por su nombre y pide
+  entrar; uno secreto solo lo ven sus personas y los invitados. Lo de dentro (el Gallinero,
+  las personas y los eventos) es solo para sus miembros.
+- **Papeles.** Quien lo crea es propietario: nombra administradores y puede pasar el grupo.
+  Quien administra acepta solicitudes, edita el grupo, quita miembros y borra publicaciones.
+  Si sale el propietario, lo sustituye el administrador más antiguo (o el miembro más antiguo);
+  un grupo vacío se borra.
+- **Límites.** Hasta 200 personas y 10 grupos creados por persona (`GROUPS` en
+  `src/config/app.js` y en la migración `groups`). Los miembros invitan a sus amigos.
+- **Sin grupos vacíos.** Si en 7 días no se une nadie, la tarea nocturna `yg_cleanup_groups()`
+  lo borra y avisa a quien lo creó.
+- **Gallinero.** Publicaciones de hasta 280 caracteres con una foto opcional (bucket privado
+  `photos`, solo la leen los miembros), respuestas y Grr. Los bloqueos ocultan lo de la otra
+  persona. Un reporte llega a moderación con el 30% de los miembros (entre 3 y 10).
+- **Eventos de grupo.** Al crear un evento se elige «Con invitación», «Público» o «De un
+  grupo»; los de grupo los ven sus miembros, que se apuntan sin invitación.
+
 ### Logros
 
 La base de datos calcula los logros a partir de lo que ya existe (fotos, amigos, planes, Grr,
@@ -310,6 +333,7 @@ select run_retention();
 -- Tareas nocturnas que también programa pg_cron: logros de todos y fin de las retiradas
 select yg_check_all_achievements();
 select yg_purge_removals();
+select yg_cleanup_groups();  -- grupos sin nadie a los 7 días
 
 -- Archivos de Storage que ya no usa nadie (bórralos desde el panel de Storage)
 select * from admin_storage_orphans();
@@ -328,7 +352,8 @@ la política de privacidad: si cambias uno, cambia también el otro.
   cambias, sube la versión en **dos sitios**, `LEGAL.version` y `yg_terms_version()` (con una
   migración nueva). Todo el mundo tendrá que aceptarlos de nuevo al entrar; quien no quiera
   puede descargar sus datos y eliminar su cuenta desde esa misma pantalla.
-- «Descargar mis datos» incluye las conversaciones completas (mensajes enviados y recibidos).
+- «Descargar mis datos» incluye las conversaciones completas (mensajes enviados y recibidos)
+  y los grupos, con lo publicado en su Gallinero.
 
 ## Diseño
 

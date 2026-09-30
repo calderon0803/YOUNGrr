@@ -4,7 +4,8 @@
 // answered. Shared by both backends, which only gather the raw state:
 //
 // - Pending things are derived from the real state: unread conversations,
-//   friend requests, event invitations, photo co-ownership invitations.
+//   friend requests, event invitations, photo co-ownership invitations,
+//   group invitations, requests to join your groups and group notices.
 // - Things that need no answer (comments, Grr, tags, accepted requests) are
 //   stored as notifications and marked read when their place is visited.
 
@@ -51,7 +52,7 @@ const singleLink = (me, kind, targetId) => {
   return listLink(me, 'friends')
 }
 
-const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, sharePhotoIds }) => [
+const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, sharePhotoIds, groupInviteIds = [], groupRequestIds = [], groupNoticeCount = 0 }) => [
   {
     key: 'messages',
     pref: 'messages',
@@ -72,6 +73,27 @@ const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, shar
     count: invitationEventIds.length,
     label: pick(invitationEventIds.length, 'invitación a un evento', 'invitaciones a eventos'),
     link: invitationEventIds.length === 1 ? `/events/${invitationEventIds[0]}` : '/events',
+  },
+  {
+    key: 'group_invites',
+    pref: 'groups',
+    count: groupInviteIds.length,
+    label: pick(groupInviteIds.length, 'invitación a un grupo', 'invitaciones a grupos'),
+    link: groupInviteIds.length === 1 ? `/groups/${groupInviteIds[0]}` : '/groups',
+  },
+  {
+    key: 'group_requests',
+    pref: 'groups',
+    count: groupRequestIds.length,
+    label: pick(groupRequestIds.length, 'solicitud para entrar en tus grupos', 'solicitudes para entrar en tus grupos'),
+    link: new Set(groupRequestIds).size === 1 ? `/groups/${groupRequestIds[0]}?tab=people` : '/groups',
+  },
+  {
+    key: 'group_notices',
+    pref: 'groups',
+    count: groupNoticeCount,
+    label: pick(groupNoticeCount, 'aviso sobre tus grupos', 'avisos sobre tus grupos'),
+    link: '/groups',
   },
   {
     key: 'shares',
@@ -112,6 +134,9 @@ const storedGroups = (me, unread) =>
  *   requestCount: number,
  *   invitationEventIds: string[],
  *   sharePhotoIds: string[],
+ *   groupInviteIds?: string[],
+ *   groupRequestIds?: string[],
+ *   groupNoticeCount?: number,
  *   unread: { type: string, targetId: string }[],
  * }} state
  */

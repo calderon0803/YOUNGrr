@@ -16,7 +16,15 @@ const moderation = useModerationStore()
 const { confirm } = useConfirm()
 
 // DATA
-const KIND_LABEL = { status: 'Estado', photo: 'Foto', comment: 'Comentario', wall_message: 'Mensaje del tablón', message: 'Mensaje privado' }
+const KIND_LABEL = {
+  status: 'Estado',
+  photo: 'Foto',
+  comment: 'Comentario',
+  wall_message: 'Mensaje del tablón',
+  message: 'Mensaje privado',
+  group_post: 'Publicación del Gallinero',
+  group_reply: 'Respuesta del Gallinero',
+}
 
 // METHODS
 const decide = async (appeal, accept) => {

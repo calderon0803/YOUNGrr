@@ -2,13 +2,25 @@
 // moderation.supabase.js. The demo moderator is Carlos.
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { canViewPhoto, canViewPost, canViewProfile, summaryOf } from '@/services/local/access'
+import { canViewPhoto, canViewPost, canViewProfile, groupMemberCount, isGroupMember, summaryOf } from '@/services/local/access'
 import { ensure, validate } from '@/services/errors'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
 import { APPEAL_DAYS, REPORT_REASONS, REPORT_THRESHOLD } from '@/config/app'
 
-const COLLECTIONS = { status: 'posts', photo: 'photos', comment: 'comments', wall_message: 'wallMessages', profile: 'profiles', message: 'messages' }
+const COLLECTIONS = {
+  status: 'posts',
+  photo: 'photos',
+  comment: 'comments',
+  wall_message: 'wallMessages',
+  profile: 'profiles',
+  message: 'messages',
+  group_post: 'groupPosts',
+  group_reply: 'groupReplies',
+}
+
+const groupOfReply = (db, reply) => db.groupPosts.find((p) => p.id === reply?.postId)?.groupId
+const groupName = (db, groupId) => db.groups.find((g) => g.id === groupId)?.name ?? ''
 
 /** The reported content, if the reporter can see it: { ownerId, snapshot }. */
 const findTarget = (db, me, kind, id) => {
@@ -33,6 +45,15 @@ const findTarget = (db, me, kind, id) => {
     const message = db.messages.find((m) => m.id === id && !m.deleted)
     const member = message && db.conversations.find((c) => c.id === message.conversationId)?.memberIds.includes(me)
     return member && { ownerId: message.senderId, snapshot: { text: message.text } }
+  }
+  if (kind === 'group_post') {
+    // Members of the group only.
+    const post = db.groupPosts.find((p) => p.id === id && isGroupMember(db, p.groupId, me))
+    return post && { ownerId: post.authorId, snapshot: { text: post.text, photoUrl: post.photoUrl, group: groupName(db, post.groupId) } }
+  }
+  if (kind === 'group_reply') {
+    const reply = db.groupReplies.find((r) => r.id === id && isGroupMember(db, groupOfReply(db, r), me))
+    return reply && { ownerId: reply.authorId, snapshot: { text: reply.text, group: groupName(db, groupOfReply(db, reply)) } }
   }
   if (kind === 'profile') {
     const profile = db.profiles.find((p) => p.id === id)
@@ -61,6 +82,10 @@ const snapshotOf = (db, kind, id) => {
   }
   if (kind === 'comment') return { comment: db.comments.find((c) => c.id === id) }
   if (kind === 'wall_message') return { wallMessage: db.wallMessages.find((w) => w.id === id) }
+  if (kind === 'group_post') {
+    return { groupPost: db.groupPosts.find((p) => p.id === id), replies: db.groupReplies.filter((r) => r.postId === id), grrs: db.groupPostGrrs.filter((g) => g.postId === id) }
+  }
+  if (kind === 'group_reply') return { groupReply: db.groupReplies.find((r) => r.id === id) }
   return { text: db.messages.find((m) => m.id === id)?.text ?? '' }
 }
 
@@ -86,6 +111,12 @@ const takeOut = (db, kind, id) => {
   } else if (kind === 'message') {
     const message = db.messages.find((m) => m.id === id)
     if (message) Object.assign(message, { text: '', deleted: true, deletedAt: nowIso() })
+  } else if (kind === 'group_post') {
+    db.groupPosts = db.groupPosts.filter((p) => p.id !== id)
+    db.groupReplies = db.groupReplies.filter((r) => r.postId !== id)
+    db.groupPostGrrs = db.groupPostGrrs.filter((g) => g.postId !== id)
+  } else if (kind === 'group_reply') {
+    db.groupReplies = db.groupReplies.filter((r) => r.id !== id)
   }
 }
 
@@ -112,6 +143,15 @@ const putBack = (db, removal) => {
     db.comments.push(d.comment)
   } else if (removal.contentKind === 'wall_message') {
     db.wallMessages.push(d.wallMessage)
+  } else if (removal.contentKind === 'group_post') {
+    // Its group must still exist.
+    if (!db.groups.some((g) => g.id === d.groupPost.groupId)) return false
+    db.groupPosts.push(d.groupPost)
+    db.groupReplies.push(...d.replies)
+    db.groupPostGrrs.push(...d.grrs)
+  } else if (removal.contentKind === 'group_reply') {
+    if (!db.groupPosts.some((p) => p.id === d.groupReply.postId)) return false
+    db.groupReplies.push(d.groupReply)
   } else {
     const message = db.messages.find((m) => m.id === removal.contentId)
     if (!message) return false
@@ -122,8 +162,13 @@ const putBack = (db, removal) => {
 
 const person = (db, id) => (id && db.profiles.some((p) => p.id === id) ? summaryOf(db, id) : null)
 
-// A message needs 1 report, or 2 in a chat of more than 5 people.
+// A message needs 1 report, or 2 in a chat of more than 5 people; in the
+// Gallinero, 30% of the group's members (at least 3, at most 10).
 const thresholdFor = (db, kind, targetId) => {
+  if (kind === 'group_post' || kind === 'group_reply') {
+    const groupId = kind === 'group_post' ? db.groupPosts.find((p) => p.id === targetId)?.groupId : groupOfReply(db, db.groupReplies.find((r) => r.id === targetId))
+    return Math.max(3, Math.min(10, Math.ceil(0.3 * groupMemberCount(db, groupId))))
+  }
   if (kind !== 'message') return REPORT_THRESHOLD
   const message = db.messages.find((m) => m.id === targetId)
   const size = db.conversations.find((c) => c.id === message?.conversationId)?.memberIds.length ?? 2
@@ -233,8 +278,8 @@ export const localModerationService = {
           removedAt: r.removedAt,
           appealText: r.appealText,
           appealedAt: r.appealedAt,
-          text: d.post?.text ?? d.photo?.caption ?? d.comment?.text ?? d.wallMessage?.text ?? d.text ?? '',
-          photoUrl: d.photo?.url ?? null,
+          text: d.post?.text ?? d.photo?.caption ?? d.comment?.text ?? d.wallMessage?.text ?? d.groupPost?.text ?? d.groupReply?.text ?? d.text ?? '',
+          photoUrl: d.photo?.url ?? d.groupPost?.photoUrl ?? null,
         }
       })
   },
@@ -284,7 +329,7 @@ export const localModerationService = {
         createdAt: group[0].createdAt,
         lastReportedAt: newest.createdAt,
         status: newest.status,
-        snapshot: { text: newest.snapshot?.text ?? '', name: newest.snapshot?.name ?? null, photoUrl: newest.snapshot?.photoUrl ?? null },
+        snapshot: { text: newest.snapshot?.text ?? '', name: newest.snapshot?.name ?? null, photoUrl: newest.snapshot?.photoUrl ?? null, group: newest.snapshot?.group ?? null },
         contentExists: db[COLLECTIONS[newest.targetType]].some((x) => x.id === newest.targetId),
         contentRemoved: group.some((r) => r.contentRemoved),
         targetOwner: person(db, newest.targetOwnerId),

@@ -54,6 +54,7 @@ const load = async () => {
   db.wallMessages ??= []
   db.achievements ??= []
   db.moderationRemovals ??= []
+  for (const table of ['groups', 'groupMembers', 'groupInvites', 'groupJoinRequests', 'groupPosts', 'groupReplies', 'groupPostGrrs', 'groupNotices']) db[table] ??= []
   if (!db.albumPhotos) toDefaultAlbums(db)
   if (!stored) {
     await commit()

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, markRaw } from 'vue'
-import { House, Menu, MessageCircle, Users } from 'lucide-vue-next'
+import { House, Menu, MessageCircle, Users, UsersRound } from 'lucide-vue-next'
 import NavBadge from '@/components/layout/NavBadge.vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useFriendsStore } from '@/stores/friends'
@@ -17,6 +17,7 @@ const notifications = useNotificationsStore()
 const items = computed(() => [
   { to: { name: 'home' }, label: 'Inicio', icon: markRaw(House), count: notifications.total, badge: 'novedades' },
   { to: { name: 'friends' }, label: 'Amigos', icon: markRaw(Users), count: friends.incomingCount, badge: 'solicitudes pendientes' },
+  { to: { name: 'groups' }, label: 'Grupos', icon: markRaw(UsersRound), count: notifications.groupsCount, badge: 'novedades de grupos' },
   { to: { name: 'messages' }, label: 'Mensajes', icon: markRaw(MessageCircle), count: messages.unreadTotal, badge: 'sin leer' },
   { to: { name: 'more' }, label: 'Más', icon: markRaw(Menu), count: events.pendingCount, badge: 'invitaciones a eventos' },
 ])

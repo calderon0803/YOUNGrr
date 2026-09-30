@@ -99,6 +99,7 @@ export const localAuthService = {
       privacy: { profileVisibility: 'everyone', cityVisibility: 'friends', friendRequests: 'everyone' },
       notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
       appearance: { theme: 'system' },
+      groups: { profileShare: 'basic', notify: 'all', invites: 'friends' },
     }
     db.albums.push({
       id: uid('a'),

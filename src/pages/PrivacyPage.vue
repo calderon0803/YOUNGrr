@@ -44,8 +44,8 @@ import { LIMITS } from '@/utils/validation'
       <li>
         <strong>Grupos:</strong> los grupos que creas o en los que estás, tu papel en cada uno (propietario,
         administración o miembro) y cuándo entraste, las invitaciones y solicitudes para entrar, lo que publicas en su
-        Gallinero (textos, fotos, respuestas y Grr) y, para saber qué es nuevo para ti, cuándo lo visitaste por última vez.
-        Si pides el grupo de un pueblo o ciudad, guardamos tu petición (el lugar y cuándo la hiciste).
+        Gallinero (textos, fotos, respuestas, Grr y a quién mencionas), tus ajustes de privacidad y avisos en cada grupo y,
+        para saber qué es nuevo para ti, cuándo lo visitaste por última vez. Si pides el grupo de un pueblo o ciudad, guardamos tu petición (el lugar y cuándo la hiciste).
       </li>
       <li>
         <strong>Invitaciones:</strong> los enlaces que creas, quién entró con cada uno y cuándo. No guardamos datos de la
@@ -101,8 +101,8 @@ import { LIMITS } from '@/utils/validation'
     <p>
       Cualquier persona con cuenta puede ver tu nombre y tu foto de perfil. El resto de tu perfil y de lo que publicas lo
       ve quien permitas en <em>Configuración &gt; Privacidad</em>. Los mensajes privados solo los ven las personas de la
-      conversación; en un chat de grupo, sus miembros ven tu nombre y tus mensajes, y quien lo creó puede añadir o quitar
-      personas. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
+      conversación; a un chat de grupo solo entras si aceptas la invitación, y dentro sus miembros ven tu nombre y tus
+      mensajes. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
     </p>
     <ul>
       <li>
@@ -119,14 +119,21 @@ import { LIMITS } from '@/utils/validation'
         <strong>Grupos:</strong> un grupo cerrado lo encuentra cualquier persona con cuenta, con su nombre, su
         descripción, quién es su propietario y cuántas personas tiene; un grupo secreto solo lo ven sus personas y quienes
         están invitados. Lo de dentro (el Gallinero, la lista de personas con su papel y los eventos del grupo) solo lo ven
-        sus personas. Quien administra el grupo ve quién pide entrar y puede borrar lo que se publica en él. Estar en el
-        mismo grupo no da acceso al resto de tu perfil, que sigue tu privacidad.
+        sus personas, y en la lista apareces con tu nombre y tu foto. Quien administra el grupo ve quién pide entrar y puede
+        borrar lo que se publica en él.
+      </li>
+      <li>
+        <strong>Tu privacidad en cada grupo:</strong> la de amigos y la de grupos son distintas. Tus amigos ven siempre lo
+        que permiten tus ajustes de amigos. A la gente de un grupo que no es tu amiga le enseñas lo que elijas en ese grupo:
+        solo tu nombre y tu foto (lo normal), también tu información (ciudad, estudios, trabajo y cumpleaños) o tu perfil
+        completo, y entonces también ve tu actividad en las Novedades del grupo. Los valores para los grupos nuevos, y quién
+        puede invitarte a grupos, están en <em>Configuración &gt; Privacidad</em>. Si alguien te menciona, verá tu nombre
+        enlazado a tu perfil.
       </li>
       <li>
         <strong>Grupos de lugares:</strong> los de comunidades, provincias, pueblos y ciudades los ve cualquier persona
-        con cuenta, con cuántas personas tienen. Dentro, de la gente del grupo solo ves por nombre a tus amigos y a quien
-        lo administra (la moderación de YOUNGrr y quien esta nombre); lo que publicas en su Gallinero lo ven todas sus
-        personas. De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
+        con cuenta, con cuántas personas tienen. Dentro, como en los demás grupos, sus personas aparecen con su nombre, y lo
+        administra la moderación de YOUNGrr (y quien esta nombre). De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
       </li>
       <li>
         <strong>Eventos de un grupo:</strong> los ven las personas del grupo, que pueden apuntarse; si te apuntas, verán tu

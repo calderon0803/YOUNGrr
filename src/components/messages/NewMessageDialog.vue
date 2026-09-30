@@ -100,8 +100,8 @@ watch(
         <span class="field__label">Nombre del grupo</span>
         <input v-model="title" class="input" :maxlength="LIMITS.groupChatTitle" placeholder="Cena del viernes" required />
       </label>
-      <FriendPicker v-model="people" label="Amigos en el grupo" />
-      <p class="new-message__hint">Al menos 2 amigos; hasta {{ GROUP_CHAT_MAX }} personas contigo.</p>
+      <FriendPicker v-model="people" label="Amigos a los que invitar" />
+      <p class="new-message__hint">Al menos 2 amigos, hasta {{ GROUP_CHAT_MAX }} personas contigo. Les llegará una invitación.</p>
       <p v-if="error" class="field__error" role="alert">{{ error }}</p>
       <button type="submit" class="btn btn--primary" :disabled="!canCreate">{{ creating ? 'Creando…' : 'Crear grupo' }}</button>
     </form>

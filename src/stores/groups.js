@@ -205,11 +205,19 @@ export const useGroupsStore = defineStore('groups', () => {
     refresh(groupId)
   }
 
+  /** Your settings in a group: what non-friends see of you and your notices. */
+  const setMySettings = async (groupId, settings) => {
+    groups[groupId] = await groupsService.setMySettings(groupId, settings)
+    toast.success('Ajustes del grupo guardados.')
+    notifications.loadSummary()
+  }
+
   /** Visiting the Gallinero: its posts stop being new. */
   const markSeen = async (groupId) => {
     try {
       await groupsService.markSeen(groupId)
-      if (groups[groupId]) groups[groupId] = { ...groups[groupId], newPosts: 0 }
+      if (groups[groupId]) groups[groupId] = { ...groups[groupId], newPosts: 0, mentions: 0 }
+      notifications.loadSummary()
     } catch {
       // Counters only.
     }
@@ -317,8 +325,8 @@ export const useGroupsStore = defineStore('groups', () => {
     }
   }
 
-  const reply = async (postId, text) => {
-    posts[postId] = await groupsService.reply(postId, text)
+  const reply = async (postId, text, mentions = []) => {
+    posts[postId] = await groupsService.reply(postId, text, mentions)
   }
 
   const deleteReply = async (postId, replyId) => {
@@ -374,6 +382,7 @@ export const useGroupsStore = defineStore('groups', () => {
     removeMember,
     setRole,
     markSeen,
+    setMySettings,
     dismissNotice,
     loadPosts,
     createPost,

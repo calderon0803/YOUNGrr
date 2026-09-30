@@ -27,6 +27,9 @@ defineProps({
       <span v-if="group.invitedBy" class="group-item__meta">Te invita {{ group.invitedBy.firstName }}</span>
       <span v-if="$slots.default" class="group-item__actions"><slot /></span>
     </span>
+    <span v-if="showNew && group.mentions" class="group-item__new group-item__new--mention">
+      @{{ group.mentions }} <span class="visually-hidden">{{ group.mentions === 1 ? 'mención' : 'menciones' }}</span>
+    </span>
     <span v-if="showNew && group.newPosts" class="group-item__new">
       {{ group.newPosts }} <span class="visually-hidden">{{ group.newPosts === 1 ? 'publicación nueva' : 'publicaciones nuevas' }}</span>
     </span>
@@ -87,6 +90,10 @@ defineProps({
     font-size: $fs-xs;
     font-weight: 700;
     text-align: center;
+
+    &--mention {
+      background: $color-brand;
+    }
   }
 }
 </style>

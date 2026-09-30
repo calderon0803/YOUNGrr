@@ -14,7 +14,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v21',
+  db: 'youngrr:db:v22',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -164,8 +164,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30.4',
-  updatedOn: '30 de septiembre de 2026 (revisión 4)',
+  version: '2026-09-30.5',
+  updatedOn: '30 de septiembre de 2026 (revisión 5)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

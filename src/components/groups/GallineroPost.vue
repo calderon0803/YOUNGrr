@@ -6,6 +6,7 @@ import RelativeTime from '@/components/common/RelativeTime.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import GrrButton from '@/components/common/GrrButton.vue'
 import CommentForm from '@/components/feed/CommentForm.vue'
+import MentionText from '@/components/common/MentionText.vue'
 import ReportDialog from '@/components/feed/ReportDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useGroupsStore } from '@/stores/groups'
@@ -40,6 +41,8 @@ const menu = computed(() => [
   ...(!isOwn.value ? [{ key: 'report', label: 'Reportar', danger: true }] : []),
 ])
 const titleId = computed(() => `gallinero-${props.postId}`)
+// Who can be mentioned in a reply: the people of the group.
+const people = computed(() => (groups.details[post.value?.groupId]?.members ?? []).map((m) => m.person).filter((p) => p.id !== auth.meId))
 
 // METHODS
 const onMenu = async (key) => {
@@ -90,7 +93,7 @@ const toggleGrr = async () => {
     <div class="gallinero-post__body">
       <p :id="titleId" class="gallinero-post__line">
         <PersonLink :person="post.author" />
-        <span v-if="post.text" class="user-text">{{ post.text }}</span>
+        <MentionText v-if="post.text" :text="post.text" :people="post.mentions" />
       </p>
       <img
         v-if="post.photo?.url"
@@ -119,7 +122,7 @@ const toggleGrr = async () => {
           <UserAvatar :person="item.author" size="sm" />
           <p class="gallinero-post__reply-text">
             <PersonLink :person="item.author" />
-            <span class="user-text">{{ item.text }}</span>
+            <MentionText :text="item.text" :people="item.mentions ?? []" />
             <span class="gallinero-post__reply-time"><RelativeTime :value="item.createdAt" /></span>
           </p>
           <DropdownMenu
@@ -137,7 +140,8 @@ const toggleGrr = async () => {
         ref="replyForm"
         :max="LIMITS.groupReply"
         placeholder="Escribe una respuesta..."
-        :submit="(text) => groups.reply(postId, text)"
+        :people="people"
+        :submit="(text, mentions) => groups.reply(postId, text, mentions)"
       />
     </div>
 

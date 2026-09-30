@@ -21,6 +21,17 @@
     font-weight: 700;
   }
 
+  // A group of blocks inside a section ("Grupos" in Privacidad).
+  &__heading {
+    padding: $space-3 $space-4;
+    border-top: 1px solid $color-border;
+    background: $color-surface-alt;
+    font-size: $fs-sm;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: $color-text-muted;
+  }
+
   &__form {
     max-width: 26rem;
   }

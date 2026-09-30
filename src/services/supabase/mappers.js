@@ -49,6 +49,8 @@ export const toProfileView = (json) => ({
   postsCount: json.posts_count ?? 0,
   photosCount: json.photos_count ?? 0,
   canViewProfile: !!json.can_view_profile,
+  // Town, studies, work and birthday: also through a group.
+  canViewInfo: !!(json.can_view_info ?? json.can_view_profile),
   canSendRequest: !!json.can_send_request,
   // Only present on your own profile.
   visits: json.visits ?? null,
@@ -83,6 +85,12 @@ export const toSettings = (row) => ({
     groups: row.notify_groups ?? true,
   },
   appearance: { theme: row.theme },
+  // Defaults for the groups you join, and who can invite you to groups.
+  groups: {
+    profileShare: row.group_profile_share ?? 'basic',
+    notify: row.group_notify ?? 'all',
+    invites: row.group_invites ?? 'friends',
+  },
 })
 
 export const fromSettings = (settings) => ({
@@ -97,6 +105,9 @@ export const fromSettings = (settings) => ({
   notify_tags: settings.notifications.tags,
   notify_groups: settings.notifications.groups ?? true,
   theme: settings.appearance.theme,
+  group_profile_share: settings.groups.profileShare,
+  group_notify: settings.groups.notify,
+  group_invites: settings.groups.invites,
 })
 
 const toSummary = (json) => ({

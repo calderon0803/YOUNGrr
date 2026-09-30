@@ -5,6 +5,7 @@ import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import NavBadge from '@/components/layout/NavBadge.vue'
 import ConversationList from '@/components/messages/ConversationList.vue'
+import ChatInvites from '@/components/messages/ChatInvites.vue'
 import ChatWindow from '@/components/messages/ChatWindow.vue'
 import NewMessageDialog from '@/components/messages/NewMessageDialog.vue'
 import { useMessagesStore } from '@/stores/messages'
@@ -78,6 +79,7 @@ onBeforeUnmount(() => {
               <button type="button" class="btn btn--primary btn--sm" @click="composing = true">Nuevo mensaje</button>
             </StateMessage>
           </template>
+          <ChatInvites compact />
           <ConversationList compact :conversations="messages.inbox.items" />
         </AsyncState>
       </div>

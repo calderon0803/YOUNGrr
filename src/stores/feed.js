@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 import { postsService } from '@/services/posts.service'
+import { groupsService } from '@/services/groups.service'
 import { interactionsService } from '@/services/interactions.service'
 import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
@@ -20,6 +21,8 @@ export const useFeedStore = defineStore('feed', () => {
   const posts = reactive(/** @type {Record<string, PostView>} */ ({}))
   const home = reactive(listState())
   const grrPending = ref(new Set())
+  /** Each group's news, by group id: people's blocks, who joined and new events. */
+  const groupFeeds = reactive({})
 
   const toBlock = ({ status, uploads, ...block }) => {
     if (status) posts[status.id] = status
@@ -55,6 +58,34 @@ export const useFeedStore = defineStore('feed', () => {
   }
 
   const loadActivity = (options) => loadInto(home, (before) => postsService.getActivity({ before }), options)
+
+  const loadGroupActivity = async (groupId, { more = false } = {}) => {
+    groupFeeds[groupId] ??= { items: [], status: 'idle', error: null, hasMore: false, loadingMore: false }
+    const state = groupFeeds[groupId]
+    if (more) {
+      if (state.loadingMore || !state.hasMore) return
+      state.loadingMore = true
+    } else {
+      state.status = state.items.length ? state.status : 'loading'
+      state.error = null
+    }
+    try {
+      const before = more ? (state.items.at(-1)?.lastActivityAt ?? null) : null
+      const page = await groupsService.activity(groupId, { before })
+      const items = page.items.map((i) => (i.kind === 'person' ? { ...i, block: toBlock(i.block) } : i))
+      state.items = more ? [...state.items, ...items] : items
+      state.hasMore = page.hasMore
+      state.status = 'success'
+    } catch (error) {
+      if (more) toast.error(errorMessage(error))
+      else {
+        state.status = 'error'
+        state.error = errorMessage(error)
+      }
+    } finally {
+      state.loadingMore = false
+    }
+  }
 
   /** Friendships changed: the next visit reloads. */
   const invalidate = () => {
@@ -162,8 +193,10 @@ export const useFeedStore = defineStore('feed', () => {
   return {
     posts,
     home,
+    groupFeeds,
     grrPending,
     loadActivity,
+    loadGroupActivity,
     loadPost,
     invalidate,
     setStatus,

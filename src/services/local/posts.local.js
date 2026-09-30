@@ -13,6 +13,31 @@ const DAY_MS = 86_400_000
 
 const windowStart = () => new Date(Date.now() - ACTIVITY_WINDOW_DAYS * DAY_MS).toISOString()
 
+/** What a set of people did since `since` (status, uploads, friendships, tags, shared achievements). */
+export const activityEvents = (db, me, people, since) => [
+  ...db.posts.filter((p) => people.has(p.authorId) && p.createdAt >= since).map((p) => ({ person: p.authorId, at: p.createdAt })),
+  ...db.friendships
+    .filter((f) => f.createdAt >= since && ![f.userA, f.userB].includes(me))
+    .flatMap((f) => [f.userA, f.userB].filter((id) => people.has(id)).map((person) => ({ person, at: f.createdAt }))),
+  ...db.photoTags
+    .filter((t) => people.has(t.userId) && t.createdAt >= since)
+    .filter((t) => {
+      const photo = db.photos.find((p) => p.id === t.photoId)
+      return photo && canViewPhoto(db, me, photo)
+    })
+    .map((t) => ({ person: t.userId, at: t.createdAt })),
+  ...(db.achievements ?? []).filter((a) => people.has(a.userId) && a.sharedAt && a.sharedAt >= since).map((a) => ({ person: a.userId, at: a.sharedAt })),
+]
+
+/** Local day of a moment, with its start and end. */
+export const dayOf = (at) => {
+  const day = toDateInput(new Date(at))
+  const [y, m, d] = day.split('-').map(Number)
+  return { day, from: new Date(y, m - 1, d).toISOString(), to: new Date(y, m - 1, d + 1).toISOString() }
+}
+
+export const activityWindowStart = () => windowStart()
+
 /** One card per person and (local) day, newest first, one page after `before`. */
 const pageOfDays = (events, before) => {
   const last = new Map()
@@ -60,21 +85,7 @@ export const localPostsService = {
     const db = await getDb()
     const me = requireUserId(db)
     const since = windowStart()
-    const friends = new Set(friendIdsOf(db, me))
-    const events = [
-      ...db.posts.filter((p) => friends.has(p.authorId) && p.createdAt >= since).map((p) => ({ person: p.authorId, at: p.createdAt })),
-      ...db.friendships
-        .filter((f) => f.createdAt >= since && ![f.userA, f.userB].includes(me))
-        .flatMap((f) => [f.userA, f.userB].filter((id) => friends.has(id)).map((person) => ({ person, at: f.createdAt }))),
-      ...db.photoTags
-        .filter((t) => friends.has(t.userId) && t.createdAt >= since)
-        .filter((t) => {
-          const photo = db.photos.find((p) => p.id === t.photoId)
-          return photo && canViewPhoto(db, me, photo)
-        })
-        .map((t) => ({ person: t.userId, at: t.createdAt })),
-      ...(db.achievements ?? []).filter((a) => friends.has(a.userId) && a.sharedAt && a.sharedAt >= since).map((a) => ({ person: a.userId, at: a.sharedAt })),
-    ]
+    const events = activityEvents(db, me, new Set(friendIdsOf(db, me)), since)
     const { cards, hasMore } = pageOfDays(events, before)
     return {
       items: cards.map((c) => activityBlock(db, me, c.person, { since: c.from > since ? c.from : since, until: c.to, day: c.day, withSocial: true, lastActivityAt: c.at })),

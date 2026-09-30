@@ -7,6 +7,7 @@ import StateMessage from '@/components/common/StateMessage.vue'
 import MessageComposer from '@/components/messages/MessageComposer.vue'
 import ReportDialog from '@/components/feed/ReportDialog.vue'
 import GroupChatDialog from '@/components/messages/GroupChatDialog.vue'
+import MentionText from '@/components/common/MentionText.vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirm } from '@/composables/useConfirm'
@@ -125,7 +126,7 @@ watch(() => state.value.messages.length, scrollToEnd)
               <span v-if="isGroup && message.senderId !== auth.meId" class="bubble__sender">{{ senderName(message.senderId) }}</span>
               <span v-else class="visually-hidden">{{ message.senderId === auth.meId ? 'Tú' : other?.firstName }}:</span>
               <span v-if="message.deleted" class="bubble__text">Mensaje eliminado</span>
-              <span v-else class="bubble__text user-text">{{ message.text }}</span>
+              <MentionText v-else class="bubble__text" :text="message.text" :people="(message.mentions ?? []).map((id) => senders[id]).filter(Boolean)" />
               <span class="bubble__meta">
                 <button
                   v-if="message.senderId !== auth.meId && !message.deleted"
@@ -159,7 +160,13 @@ watch(() => state.value.messages.length, scrollToEnd)
     </div>
 
     <ReportDialog v-if="reportingId" :open="!!reportingId" kind="message" :target-id="reportingId" @close="reportingId = null" />
-    <MessageComposer ref="composer" v-if="state.status === 'success' && conversation" :recipient="name" :send="(text) => messages.send(conversationId, text)" />
+    <MessageComposer
+      ref="composer"
+      v-if="state.status === 'success' && conversation"
+      :recipient="name"
+      :people="isGroup ? conversation.members.filter((p) => p.id !== auth.meId) : []"
+      :send="(text, mentions) => messages.send(conversationId, text, mentions)"
+    />
     <GroupChatDialog v-if="isGroup && !embedded" :open="managing" :conversation-id="conversationId" @close="managing = false" />
   </section>
 </template>

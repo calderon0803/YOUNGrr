@@ -12,6 +12,8 @@ const toMessage = (json) => ({
   createdAt: json.created_at,
   // Deleted by its sender: the text is gone for both people.
   deleted: !!json.deleted,
+  // Ids of the people mentioned (group chats).
+  mentions: json.mentions ?? [],
 })
 
 const toConversation = (json) => ({
@@ -22,6 +24,8 @@ const toConversation = (json) => ({
   createdById: json.created_by ?? null,
   other: json.other ? toSummary(json.other) : null,
   members: (json.members ?? []).map(toSummary),
+  // Invited to a group chat, not answered yet.
+  invited: (json.invited ?? []).map(toSummary),
   lastMessage: json.last_message ? toMessage(json.last_message) : null,
   unreadCount: json.unread_count,
   updatedAt: json.updated_at,
@@ -65,9 +69,23 @@ export const supabaseMessagesService = {
     await rpc('leave_group_chat', { target: conversationId }, 'No se ha podido salir del grupo.')
   },
 
-  async sendMessage(conversationId, text) {
+  async sendMessage(conversationId, text, mentions = []) {
     validate(rules.required(text, 'El mensaje'), rules.max(text, LIMITS.messageText, 'El mensaje'))
-    return toMessage(await rpc('send_message', { target: conversationId, body: text }, 'No se ha podido enviar el mensaje.'))
+    return toMessage(await rpc('send_message', { target: conversationId, body: text, mentions }, 'No se ha podido enviar el mensaje.'))
+  },
+
+  /** Group chats you are invited to: you join only if you accept. */
+  async chatInvitations() {
+    return (await rpc('chat_invitations', {}, 'No se han podido cargar tus invitaciones.')).map((i) => ({
+      conversation: toConversation(i.conversation),
+      invitedBy: i.invited_by ? toSummary(i.invited_by) : null,
+      createdAt: i.created_at,
+    }))
+  },
+
+  async answerChatInvite(conversationId, accept) {
+    const data = await rpc('answer_chat_invite', { target: conversationId, accept }, 'No se ha podido guardar tu respuesta.')
+    return data ? toConversation(data) : null
   },
 
   /** Only your own messages; the text is erased for both people. */

@@ -5,6 +5,7 @@ import { MessageCircle, SquarePen } from 'lucide-vue-next'
 import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import ConversationList from '@/components/messages/ConversationList.vue'
+import ChatInvites from '@/components/messages/ChatInvites.vue'
 import ChatThread from '@/components/messages/ChatThread.vue'
 import NewMessageDialog from '@/components/messages/NewMessageDialog.vue'
 import { useMessagesStore } from '@/stores/messages'
@@ -44,6 +45,7 @@ watch(activeId, () => messages.loadConversations())
             <button type="button" class="btn btn--primary btn--sm" @click="composing = true">Nuevo mensaje</button>
           </StateMessage>
         </template>
+        <ChatInvites />
         <ConversationList :conversations="messages.inbox.items" :active-id="activeId" />
       </AsyncState>
     </section>

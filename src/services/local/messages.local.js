@@ -40,6 +40,7 @@ const conversationView = (db, me, conversation) => {
     createdById: conversation.createdBy ?? null,
     other: isGroup(conversation) ? null : summaryOf(db, otherId),
     members: conversation.memberIds.map((id) => summaryOf(db, id)),
+    invited: (db.conversationInvites ?? []).filter((i) => i.conversationId === conversation.id).map((i) => summaryOf(db, i.userId)),
     lastMessage,
     unreadCount: unreadFor(db, me, conversation),
     updatedAt: conversation.updatedAt,
@@ -59,18 +60,16 @@ const validTitle = (title) => {
   return value
 }
 
-/** Adds friends of `me` without a block and not already in; keeps the size limit. */
+/** Invites friends of `me` without a block, not in it yet; keeps the size limit. */
 const addPeople = (db, me, conversation, people) => {
-  const fresh = [...new Set(people)].filter((id) => id !== me && !conversation.memberIds.includes(id))
+  const pending = new Set(db.conversationInvites.filter((i) => i.conversationId === conversation.id).map((i) => i.userId))
+  const fresh = [...new Set(people)].filter((id) => id !== me && !conversation.memberIds.includes(id) && !pending.has(id))
   for (const id of fresh) {
     ensure(areFriends(db, me, id), 'forbidden', 'Solo puedes añadir a tus amigos.')
     ensure(!isBlockedBetween(db, me, id), 'forbidden', 'No puedes añadir a esta persona.')
   }
-  ensure(conversation.memberIds.length + fresh.length <= GROUP_CHAT_MAX, 'validation', `Un grupo puede tener como mucho ${GROUP_CHAT_MAX} personas.`)
-  for (const id of fresh) {
-    conversation.memberIds.push(id)
-    db.conversationMembers.push({ conversationId: conversation.id, userId: id, lastReadAt: null })
-  }
+  ensure(conversation.memberIds.length + pending.size + fresh.length <= GROUP_CHAT_MAX, 'validation', `Un grupo puede tener como mucho ${GROUP_CHAT_MAX} personas.`)
+  for (const id of fresh) db.conversationInvites.push({ conversationId: conversation.id, userId: id, invitedBy: me, createdAt: nowIso() })
 }
 
 /** The creator's role goes to the oldest member; an empty chat goes. */
@@ -176,6 +175,7 @@ export const localMessagesService = {
     ensure(userId !== me, 'validation', 'Para irte, sal del grupo.')
     conversation.memberIds = conversation.memberIds.filter((id) => id !== userId)
     db.conversationMembers = db.conversationMembers.filter((m) => !(m.conversationId === conversationId && m.userId === userId))
+    db.conversationInvites = db.conversationInvites.filter((i) => !(i.conversationId === conversationId && i.userId === userId))
     await commit()
     return conversationView(db, me, conversation)
   },
@@ -190,7 +190,31 @@ export const localMessagesService = {
     await commit()
   },
 
-  async sendMessage(conversationId, text) {
+  /** Group chats you are invited to: you join only if you accept. */
+  async chatInvitations() {
+    const db = await getDb()
+    const me = requireUserId(db)
+    return db.conversationInvites
+      .filter((i) => i.userId === me && !isBlockedBetween(db, me, i.invitedBy))
+      .map((i) => ({ conversation: conversationView(db, me, db.conversations.find((c) => c.id === i.conversationId)), invitedBy: summaryOf(db, i.invitedBy), createdAt: i.createdAt }))
+  },
+
+  async answerChatInvite(conversationId, accept) {
+    await latency(60, 140)
+    const db = await getDb()
+    const me = requireUserId(db)
+    ensure(db.conversationInvites.some((i) => i.conversationId === conversationId && i.userId === me), 'not_found', 'Esta invitación ya no existe.')
+    db.conversationInvites = db.conversationInvites.filter((i) => !(i.conversationId === conversationId && i.userId === me))
+    const conversation = db.conversations.find((c) => c.id === conversationId)
+    if (accept && conversation && !conversation.memberIds.includes(me)) {
+      conversation.memberIds.push(me)
+      db.conversationMembers.push({ conversationId, userId: me, lastReadAt: null })
+    }
+    await commit()
+    return accept && conversation ? conversationView(db, me, conversation) : null
+  },
+
+  async sendMessage(conversationId, text, mentions = []) {
     validate(rules.required(text, 'El mensaje'), rules.max(text, LIMITS.messageText, 'El mensaje'))
     await latency(80, 200)
     const db = await getDb()
@@ -198,7 +222,14 @@ export const localMessagesService = {
     const conversation = membership(db, me, conversationId)
     // A block stops a direct chat; in a group it only hides messages.
     ensure(isGroup(conversation) || !conversation.memberIds.some((id) => id !== me && isBlockedBetween(db, me, id)), 'forbidden', 'No puedes escribir a esta persona.')
-    const message = { id: uid('m'), conversationId, senderId: me, text: text.trim(), createdAt: nowIso() }
+    // Mentions only in group chats, of its people named in the text.
+    const named = isGroup(conversation)
+      ? [...new Set(mentions)].filter((id) => id !== me && conversation.memberIds.includes(id)).filter((id) => {
+          const p = db.profiles.find((x) => x.id === id)
+          return p && text.toLowerCase().includes(`@${p.firstName} ${p.lastName}`.toLowerCase())
+        })
+      : []
+    const message = { id: uid('m'), conversationId, senderId: me, text: text.trim(), mentions: named, createdAt: nowIso() }
     db.messages.push(message)
     conversation.updatedAt = message.createdAt
     const self = db.conversationMembers.find((m) => m.conversationId === conversationId && m.userId === me)

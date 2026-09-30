@@ -26,6 +26,7 @@ export const purgeLocalUser = (db, id) => {
   db.groupJoinRequests = (db.groupJoinRequests ?? []).filter((r) => r.userId !== id)
   db.groupNotices = (db.groupNotices ?? []).filter((n) => n.userId !== id)
   db.placeRequests = (db.placeRequests ?? []).filter((r) => r.userId !== id)
+  db.conversationInvites = (db.conversationInvites ?? []).filter((i) => i.userId !== id && i.invitedBy !== id)
   for (const g of db.groups ?? []) if (g.createdBy === id) g.createdBy = null
   const conversationIds = new Set(db.conversations.filter((c) => c.kind !== 'group' && c.memberIds.includes(id)).map((c) => c.id))
   const gone = (targetType, targetId) => (targetType === 'post' ? postIds.has(targetId) : photoIds.has(targetId))
@@ -95,7 +96,7 @@ export const buildLocalExport = (db, id) => {
       .filter((m) => m.userId === id)
       .map((m) => {
         const group = db.groups.find((g) => g.id === m.groupId)
-        return { name: group?.name, privacy: group?.privacy, role: m.role, joined_at: m.joinedAt }
+        return { name: group?.name, privacy: group?.privacy, role: m.role, joined_at: m.joinedAt, profile_share: m.profileShare ?? 'basic', notify: m.notify ?? 'all' }
       }),
     group_posts: (db.groupPosts ?? [])
       .filter((p) => p.authorId === id)

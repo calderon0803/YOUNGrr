@@ -101,6 +101,7 @@ export const buildSeed = () => {
         privacy: { profileVisibility: 'everyone', cityVisibility: 'everyone', friendRequests: 'everyone', ...PRIVACY[key] },
         notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
         appearance: { theme: 'system' },
+        groups: { profileShare: 'basic', notify: 'all', invites: 'friends' },
       },
     ]),
   )

@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import PersonLink from '@/components/common/PersonLink.vue'
 import { useUserStore } from '@/stores/user'
 import { useFriendsStore } from '@/stores/friends'
+import { GROUP_NOTIFY_OPTIONS, GROUP_SHARE_OPTIONS } from '@/utils/groups'
 
 // STORES
 const user = useUserStore()
@@ -40,7 +41,38 @@ const QUESTIONS = [
   },
 ]
 
+// Groups: separate from friends; the defaults for each group you join.
+const GROUP_QUESTIONS = [
+  {
+    key: 'profileShare',
+    title: 'Qué ve de mí la gente de mis grupos que no es mi amiga',
+    hint: 'Valor para los grupos en los que entres. Lo cambias en cada grupo desde su menú. Tus amigos siempre siguen lo de arriba.',
+    options: GROUP_SHARE_OPTIONS,
+  },
+  {
+    key: 'notify',
+    title: 'Avisos de mis grupos',
+    hint: 'Valor para los grupos en los que entres. Los grupos de lugares solo avisan cuando te mencionan.',
+    options: GROUP_NOTIFY_OPTIONS,
+  },
+  {
+    key: 'invites',
+    title: 'Quién puede invitarme a grupos',
+    hint: 'Las invitaciones siempre las aceptas tú.',
+    options: [
+      { value: 'friends', label: 'Mis amigos' },
+      { value: 'nobody', label: 'Nadie' },
+    ],
+  },
+]
+
 // METHODS
+const updateGroups = (key, value) => {
+  const next = user.draftSettings()
+  next.groups = { ...next.groups, [key]: value }
+  user.updateSettings(next, 'Privacidad actualizada.')
+}
+
 const update = (key, value) => {
   const next = user.draftSettings()
   next.privacy[key] = value
@@ -64,6 +96,24 @@ onMounted(() => friends.loadBlocked())
             :value="option.value"
             :checked="user.settings.privacy[q.key] === option.value"
             @change="update(q.key, option.value)"
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      </fieldset>
+    </section>
+
+    <h2 class="settings-section__heading">Grupos</h2>
+    <section v-for="q in GROUP_QUESTIONS" :key="q.key" class="settings-section__block">
+      <fieldset class="settings-section__options">
+        <legend class="settings-section__title">{{ q.title }}</legend>
+        <p class="settings-section__option-hint">{{ q.hint }}</p>
+        <label v-for="option in q.options" :key="option.value" class="settings-section__option">
+          <input
+            type="radio"
+            :name="`groups-${q.key}`"
+            :value="option.value"
+            :checked="(user.settings.groups?.[q.key] ?? q.options[0].value) === option.value"
+            @change="updateGroups(q.key, option.value)"
           />
           <span>{{ option.label }}</span>
         </label>

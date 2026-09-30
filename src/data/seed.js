@@ -1,7 +1,8 @@
 // Demo dataset for the local backend. Dates are relative to "now" so the demo
 // always reads fresh ("Hace 15 minutos"). Emojis only appear in user content.
 import { toDateInput } from '@/utils/time'
-import { DEFAULT_ALBUM_TITLE, LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { DEFAULT_ALBUM_TITLE, LEGAL } from '@/config/app'
+import { PLACES } from '@/config/places'
 
 const MIN = 60 * 1000
 const HOUR = 60 * MIN
@@ -31,7 +32,7 @@ const PEOPLE = [
   ['marta', 'Marta', 'Sanz', avatar('women', 90), 'Madrid', 'Perfil privado, pero se aceptan planes.', null, 'Arquitectura · UPM', ''],
   ['alvaro', 'Álvaro', 'Prieto', avatar('men', 11), 'Salamanca', 'No acepto solicitudes, lo siento.', null, '', ''],
   ['irene', 'Irene', 'Castro', avatar('women', 29), 'Gijón', 'Retratos y viajes.', null, 'Bellas Artes', ''],
-  // Neighbours of Carlos who are not his friends, for the "Cerca de ti" feed.
+  // Neighbours of Carlos who are not his friends (some are in the group of Santander).
   ['nerea', 'Nerea', 'Gutiérrez', avatar('women', 33), 'Santander', 'Vintage, mercadillos y bicis viejas.', null, 'Historia del Arte · UC', ''],
   ['hugo', 'Hugo', 'Revuelta', avatar('men', 52), 'Laredo', 'Surf de invierno y fotos de atardeceres.', null, '', 'Socorrista'],
   ['claudia', 'Claudia', 'Sainz', avatar('women', 57), 'Comillas', 'Canto en un coro y doy clases de piano.', null, 'Conservatorio de Santander', ''],
@@ -39,22 +40,6 @@ const PEOPLE = [
   ['bea', 'Bea', 'Arce', avatar('women', 79), 'Santander', 'Cuenta privada.', null, '', ''],
   ['ruben', 'Rubén', 'Ceballos', avatar('men', 36), 'Reinosa', 'Montaña todo el año.', null, '', 'Guía de montaña'],
 ]
-
-// Town-level coordinates (never exact positions).
-const CITY_COORDS = {
-  Santander: [43.4623, -3.81],
-  Torrelavega: [43.3494, -4.0479],
-  Laredo: [43.4098, -3.4196],
-  Comillas: [43.3857, -4.2914],
-  'Castro Urdiales': [43.3846, -3.2164],
-  Reinosa: [43.0012, -4.1373],
-  Madrid: [40.4168, -3.7038],
-  Bilbao: [43.263, -2.935],
-  Valencia: [39.4699, -0.3763],
-  Oviedo: [43.3614, -5.8494],
-  Salamanca: [40.9701, -5.6635],
-  'Gijón': [43.5322, -5.6611],
-}
 
 const FRIENDS = [
   ['carlos', 'ana', 900], ['carlos', 'pablo', 1400], ['carlos', 'laura', 700], ['carlos', 'javi', 7], ['carlos', 'sara', 400],
@@ -73,7 +58,6 @@ const PRIVACY = {
   hugo: { profileVisibility: 'everyone', friendRequests: 'everyone' },
   // Public accounts that hide part of their location.
   claudia: { cityVisibility: 'only_me' },
-  oscar: { distanceVisibility: 'friends' },
   bea: { profileVisibility: 'friends', friendRequests: 'friends_of_friends' },
 }
 
@@ -91,8 +75,8 @@ export const buildSeed = () => {
     adultConfirmed: true,
     termsVersion: LEGAL.version,
     city,
-    cityLat: CITY_COORDS[city]?.[0] ?? null,
-    cityLng: CITY_COORDS[city]?.[1] ?? null,
+    cityLat: null,
+    cityLng: null,
     bio,
     birthday,
     studies,
@@ -114,10 +98,9 @@ export const buildSeed = () => {
     PEOPLE.map(([key]) => [
       id(key),
       {
-        privacy: { profileVisibility: 'everyone', cityVisibility: 'everyone', distanceVisibility: 'everyone', friendRequests: 'everyone', ...PRIVACY[key] },
+        privacy: { profileVisibility: 'everyone', cityVisibility: 'everyone', friendRequests: 'everyone', ...PRIVACY[key] },
         notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
         appearance: { theme: 'system' },
-        nearby: { radiusKm: NEARBY_DEFAULT_RADIUS_KM },
       },
     ]),
   )
@@ -426,6 +409,18 @@ export const buildSeed = () => {
     { id: 'g_monte', kind: 'user', privacy: 'closed', name: 'Montañeros de Cantabria', description: 'Rutas por los Picos y el Pas cada fin de semana.', createdBy: id('ruben'), createdAt: ago({ d: 90 }), updatedAt: ago({ d: 90 }), firstJoinedAt: ago({ d: 88 }) },
   ]
 
+  // Communities and provinces, as the place_groups migration creates them, and
+  // the group of Santander (activated by its neighbours).
+  const place = (p, level, parentId = null) => ({
+    id: `g_${p.key}`, kind: 'place', privacy: 'closed', name: p.name, description: '', createdBy: null,
+    createdAt: ago({ d: 30 }), updatedAt: ago({ d: 30 }), firstJoinedAt: ago({ d: 30 }), placeLevel: level, placeKey: p.key, parentId,
+  })
+  for (const c of PLACES) {
+    groups.push(place(c, 'community'))
+    for (const p of c.provinces ?? []) groups.push(place(p, 'province', `g_${c.key}`))
+  }
+  groups.push({ ...place({ key: 'osm-R340102', name: 'Santander' }, 'municipality', 'g_es-cantabria'), id: 'g_santander', description: 'Lo que pasa en Santander.' })
+
   const GM = (group, user, role, joinedDays, seenHours = 0) => ({ groupId: `g_${group}`, userId: id(user), role, joinedAt: ago({ d: joinedDays }), lastSeenAt: ago({ h: seenHours }) })
 
   const groupMembers = [
@@ -439,12 +434,21 @@ export const buildSeed = () => {
     GM('analogica', 'irene', 'member', 3),
     GM('monte', 'ruben', 'owner', 90),
     GM('monte', 'hugo', 'member', 88),
+    GM('santander', 'ana', 'member', 12),
+    GM('santander', 'nerea', 'member', 12),
+    GM('santander', 'bea', 'member', 12),
+    GM('santander', 'laura', 'member', 12),
+    GM('santander', 'javi', 'member', 12),
+    GM('es-cantabria', 'ana', 'member', 20),
+    GM('es-cantabria', 'hugo', 'member', 25),
+    GM('es-cantabria', 'ruben', 'member', 28),
   ]
 
   const groupPosts = [
     { id: 'gp_1', groupId: 'g_cuadrilla', authorId: id('ana'), text: '¿Quién se apunta a la ruta del Castro Valnera? Pablo ha creado el evento 🥾', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ h: 1 }) },
     { id: 'gp_2', groupId: 'g_cuadrilla', authorId: id('pablo'), text: 'Atardecer desde la Magdalena ayer', photoUrl: photoUrl('gallinero-atardecer'), photoWidth: 1200, photoHeight: 800, createdAt: ago({ h: 6 }) },
     { id: 'gp_3', groupId: 'g_cuadrilla', authorId: id('laura'), text: 'Recordad que el sábado es el cumple de Sara, ¿hacemos bote para el regalo?', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ d: 2 }) },
+    { id: 'gp_5', groupId: 'g_santander', authorId: id('nerea'), text: 'Este sábado hay mercadillo en la Plaza de la Esperanza', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ h: 8 }) },
     { id: 'gp_4', groupId: 'g_analogica', authorId: id('ana'), text: 'He revelado el carrete de Lisboa, ¡quedaron geniales!', photoUrl: null, photoWidth: null, photoHeight: null, createdAt: ago({ d: 1 }) },
   ]
 
@@ -494,6 +498,10 @@ export const buildSeed = () => {
     groupReplies,
     groupPostGrrs,
     groupNotices: [],
+    // Three people asked for the group of Torrelavega (it needs five).
+    placeRequests: ['pablo', 'oscar', 'claudia'].map((key, i) => ({
+      placeKey: 'osm-R340131', placeName: 'Torrelavega', parentKey: 'es-cantabria', userId: id(key), createdAt: ago({ d: 3 + i }),
+    })),
     // Carlos invited Javi (now friends) and has one invitation still pending.
     invitations: [
       { id: 'inv_javi', token: 'demo-javi', inviterId: id('carlos'), email: 'javi@demo.youngrr.app', createdAt: ago({ d: 8 }), expiresAt: ago({ d: -22 }), usedBy: id('javi'), usedAt: ago({ d: 7 }) },

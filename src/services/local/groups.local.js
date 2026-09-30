@@ -6,14 +6,19 @@
 //   group, remove members and delete posts;
 // - members invite their friends; up to GROUPS.maxMembers people;
 // - blocks hide posts and replies between the two people.
+// Place groups (communities, provinces and towns) are joined directly and have no
+// owner: the moderators in them administer them. A town's group is created when
+// PLACE_GROUPS.threshold people have asked for it.
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { areFriends, groupMemberCount, groupRole, isBlockedBetween, isGroupAdmin, isGroupMember, summaryOf } from '@/services/local/access'
+import { areFriends, groupMemberCount, groupRole, isBlockedBetween, isGroupAdmin, isGroupMember, profileOf, summaryOf } from '@/services/local/access'
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
+import { normalize } from '@/utils/text'
 import { nowIso } from '@/utils/time'
-import { GROUPS } from '@/config/app'
+import { GROUPS, PLACE_GROUPS } from '@/config/app'
+import { placeParentKey } from '@/utils/places'
 
 const DAY_MS = 86_400_000
 const ROLE_ORDER = { owner: 0, admin: 1, member: 2 }
@@ -49,6 +54,9 @@ const groupView = (db, me, group) => {
     name: group.name,
     description: group.description,
     createdAt: group.createdAt,
+    placeLevel: group.placeLevel ?? null,
+    parent: parentOf(db, group),
+    canManage: isGroupAdmin(db, group.id, me),
     owner: owner ? summaryOf(db, owner) : null,
     memberCount: groupMemberCount(db, group.id),
     myRole: role,
@@ -89,7 +97,7 @@ const validateGroup = (input) =>
 
 const join = (db, group, userId) => {
   if (isGroupMember(db, group.id, userId)) return
-  ensure(groupMemberCount(db, group.id) < GROUPS.maxMembers, 'conflict', `Este grupo ya tiene ${GROUPS.maxMembers} personas, el máximo.`)
+  ensure(group.kind === 'place' || groupMemberCount(db, group.id) < GROUPS.maxMembers, 'conflict', `Este grupo ya tiene ${GROUPS.maxMembers} personas, el máximo.`)
   const now = nowIso()
   db.groupMembers.push({ groupId: group.id, userId, role: 'member', joinedAt: now, lastSeenAt: now })
   if (!group.firstJoinedAt && group.createdBy !== userId) group.firstJoinedAt = now
@@ -116,6 +124,8 @@ export const leaveGroup = (db, person, groupId) => {
   const was = groupRole(db, groupId, person)
   if (!was) return
   db.groupMembers = db.groupMembers.filter((m) => !(m.groupId === groupId && m.userId === person))
+  // A place group stays even when everyone leaves.
+  if (db.groups.find((g) => g.id === groupId)?.kind === 'place') return
   const rest = db.groupMembers.filter((m) => m.groupId === groupId)
   if (!rest.length) return removeGroup(db, groupId)
   if (was === 'owner') {
@@ -126,10 +136,28 @@ export const leaveGroup = (db, person, groupId) => {
 
 /** Groups nobody joined in GROUPS.emptyDays go, and their creator gets a notice (the nightly job). */
 const cleanUpEmptyGroups = (db) => {
+  const requestsLimit = new Date(Date.now() - PLACE_GROUPS.requestDays * DAY_MS).toISOString()
+  db.placeRequests = db.placeRequests.filter((r) => r.createdAt > requestsLimit)
   const limit = new Date(Date.now() - GROUPS.emptyDays * DAY_MS).toISOString()
   for (const group of db.groups.filter((g) => g.kind === 'user' && !g.firstJoinedAt && g.createdAt < limit)) {
-    if (group.createdBy) db.groupNotices.push({ id: uid('gn'), userId: group.createdBy, groupName: group.name, createdAt: nowIso() })
+    if (group.createdBy) db.groupNotices.push({ id: uid('gn'), kind: 'expired', groupId: null, userId: group.createdBy, groupName: group.name, createdAt: nowIso() })
     removeGroup(db, group.id)
+  }
+}
+
+const parentOf = (db, group) => {
+  const parent = group.parentId ? db.groups.find((g) => g.id === group.parentId) : null
+  return parent ? { id: parent.id, name: parent.name } : null
+}
+
+const placeStatusOf = (db, me, key) => {
+  const group = db.groups.find((g) => g.placeKey === key)
+  const requests = db.placeRequests.filter((r) => r.placeKey === key)
+  return {
+    group: group ? groupView(db, me, group) : null,
+    count: requests.length,
+    threshold: PLACE_GROUPS.threshold,
+    requested: requests.some((r) => r.userId === me),
   }
 }
 
@@ -192,7 +220,7 @@ export const localGroupsService = {
     return db.groupNotices
       .filter((n) => n.userId === me)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map(({ id, groupName, createdAt }) => ({ id, groupName, createdAt }))
+      .map(({ id, kind, groupId, groupName, createdAt }) => ({ id, kind: kind ?? 'expired', groupId: groupId ?? null, groupName, createdAt }))
   },
 
   async dismissNotice(noticeId) {
@@ -227,6 +255,7 @@ export const localGroupsService = {
       members: inside
         ? db.groupMembers
             .filter((m) => m.groupId === groupId && (m.userId === me || !isBlockedBetween(db, me, m.userId)))
+            .filter((m) => group.kind === 'user' || m.userId === me || m.role !== 'member' || areFriends(db, me, m.userId))
             .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.joinedAt.localeCompare(b.joinedAt))
             .map((m) => ({ person: summaryOf(db, m.userId), role: m.role, joinedAt: m.joinedAt }))
         : [],
@@ -274,7 +303,7 @@ export const localGroupsService = {
     const me = requireUserId(db)
     const group = adminGroup(db, me, groupId)
     Object.assign(group, {
-      name: input.name.trim(),
+      name: group.kind === 'user' ? input.name.trim() : group.name,
       description: (input.description ?? '').trim(),
       privacy: group.kind === 'user' ? (input.secret ? 'secret' : 'closed') : group.privacy,
       updatedAt: nowIso(),
@@ -330,7 +359,7 @@ export const localGroupsService = {
     const me = requireUserId(db)
     const group = visibleGroup(db, me, groupId)
     if (!isGroupMember(db, groupId, me)) {
-      if (invitationOf(db, groupId, me)) join(db, group, me)
+      if (group.kind === 'place' || invitationOf(db, groupId, me)) join(db, group, me)
       else {
         ensure(group.privacy === 'closed', 'forbidden', 'A este grupo solo se entra con invitación.')
         if (!db.groupJoinRequests.some((r) => r.groupId === groupId && r.userId === me)) db.groupJoinRequests.push({ groupId, userId: me, createdAt: nowIso() })
@@ -378,7 +407,9 @@ export const localGroupsService = {
     ensure(userId !== me, 'validation', 'Para irte, sal del grupo.')
     const theirs = groupRole(db, groupId, userId)
     ensure(theirs, 'not_found', 'Esta persona ya no está en el grupo.')
-    ensure(theirs === 'member' || (theirs === 'admin' && groupRole(db, groupId, me) === 'owner'), 'forbidden', 'No puedes quitar a esta persona.')
+    const group = db.groups.find((g) => g.id === groupId)
+    const canRemoveAdmins = groupRole(db, groupId, me) === 'owner' || (group.kind === 'place' && db.moderators.includes(me))
+    ensure(theirs === 'member' || (theirs === 'admin' && canRemoveAdmins), 'forbidden', 'No puedes quitar a esta persona.')
     db.groupMembers = db.groupMembers.filter((m) => !(m.groupId === groupId && m.userId === userId))
     await commit()
   },
@@ -387,9 +418,14 @@ export const localGroupsService = {
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
-    memberGroup(db, me, groupId)
-    ensure(groupRole(db, groupId, me) === 'owner', 'forbidden', 'Solo quien es propietario del grupo puede cambiar los papeles.')
-    validate(['owner', 'admin', 'member'].includes(role) ? null : 'Papel no válido.')
+    const group = memberGroup(db, me, groupId)
+    if (group.kind === 'place') {
+      ensure(db.moderators.includes(me), 'forbidden', 'Los grupos de lugares los administra la moderación de YOUNGrr.')
+      validate(['admin', 'member'].includes(role) ? null : 'Papel no válido.')
+    } else {
+      ensure(groupRole(db, groupId, me) === 'owner', 'forbidden', 'Solo quien es propietario del grupo puede cambiar los papeles.')
+      validate(['owner', 'admin', 'member'].includes(role) ? null : 'Papel no válido.')
+    }
     const member = db.groupMembers.find((m) => m.groupId === groupId && m.userId === userId)
     ensure(member && userId !== me, 'validation', 'Elige a otra persona del grupo.')
     if (role === 'owner') db.groupMembers.find((m) => m.groupId === groupId && m.userId === me).role = 'admin'
@@ -405,6 +441,94 @@ export const localGroupsService = {
       member.lastSeenAt = nowIso()
       await commit()
     }
+  },
+
+  // ---- Place groups ---------------------------------------------------------------------------
+
+  async listPlaces(parentId = null) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const LEVEL = { province: 0, municipality: 1 }
+    return db.groups
+      .filter((g) => g.kind === 'place' && (parentId ? g.parentId === parentId : !g.parentId && g.placeLevel === 'community'))
+      .sort((a, b) => (LEVEL[a.placeLevel] ?? 0) - (LEVEL[b.placeLevel] ?? 0) || a.name.localeCompare(b.name, 'es'))
+      .map((g) => groupView(db, me, g))
+  },
+
+  async suggestPlaces() {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const city = normalize(profileOf(db, me).city ?? '')
+    if (!city) return []
+    const chain = []
+    for (const town of db.groups.filter((g) => g.placeLevel === 'municipality' && normalize(g.name) === city)) {
+      for (let g = town; g && !chain.includes(g); g = db.groups.find((x) => x.id === g.parentId)) chain.push(g)
+    }
+    return chain.map((g) => groupView(db, me, g))
+  },
+
+  async placeStatus(key) {
+    const db = await getDb()
+    const me = requireUserId(db)
+    return placeStatusOf(db, me, key)
+  },
+
+  async requestPlace(place) {
+    validate(place?.key ? null : 'Elige el pueblo o la ciudad de la lista.')
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    cleanUpEmptyGroups(db)
+    const existing = db.groups.find((g) => g.placeKey === place.key)
+    if (existing) {
+      join(db, existing, me)
+    } else {
+      const parentKey = placeParentKey(place)
+      db.placeRequests = db.placeRequests.filter((r) => !(r.placeKey === place.key && r.userId === me))
+      db.placeRequests.push({ placeKey: place.key, placeName: place.name, parentKey, userId: me, createdAt: nowIso() })
+      const requests = db.placeRequests.filter((r) => r.placeKey === place.key)
+      if (requests.length >= PLACE_GROUPS.threshold) {
+        const now = nowIso()
+        const parent = db.groups.find((g) => g.placeKey === parentKey)
+        const group = {
+          id: uid('g'), kind: 'place', privacy: 'closed', name: place.name, description: '', createdBy: null,
+          createdAt: now, updatedAt: now, firstJoinedAt: now, placeLevel: 'municipality', placeKey: place.key, parentId: parent?.id ?? null,
+        }
+        db.groups.push(group)
+        for (const r of requests) {
+          db.groupMembers.push({ groupId: group.id, userId: r.userId, role: 'member', joinedAt: now, lastSeenAt: now })
+          if (r.userId !== me) db.groupNotices.push({ id: uid('gn'), kind: 'activated', groupId: group.id, userId: r.userId, groupName: group.name, createdAt: now })
+        }
+        db.placeRequests = db.placeRequests.filter((r) => r.placeKey !== place.key)
+      }
+    }
+    await commit()
+    return placeStatusOf(db, me, place.key)
+  },
+
+  async cancelPlaceRequest(key) {
+    const db = await getDb()
+    const me = requireUserId(db)
+    db.placeRequests = db.placeRequests.filter((r) => !(r.placeKey === key && r.userId === me))
+    await commit()
+  },
+
+  async myPlaceRequests() {
+    const db = await getDb()
+    const me = requireUserId(db)
+    cleanUpEmptyGroups(db)
+    return db.placeRequests
+      .filter((r) => r.userId === me)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((r) => ({
+        key: r.placeKey,
+        name: r.placeName,
+        count: db.placeRequests.filter((x) => x.placeKey === r.placeKey).length,
+        threshold: PLACE_GROUPS.threshold,
+        expiresAt: new Date(Date.parse(r.createdAt) + PLACE_GROUPS.requestDays * DAY_MS).toISOString(),
+      }))
   },
 
   // ---- The Gallinero --------------------------------------------------------------------------

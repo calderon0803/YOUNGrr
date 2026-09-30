@@ -1,11 +1,13 @@
 // Groups and their Gallinero with Supabase. Same interface as local/groups.local.js.
 // Gallinero photos go to the private "photos" bucket; only the group's members read them.
+// Place groups: communities and provinces exist; towns are asked for until enough people want them.
 import { currentUserId, rpc } from '@/services/supabase/client'
 import { removePhotos, signPhotoUrls, uploadPhoto } from '@/services/supabase/storage'
 import { toSummary } from '@/services/supabase/mappers'
 import { validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { GROUPS } from '@/config/app'
+import { placeParentKey } from '@/utils/places'
 
 const summaryOrNull = (json) => (json ? toSummary(json) : null)
 
@@ -18,6 +20,11 @@ const toGroup = (json) => ({
   name: json.name,
   description: json.description ?? '',
   createdAt: json.created_at,
+  // Place groups: 'community' | 'province' | 'municipality', and the group they are in.
+  placeLevel: json.place_level ?? null,
+  parent: json.parent ?? null,
+  // Administers it (in place groups, also the moderators who are in it).
+  canManage: !!json.can_manage,
   owner: summaryOrNull(json.owner),
   memberCount: json.member_count ?? 0,
   // null when you are not in it.
@@ -29,6 +36,13 @@ const toGroup = (json) => ({
   lastPostAt: json.last_post_at ?? null,
   // Only for its owner, while nobody else has joined.
   expiresAt: json.expires_at ?? null,
+})
+
+const toPlaceStatus = (json) => ({
+  group: json.group ? toGroup(json.group) : null,
+  count: json.count ?? 0,
+  threshold: json.threshold,
+  requested: !!json.requested,
 })
 
 const toPost = (json, urls) => ({
@@ -76,7 +90,14 @@ export const supabaseGroupsService = {
 
   /** Groups deleted because nobody joined them in time. */
   async notices() {
-    return (await rpc('my_group_notices', {}, 'No se han podido cargar tus avisos.')).map((n) => ({ id: n.id, groupName: n.group_name, createdAt: n.created_at }))
+    return (await rpc('my_group_notices', {}, 'No se han podido cargar tus avisos.')).map((n) => ({
+      id: n.id,
+      // 'expired': deleted because nobody joined; 'activated': the group of a town you asked for.
+      kind: n.kind ?? 'expired',
+      groupId: n.group_id ?? null,
+      groupName: n.group_name,
+      createdAt: n.created_at,
+    }))
   },
 
   async dismissNotice(noticeId) {
@@ -155,6 +176,45 @@ export const supabaseGroupsService = {
 
   async markSeen(groupId) {
     await rpc('mark_group_seen', { target: groupId }, 'No se ha podido actualizar el grupo.')
+  },
+
+  // ---- Place groups ---------------------------------------------------------------------------
+
+  /** The communities, or the groups inside one (provinces and towns). */
+  async listPlaces(parentId = null) {
+    return (await rpc('list_place_groups', { parent: parentId }, 'No se han podido cargar los grupos de lugares.')).map(toGroup)
+  },
+
+  /** The group of your profile's town (if it exists) and the ones above it. */
+  async suggestPlaces() {
+    return (await rpc('suggest_place_groups', {}, 'No se han podido cargar los grupos de tu zona.')).map(toGroup)
+  },
+
+  /** For a town from the geocoder: its group, or how many asked for it. */
+  async placeStatus(key) {
+    return toPlaceStatus(await rpc('place_group_status', { key }, 'No se ha podido consultar el grupo.'))
+  },
+
+  /** "Quiero un grupo de…": with enough requests the group is created with everyone in it. */
+  async requestPlace(place) {
+    validate(place?.key ? null : 'Elige el pueblo o la ciudad de la lista.')
+    return toPlaceStatus(
+      await rpc('request_place_group', { key: place.key, place_name: place.name, parent_key: placeParentKey(place) }, 'No se ha podido enviar tu petición.'),
+    )
+  },
+
+  async cancelPlaceRequest(key) {
+    await rpc('cancel_place_request', { key }, 'No se ha podido retirar tu petición.')
+  },
+
+  async myPlaceRequests() {
+    return (await rpc('my_place_requests', {}, 'No se han podido cargar tus peticiones.')).map((r) => ({
+      key: r.place_key,
+      name: r.place_name,
+      count: r.count,
+      threshold: r.threshold,
+      expiresAt: r.expires_at,
+    }))
   },
 
   // ---- The Gallinero --------------------------------------------------------------------------

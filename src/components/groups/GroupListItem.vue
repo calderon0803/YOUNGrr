@@ -1,7 +1,7 @@
 <script setup>
 import { Lock } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { groupAvatar, PRIVACY_LABEL } from '@/utils/groups'
+import { groupAvatar, groupKindLabel } from '@/utils/groups'
 import { plural } from '@/utils/text'
 
 // One group in a list: its initials, name, privacy and people, with room for
@@ -22,7 +22,7 @@ defineProps({
       <RouterLink class="group-item__name" :to="{ name: 'group', params: { id: group.id } }">{{ group.name }}</RouterLink>
       <span class="group-item__meta">
         <Lock v-if="group.privacy === 'secret'" aria-hidden="true" />
-        {{ PRIVACY_LABEL[group.privacy] }} · {{ plural(group.memberCount, 'persona', 'personas') }}
+        {{ groupKindLabel(group) }} · {{ plural(group.memberCount, 'persona', 'personas') }}
       </span>
       <span v-if="group.invitedBy" class="group-item__meta">Te invita {{ group.invitedBy.firstName }}</span>
       <span v-if="$slots.default" class="group-item__actions"><slot /></span>

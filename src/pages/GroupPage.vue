@@ -18,11 +18,12 @@ import { useGroupsStore } from '@/stores/groups'
 import { useEventsStore } from '@/stores/events'
 import { useConfirm } from '@/composables/useConfirm'
 import { fullDate } from '@/utils/time'
-import { groupAvatar, isGroupAdminRole, PRIVACY_LABEL } from '@/utils/groups'
+import { groupAvatar, groupKindLabel } from '@/utils/groups'
 import { plural } from '@/utils/text'
 
 // A group: what it is, and for its members the Gallinero, its people and its
-// events. Everyone else only sees its name, description and size.
+// events. Everyone else only sees its name, description and size. Place groups
+// (communities, provinces, towns) are joined directly.
 
 // STORES
 const route = useRoute()
@@ -43,7 +44,8 @@ const state = computed(() => groups.details[groupId.value] ?? { status: 'loading
 const board = computed(() => groups.boards[groupId.value] ?? { status: 'loading', error: null, ids: [], hasMore: false })
 const groupEvents = computed(() => events.groupLists[groupId.value] ?? { status: 'loading', error: null, upcoming: [], past: [] })
 const isMember = computed(() => !!group.value?.myRole)
-const isAdmin = computed(() => isGroupAdminRole(group.value?.myRole))
+const isAdmin = computed(() => !!group.value?.canManage)
+const isPlace = computed(() => group.value?.kind === 'place')
 const tab = computed(() => (['people', 'events'].includes(route.query.tab) ? route.query.tab : 'gallinero'))
 const tabs = computed(() => [
   { key: 'gallinero', label: 'Gallinero' },
@@ -69,11 +71,14 @@ const onMenu = async (key) => {
   if (key === 'edit') editing.value = true
   else if (key === 'leave') {
     const owner = group.value.myRole === 'owner'
+    const place = isPlace.value
     const ok = await confirm({
       title: 'Salir del grupo',
       message: owner
         ? 'Dejarás de ver el Gallinero y sus eventos. Pasará a ser propietario quien más tiempo lleve administrando (o, si no hay nadie, quien más tiempo lleve en el grupo).'
-        : 'Dejarás de ver el Gallinero y sus eventos. Para volver tendrán que invitarte o aceptar tu solicitud.',
+        : place
+          ? 'Dejarás de ver el Gallinero y sus eventos. Puedes volver a unirte cuando quieras.'
+          : 'Dejarás de ver el Gallinero y sus eventos. Para volver tendrán que invitarte o aceptar tu solicitud.',
       confirmLabel: 'Salir',
       danger: true,
     })
@@ -120,7 +125,10 @@ watch([groupId, tab, isMember], loadInside, { immediate: true })
             <h1 id="group-title" class="group-page__name">{{ group.name }}</h1>
             <p class="group-page__meta">
               <Lock v-if="group.privacy === 'secret'" aria-hidden="true" />
-              {{ PRIVACY_LABEL[group.privacy] }} · {{ plural(group.memberCount, 'persona', 'personas') }}
+              {{ groupKindLabel(group) }} · {{ plural(group.memberCount, 'persona', 'personas') }}
+              <template v-if="group.parent">
+                · <RouterLink :to="{ name: 'group', params: { id: group.parent.id } }">{{ group.parent.name }}</RouterLink>
+              </template>
             </p>
             <p v-if="group.description" class="group-page__description user-text">{{ group.description }}</p>
             <p v-if="group.expiresAt" class="group-page__warning">
@@ -140,6 +148,7 @@ watch([groupId, tab, isMember], loadInside, { immediate: true })
                 <button type="button" class="btn btn--secondary btn--sm" @click="answer(false)">Rechazar</button>
               </template>
               <button v-else-if="group.requested" type="button" class="btn btn--secondary btn--sm" @click="groups.cancelRequest(groupId)">Retirar solicitud</button>
+              <button v-else-if="isPlace" type="button" class="btn btn--primary btn--sm" @click="groups.requestToJoin(groupId)">Unirme</button>
               <button v-else-if="group.privacy === 'closed'" type="button" class="btn btn--primary btn--sm" @click="groups.requestToJoin(groupId)">Pedir entrar</button>
             </div>
           </div>
@@ -194,7 +203,13 @@ watch([groupId, tab, isMember], loadInside, { immediate: true })
           <StateMessage
             :icon="Lock"
             title="Solo las personas del grupo ven lo que hay dentro."
-            :text="group.privacy === 'closed' ? 'Pide entrar y quien lo administra te dará paso.' : 'A este grupo solo se entra con invitación.'"
+            :text="
+              isPlace
+                ? 'Únete para ver su Gallinero y sus eventos. De la gente que está dentro solo verás a tus amigos.'
+                : group.privacy === 'closed'
+                  ? 'Pide entrar y quien lo administra te dará paso.'
+                  : 'A este grupo solo se entra con invitación.'
+            "
           />
         </div>
 

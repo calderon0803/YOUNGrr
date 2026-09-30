@@ -1,25 +1,32 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Search, UsersRound, X } from 'lucide-vue-next'
+import { MapPin, Plus, Search, UsersRound, X } from 'lucide-vue-next'
 import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import GroupListItem from '@/components/groups/GroupListItem.vue'
 import GroupFormDialog from '@/components/groups/GroupFormDialog.vue'
+import PlaceRequestDialog from '@/components/groups/PlaceRequestDialog.vue'
+import PlaceTree from '@/components/groups/PlaceTree.vue'
 import { useGroupsStore } from '@/stores/groups'
 import { useNotificationsStore } from '@/stores/notifications'
+import { useAuthStore } from '@/stores/auth'
 import { debounce } from '@/utils/debounce'
+import { fullDate } from '@/utils/time'
 import { GROUPS, SEARCH_DEBOUNCE_MS } from '@/config/app'
 
-// Groups: notices, invitations, your groups and a search of closed groups.
+// Groups: notices, invitations, your groups, a search of closed groups and the
+// groups of places (your area, your requests and all of them by community).
 
 // STORES
 const groups = useGroupsStore()
 const notifications = useNotificationsStore()
+const auth = useAuthStore()
 const router = useRouter()
 
 // DATA
 const creating = ref(false)
+const askingPlace = ref(false)
 const query = ref('')
 
 // COMPUTED
@@ -27,6 +34,10 @@ const pick = (ids) => ids.map((id) => groups.groups[id]).filter(Boolean)
 const mine = computed(() => pick(groups.mine.ids))
 const invited = computed(() => pick(groups.invitations.ids))
 const results = computed(() => pick(groups.found.ids))
+const suggested = computed(() => pick(groups.suggested.ids))
+const myCity = computed(() => auth.me?.city ?? '')
+// Your town has no group yet: it can be asked for.
+const townMissing = computed(() => !!myCity.value && groups.suggested.status === 'success' && !suggested.value.some((g) => g.placeLevel === 'municipality'))
 
 // METHODS
 const onCreated = (group) => router.push({ name: 'group', params: { id: group.id } })
@@ -41,6 +52,8 @@ onMounted(() => {
   groups.loadMine()
   groups.loadInvitations()
   groups.loadNotices()
+  groups.loadSuggested()
+  groups.loadPlaceRequests()
 })
 
 // WATCHERS
@@ -63,7 +76,12 @@ watch(
 
     <ul v-if="groups.notices.items.length" class="groups-page__notices" role="list">
       <li v-for="notice in groups.notices.items" :key="notice.id" class="groups-page__notice" role="status">
-        <p>
+        <p v-if="notice.kind === 'activated'">
+          Ya existe el grupo de
+          <RouterLink :to="{ name: 'group', params: { id: notice.groupId } }"><strong>{{ notice.groupName }}</strong></RouterLink>
+          que pediste, y ya estás dentro.
+        </p>
+        <p v-else>
           Tu grupo <strong>«{{ notice.groupName }}»</strong> se ha eliminado porque nadie se unió en {{ GROUPS.emptyDays }} días.
         </p>
         <button type="button" class="groups-page__close" aria-label="Cerrar el aviso" @click="groups.dismissNotice(notice.id)">
@@ -122,14 +140,59 @@ watch(
             <RouterLink v-if="group.myRole" class="btn btn--secondary btn--sm" :to="{ name: 'group', params: { id: group.id } }">Entrar</RouterLink>
             <button v-else-if="group.requested" type="button" class="btn btn--secondary btn--sm" @click="groups.cancelRequest(group.id)">Retirar solicitud</button>
             <button v-else type="button" class="btn btn--primary btn--sm" @click="groups.requestToJoin(group.id)">
-              {{ group.invitedBy ? 'Unirme' : 'Pedir entrar' }}
+              {{ group.invitedBy || group.kind === 'place' ? 'Unirme' : 'Pedir entrar' }}
             </button>
           </GroupListItem>
         </ul>
       </AsyncState>
     </section>
 
+    <section class="panel" aria-labelledby="groups-places-title">
+      <h2 id="groups-places-title" class="panel-title">Grupos de lugares</h2>
+      <div class="groups-page__places">
+        <section v-if="suggested.length || townMissing" aria-labelledby="groups-area-title">
+          <h3 id="groups-area-title" class="groups-page__subtitle">Tu zona</h3>
+          <ul v-if="suggested.length" class="groups-page__list" role="list">
+            <GroupListItem v-for="group in suggested" :key="group.id" :group="group">
+              <RouterLink v-if="group.myRole" class="btn btn--secondary btn--sm" :to="{ name: 'group', params: { id: group.id } }">Entrar</RouterLink>
+              <button v-else type="button" class="btn btn--primary btn--sm" @click="groups.requestToJoin(group.id)">Unirme</button>
+            </GroupListItem>
+          </ul>
+          <p v-if="townMissing" class="groups-page__hint groups-page__hint--flush">
+            Todavía no hay grupo de {{ myCity }}.
+            <button type="button" class="groups-page__link" @click="askingPlace = true">Pídelo</button>
+          </p>
+        </section>
+
+        <section v-if="groups.placeRequests.items.length" aria-labelledby="groups-requests-title">
+          <h3 id="groups-requests-title" class="groups-page__subtitle">Tus peticiones</h3>
+          <ul class="groups-page__requests" role="list">
+            <li v-for="request in groups.placeRequests.items" :key="request.key" class="groups-page__request">
+              <MapPin aria-hidden="true" />
+              <span class="groups-page__request-text">
+                <strong>{{ request.name }}</strong>
+                <span>{{ request.count }} de {{ request.threshold }} personas · caduca el {{ fullDate(request.expiresAt) }}</span>
+              </span>
+              <button type="button" class="btn btn--ghost btn--sm" @click="groups.cancelPlaceRequest(request.key)">Retirar</button>
+            </li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="groups-all-places-title">
+          <div class="groups-page__places-head">
+            <h3 id="groups-all-places-title" class="groups-page__subtitle">Por comunidades</h3>
+            <button type="button" class="btn btn--secondary btn--sm" @click="askingPlace = true">
+              <MapPin aria-hidden="true" />
+              Pedir el grupo de un pueblo
+            </button>
+          </div>
+          <PlaceTree />
+        </section>
+      </div>
+    </section>
+
     <GroupFormDialog :open="creating" @close="creating = false" @saved="onCreated" />
+    <PlaceRequestDialog :open="askingPlace" :initial="townMissing ? { name: myCity } : null" @close="askingPlace = false" />
   </div>
 </template>
 
@@ -221,6 +284,82 @@ watch(
     padding: $space-2 $space-3 $space-3;
     font-size: $fs-sm;
     color: $color-text-muted;
+
+    &--flush {
+      padding: $space-2 0 0;
+    }
+  }
+
+  &__link {
+    @include reset-button;
+    color: $color-link;
+    font-weight: 600;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__places {
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+    padding: $space-3;
+
+    .groups-page__list {
+      margin: 0 (-$space-3);
+    }
+  }
+
+  &__places-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-2;
+    margin-bottom: $space-2;
+
+    .groups-page__subtitle {
+      margin-bottom: 0;
+    }
+  }
+
+  &__subtitle {
+    @include section-title;
+    margin-bottom: $space-2;
+  }
+
+  &__requests {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__request {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+
+    > svg {
+      flex-shrink: 0;
+      width: 1rem;
+      height: 1rem;
+      color: $color-text-soft;
+    }
+  }
+
+  &__request-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    font-size: $fs-sm;
+
+    span {
+      color: $color-text-muted;
+    }
   }
 }
 

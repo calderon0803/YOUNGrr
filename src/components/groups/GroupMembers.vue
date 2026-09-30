@@ -6,12 +6,15 @@ import RelativeTime from '@/components/common/RelativeTime.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useGroupsStore } from '@/stores/groups'
+import { useModerationStore } from '@/stores/moderation'
 import { useConfirm } from '@/composables/useConfirm'
 import { fullName } from '@/utils/text'
-import { ROLE_LABEL, isGroupAdminRole } from '@/utils/groups'
+import { ROLE_LABEL } from '@/utils/groups'
 
 // The group's people. Administrators see the requests to join and remove
 // members; the owner also names administrators and can hand the group over.
+// Place groups have no owner: the moderators in them name administrators, and
+// everyone only sees their friends (and who administers it) by name.
 
 // PROPS
 const props = defineProps({
@@ -21,23 +24,27 @@ const props = defineProps({
 // STORES
 const auth = useAuthStore()
 const groups = useGroupsStore()
+const moderation = useModerationStore()
 const { confirm } = useConfirm()
 
 // COMPUTED
 const group = computed(() => groups.groups[props.groupId])
 const state = computed(() => groups.details[props.groupId])
 const myRole = computed(() => group.value?.myRole)
-const isAdmin = computed(() => isGroupAdminRole(myRole.value))
+const isAdmin = computed(() => !!group.value?.canManage)
+const isPlace = computed(() => group.value?.kind === 'place')
+// Who names administrators: the owner, or in place groups the moderators.
+const namesAdmins = computed(() => myRole.value === 'owner' || (isPlace.value && moderation.isModerator))
 
 // METHODS
 const actionsFor = (member) => {
   if (member.person.id === auth.meId || member.role === 'owner') return []
   const items = []
-  if (myRole.value === 'owner') {
+  if (namesAdmins.value) {
     items.push(member.role === 'admin' ? { key: 'member', label: 'Quitar de la administración' } : { key: 'admin', label: 'Hacer administrador' })
-    items.push({ key: 'owner', label: 'Pasarle el grupo' })
+    if (!isPlace.value) items.push({ key: 'owner', label: 'Pasarle el grupo' })
   }
-  if (isAdmin.value && (member.role === 'member' || myRole.value === 'owner')) items.push({ key: 'remove', label: 'Quitar del grupo', danger: true })
+  if (isAdmin.value && (member.role === 'member' || namesAdmins.value)) items.push({ key: 'remove', label: 'Quitar del grupo', danger: true })
   return items
 }
 
@@ -80,6 +87,7 @@ const onAction = async (member, key) => {
 
     <section class="group-members__section" aria-labelledby="group-people-title">
       <h3 id="group-people-title" class="group-members__title">{{ group.memberCount }} {{ group.memberCount === 1 ? 'persona' : 'personas' }}</h3>
+      <p v-if="isPlace" class="group-members__note">De la gente del grupo solo ves a tus amigos y a quien lo administra.</p>
       <ul class="group-members__list" role="list">
         <li v-for="member in state.members" :key="member.person.id" class="group-members__item">
           <UserAvatar :person="member.person" size="sm" />
@@ -109,6 +117,12 @@ const onAction = async (member, key) => {
   &__title {
     margin-bottom: $space-2;
     font-weight: 700;
+  }
+
+  &__note {
+    margin-bottom: $space-2;
+    font-size: $fs-sm;
+    color: $color-text-muted;
   }
 
   &__list {

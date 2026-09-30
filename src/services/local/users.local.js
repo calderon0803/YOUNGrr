@@ -15,7 +15,7 @@ import {
 import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { matches } from '@/utils/text'
-import { LEGAL, NEARBY_RADII_KM, VISIT_RECOUNT_HOURS } from '@/config/app'
+import { LEGAL, VISIT_RECOUNT_HOURS } from '@/config/app'
 
 // Friends always see your profile, so it only has two levels.
 const PROFILE_VISIBILITIES = ['everyone', 'friends']
@@ -107,8 +107,9 @@ export const localUsersService = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       city: location?.name.trim() ?? '',
-      cityLat: location?.lat ?? null,
-      cityLng: location?.lng ?? null,
+      // Only the name of the town is kept, never its coordinates.
+      cityLat: null,
+      cityLng: null,
       needsSetup: false,
     })
     await commit()
@@ -155,10 +156,10 @@ export const localUsersService = {
     Object.assign(profile, {
       firstName: update.firstName.trim(),
       lastName: update.lastName.trim(),
-      // Without a town there is no "Cerca de ti" feed, but the profile is still valid.
+      // The town is optional (it only suggests the groups of your area).
       city: update.location?.name.trim() ?? '',
-      cityLat: update.location?.lat ?? null,
-      cityLng: update.location?.lng ?? null,
+      cityLat: null,
+      cityLng: null,
       bio: update.bio.trim(),
       birthday: update.birthday || null,
       studies: update.studies.trim(),
@@ -190,10 +191,8 @@ export const localUsersService = {
     validate(
       PROFILE_VISIBILITIES.includes(next.privacy.profileVisibility) ? null : 'Opción de privacidad no válida.',
       VISIBILITIES.includes(next.privacy.cityVisibility) ? null : 'Opción de privacidad no válida.',
-      VISIBILITIES.includes(next.privacy.distanceVisibility) ? null : 'Opción de privacidad no válida.',
       REQUEST_POLICIES.includes(next.privacy.friendRequests) ? null : 'Opción de solicitudes no válida.',
       THEMES.includes(next.appearance.theme) ? null : 'Tema no válido.',
-      NEARBY_RADII_KM.includes(next.nearby?.radiusKm) ? null : 'Radio no válido.',
     )
     await latency(80, 160)
     const db = await getDb()

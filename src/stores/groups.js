@@ -6,7 +6,7 @@ import { useToast } from '@/composables/useToast'
 import { useNotificationsStore } from '@/stores/notifications'
 import { plural } from '@/utils/text'
 
-/** Groups, your invitations and each group's Gallinero. */
+/** Groups, your invitations, the place groups and each group's Gallinero. */
 export const useGroupsStore = defineStore('groups', () => {
   const toast = useToast()
   const notifications = useNotificationsStore()
@@ -21,6 +21,10 @@ export const useGroupsStore = defineStore('groups', () => {
   const details = reactive({})
   /** Per group: { status, error, ids, hasMore, loadingMore }. */
   const boards = reactive({})
+  /** Place groups: the communities (key '') and what is inside each one, by id. */
+  const places = reactive({})
+  const suggested = reactive({ status: 'idle', error: null, ids: [] })
+  const placeRequests = reactive({ status: 'idle', error: null, items: [] })
 
   const keep = (list) => {
     for (const g of list) groups[g.id] = g
@@ -138,7 +142,10 @@ export const useGroupsStore = defineStore('groups', () => {
     try {
       groups[groupId] = await groupsService.requestToJoin(groupId)
       toast.success(groups[groupId].myRole ? 'Ya formas parte del grupo.' : 'Solicitud enviada. Te avisarán cuando la acepten.')
-      if (groups[groupId].myRole) refresh(groupId)
+      if (groups[groupId].myRole) {
+        if (!mine.ids.includes(groupId)) mine.ids = [groupId, ...mine.ids]
+        refresh(groupId)
+      }
     } catch (error) {
       toast.error(errorMessage(error))
     }
@@ -213,6 +220,44 @@ export const useGroupsStore = defineStore('groups', () => {
     try {
       await groupsService.dismissNotice(noticeId)
       notifications.loadSummary()
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
+  // ---- Place groups ---------------------------------------------------------------------------
+
+  /** The communities (no parent) or the provinces and towns inside a group. */
+  const loadPlaces = (parentId = null) => {
+    const key = parentId ?? ''
+    places[key] ??= { status: 'idle', error: null, ids: [] }
+    return load(places[key], async () => (places[key].ids = keep(await groupsService.listPlaces(parentId))))
+  }
+
+  const loadSuggested = () => load(suggested, async () => (suggested.ids = keep(await groupsService.suggestPlaces())))
+  const loadPlaceRequests = () => load(placeRequests, async () => (placeRequests.items = await groupsService.myPlaceRequests()))
+
+  const placeStatus = (key) => groupsService.placeStatus(key)
+
+  /** "Quiero un grupo de…". Returns the new status of that town. */
+  const requestPlace = async (place) => {
+    const status = await groupsService.requestPlace(place)
+    if (status.group) {
+      groups[status.group.id] = status.group
+      if (!mine.ids.includes(status.group.id)) mine.ids = [status.group.id, ...mine.ids]
+      toast.success(`Ya estás en el grupo de ${status.group.name}.`)
+    } else {
+      toast.success('Petición enviada. Te avisaremos cuando se cree el grupo.')
+    }
+    loadPlaceRequests()
+    return status
+  }
+
+  const cancelPlaceRequest = async (key) => {
+    placeRequests.items = placeRequests.items.filter((r) => r.key !== key)
+    try {
+      await groupsService.cancelPlaceRequest(key)
+      toast.success('Petición retirada.')
     } catch (error) {
       toast.error(errorMessage(error))
     }
@@ -303,6 +348,15 @@ export const useGroupsStore = defineStore('groups', () => {
     found,
     details,
     boards,
+    places,
+    suggested,
+    placeRequests,
+    loadPlaces,
+    loadSuggested,
+    loadPlaceRequests,
+    placeStatus,
+    requestPlace,
+    cancelPlaceRequest,
     loadMine,
     loadInvitations,
     loadNotices,

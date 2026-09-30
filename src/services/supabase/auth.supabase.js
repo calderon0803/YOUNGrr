@@ -102,7 +102,7 @@ export const supabaseAuthService = {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           birth_date: birthDate,
-          ...(location ? { city: location.name.trim(), city_lat: String(location.lat), city_lng: String(location.lng) } : {}),
+          ...(location ? { city: location.name.trim() } : {}),
           invite_token: inviteToken,
           // The database stores the version accepted (and rejects any other).
           terms_version: LEGAL.version,

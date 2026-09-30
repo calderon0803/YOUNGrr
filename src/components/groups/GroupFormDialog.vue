@@ -87,6 +87,7 @@ watch(
           placeholder="Montañeros de los domingos"
           :aria-invalid="!!errors.name || undefined"
           aria-describedby="group-name-error"
+          :readonly="group?.kind === 'place'"
           autofocus
         />
         <p id="group-name-error" class="field__error">{{ errors.name }}</p>

@@ -14,7 +14,6 @@ import { useFeedStore } from '@/stores/feed'
 import { usePhotosStore } from '@/stores/photos'
 import { useConfirm } from '@/composables/useConfirm'
 import { fullName } from '@/utils/text'
-import { formatDistance } from '@/utils/geo'
 
 // A status or a "ha subido N fotos al álbum" item, Tuenti style: who, what, a
 // small photo strip and discreet text actions. Inside an activity block
@@ -23,8 +22,6 @@ import { formatDistance } from '@/utils/geo'
 // PROPS
 const props = defineProps({
   postId: { type: String, required: true },
-  /** { city, distanceKm } when shown in "Cerca de ti". */
-  nearby: { type: Object, default: null },
   /** Without avatar and name (inside an activity block). */
   bare: { type: Boolean, default: false },
   /** Information only (activity lines): no Grr, comments or menu. */
@@ -67,14 +64,6 @@ const uploadLabel = computed(() => {
 const shownPhotos = computed(() => (props.compact ? (post.value?.photos ?? []).slice(0, COMPACT_PHOTOS) : (post.value?.photos ?? [])))
 const hiddenPhotos = computed(() => (post.value?.photoTotal ?? 0) - shownPhotos.value.length)
 const what = computed(() => (isAlbumUpload.value ? 'la novedad' : 'el estado'))
-
-// The town; the distance only replaces it when the person hides the town.
-const placeLabel = computed(() => {
-  if (!props.nearby) return ''
-  const { city, distanceKm } = props.nearby
-  if (city) return city
-  return distanceKm === null ? '' : formatDistance(distanceKm)
-})
 
 // METHODS
 const onMenu = async (key) => {
@@ -138,7 +127,6 @@ const comment = async () => {
         <RouterLink v-else class="item__time" :to="{ name: 'post', params: { id: post.id } }">
           <RelativeTime :value="post.createdAt" />
         </RouterLink>
-        <span v-if="placeLabel" class="item__sep">{{ placeLabel }}</span>
         <span v-if="interactive" class="item__sep">
           <GrrButton
             compact

@@ -42,6 +42,13 @@ export const GROUP_CHAT_MAX = 20
  */
 export const GROUPS = { maxMembers: 200, maxCreated: 10, emptyDays: 7, pageSize: 10 }
 
+/**
+ * Groups of places: people who must ask for the group of a town before it is
+ * created (the database has its own value in app_settings.place_group_threshold;
+ * this one is for the demo), and days a request lasts.
+ */
+export const PLACE_GROUPS = { threshold: 5, requestDays: 90 }
+
 /** Browser chrome color per theme (matches $blue-600 / $blue-850). */
 export const THEME_COLORS = { light: '#2350a0', dark: '#142a57' }
 
@@ -81,10 +88,6 @@ export const PWA_RELOAD_FALLBACK_MS = 1500
 export const TOAST_DURATION_MS = 3200
 export const GRR_TOAST_DURATION_MS = 1800
 export const SEARCH_DEBOUNCE_MS = 250
-
-/** "Cerca de ti" feed. */
-export const NEARBY_RADII_KM = [10, 25, 50]
-export const NEARBY_DEFAULT_RADIUS_KM = 25
 
 /** OpenStreetMap geocoding (Nominatim). Its usage policy allows 1 request per second. */
 export const GEOCODER = {

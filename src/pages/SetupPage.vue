@@ -115,7 +115,7 @@ const submit = async () => {
         <CityPicker
           v-model="form.location"
           label="¿Dónde vives? Ciudad o pueblo (opcional)"
-          hint="Solo para «Cerca de ti». Nunca se muestra tu ubicación exacta."
+          hint="Para sugerirte los grupos de tu zona."
           :error="errors.location ?? ''"
         />
       </template>

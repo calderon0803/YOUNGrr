@@ -32,8 +32,9 @@ import { LIMITS } from '@/utils/validation'
         cumpleaños, estudios, trabajo y ciudad o pueblo.
       </li>
       <li>
-        <strong>Ubicación (opcional):</strong> si eliges tu ciudad o pueblo, guardamos sus coordenadas aproximadas para
-        «Cerca de ti». Nunca pedimos la ubicación de tu dispositivo, y a los demás no se les muestran tus coordenadas.
+        <strong>Ciudad o pueblo (opcional):</strong> si lo eliges, guardamos solo su nombre, para mostrarlo en tu perfil a
+        quien permitas y para sugerirte los grupos de tu zona. No guardamos coordenadas y nunca pedimos la ubicación de tu
+        dispositivo.
       </li>
       <li>
         <strong>Lo que publicas y haces:</strong> estados, fotos, álbumes, etiquetas, comentarios, Grr, mensajes del
@@ -44,6 +45,7 @@ import { LIMITS } from '@/utils/validation'
         <strong>Grupos:</strong> los grupos que creas o en los que estás, tu papel en cada uno (propietario,
         administración o miembro) y cuándo entraste, las invitaciones y solicitudes para entrar, lo que publicas en su
         Gallinero (textos, fotos, respuestas y Grr) y, para saber qué es nuevo para ti, cuándo lo visitaste por última vez.
+        Si pides el grupo de un pueblo o ciudad, guardamos tu petición (el lugar y cuándo la hiciste).
       </li>
       <li>
         <strong>Invitaciones:</strong> los enlaces que creas, quién entró con cada uno y cuándo. No guardamos datos de la
@@ -78,7 +80,7 @@ import { LIMITS } from '@/utils/validation'
     <ul>
       <li>
         <strong>Prestarte el servicio</strong> (tu cuenta, tu perfil, compartir con tus amigos, mensajes, grupos, eventos,
-        «Cerca de ti» si lo activas): es necesario para cumplir las condiciones de uso que aceptas (art. 6.1.b RGPD).
+        grupos de lugares): es necesario para cumplir las condiciones de uso que aceptas (art. 6.1.b RGPD).
       </li>
       <li>
         <strong>Seguridad y convivencia</strong> (comprobar la edad, límites de uso, bloqueos, revisar reportes, retirar
@@ -119,6 +121,12 @@ import { LIMITS } from '@/utils/validation'
         están invitados. Lo de dentro (el Gallinero, la lista de personas con su papel y los eventos del grupo) solo lo ven
         sus personas. Quien administra el grupo ve quién pide entrar y puede borrar lo que se publica en él. Estar en el
         mismo grupo no da acceso al resto de tu perfil, que sigue tu privacidad.
+      </li>
+      <li>
+        <strong>Grupos de lugares:</strong> los de comunidades, provincias, pueblos y ciudades los ve cualquier persona
+        con cuenta, con cuántas personas tienen. Dentro, de la gente del grupo solo ves por nombre a tus amigos y a quien
+        lo administra (la moderación de YOUNGrr y quien esta nombre); lo que publicas en su Gallinero lo ven todas sus
+        personas. De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
       </li>
       <li>
         <strong>Eventos de un grupo:</strong> los ven las personas del grupo, que pueden apuntarse; si te apuntas, verán tu
@@ -165,7 +173,8 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Copia de contenido retirado</td><td>A los 14 días, o al resolverse la apelación</td></tr>
         <tr><td>Aviso de contenido retirado y apelación</td><td>Al cerrarlo, una vez resuelto</td></tr>
         <tr><td>Grupo al que no se ha unido nadie</td><td>A los 7 días, con todo lo publicado en él</td></tr>
-        <tr><td>Aviso de grupo eliminado por estar vacío</td><td>Al cerrarlo, o a los 30 días</td></tr>
+        <tr><td>Aviso de grupo eliminado por estar vacío o de grupo de tu pueblo creado</td><td>Al cerrarlo, o a los 30 días</td></tr>
+        <tr><td>Petición del grupo de un pueblo o ciudad</td><td>Al crearse el grupo, al retirarla, o a los 90 días</td></tr>
       </tbody>
     </table>
     <p>
@@ -181,7 +190,7 @@ import { LIMITS } from '@/utils/validation'
     <h2>Tus derechos</h2>
     <p>Puedes ejercerlos desde la propia app o escribiendo a <a :href="`mailto:${LEGAL.contactEmail}`">{{ LEGAL.contactEmail }}</a>:</p>
     <ul>
-      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
+      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
       <li><strong>Rectificación:</strong> puedes editar tu perfil y tu contenido en cualquier momento.</li>
       <li><strong>Supresión:</strong> <em>Configuración &gt; Cuenta &gt; Eliminar mi cuenta</em>.</li>
       <li><strong>Oposición y limitación:</strong> por correo, explicando tu caso.</li>

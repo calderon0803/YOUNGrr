@@ -1,4 +1,4 @@
-// Turns a town name into coordinates with OpenStreetMap (Nominatim).
+// Finds towns by name with OpenStreetMap (Nominatim).
 // Only the text typed goes out (from 3 characters, at most one request per
 // second); Nominatim also sees the IP address and the site's origin (it needs
 // the Referer to identify the app), never the account or its data.
@@ -24,17 +24,20 @@ const toPlace = (item) => {
   const region = address.state ?? address.province ?? address.county ?? ''
   return {
     id: String(item.place_id),
+    // Stable id of the place in OpenStreetMap ("osm-R345123"): the key of its group.
+    key: item.osm_type && item.osm_id ? `osm-${item.osm_type[0].toUpperCase()}${item.osm_id}` : null,
     name,
     detail: [region, address.country].filter(Boolean).join(', '),
-    lat: Number(item.lat),
-    lng: Number(item.lon),
+    province: address.province ?? '',
+    community: address.state ?? '',
+    country: (address.country_code ?? '').toLowerCase(),
   }
 }
 
 export const geoService = {
   /**
    * Suggests towns and cities for a query.
-   * @returns {Promise<{ id: string, name: string, detail: string, lat: number, lng: number }[]>}
+   * @returns {Promise<{ id: string, key: string | null, name: string, detail: string, province: string, community: string, country: string }[]>}
    */
   async searchPlaces(query, { signal } = {}) {
     const q = query.trim()

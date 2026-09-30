@@ -9,7 +9,7 @@ import { ensure, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { DEFAULT_ALBUM_TITLE, LEGAL, NEARBY_DEFAULT_RADIUS_KM } from '@/config/app'
+import { DEFAULT_ALBUM_TITLE, LEGAL } from '@/config/app'
 
 // Auth for the local demo backend (IndexedDB). Same interface as auth.supabase.js.
 
@@ -84,8 +84,8 @@ export const localAuthService = {
       avatarUrl: null,
       coverPath: null,
       city: location?.name.trim() ?? '',
-      cityLat: location?.lat ?? null,
-      cityLng: location?.lng ?? null,
+      cityLat: null,
+      cityLng: null,
       // Only the confirmation is kept, not the birth date.
       adultConfirmed: true,
       termsVersion: LEGAL.version,
@@ -96,10 +96,9 @@ export const localAuthService = {
       createdAt,
     })
     db.settings[id] = {
-      privacy: { profileVisibility: 'everyone', cityVisibility: 'friends', distanceVisibility: 'friends', friendRequests: 'everyone' },
+      privacy: { profileVisibility: 'everyone', cityVisibility: 'friends', friendRequests: 'everyone' },
       notifications: { grr: true, comments: true, friendRequests: true, events: true, messages: true, tags: true, groups: true },
       appearance: { theme: 'system' },
-      nearby: { radiusKm: NEARBY_DEFAULT_RADIUS_KM },
     }
     db.albums.push({
       id: uid('a'),

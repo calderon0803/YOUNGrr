@@ -47,6 +47,11 @@ import { LIMITS } from '@/utils/validation'
       200 personas; un grupo al que no se une nadie en 7 días se elimina solo. Las normas de convivencia se aplican
       igual dentro de los grupos.
     </p>
+    <p>
+      Los grupos de lugares (comunidades, provincias, pueblos y ciudades) son de YOUNGrr: cualquiera puede unirse y los
+      administra la moderación, que puede nombrar a otras personas para ayudar. El grupo de un pueblo o ciudad se crea
+      cuando lo han pedido suficientes personas, y quienes lo pidieron entran en él.
+    </p>
 
     <h2>Normas de convivencia</h2>
     <p>No está permitido:</p>

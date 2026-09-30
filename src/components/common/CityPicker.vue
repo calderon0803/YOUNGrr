@@ -6,12 +6,12 @@ import { errorMessage } from '@/services/errors'
 import { debounce } from '@/utils/debounce'
 import { GEOCODER } from '@/config/app'
 
-// Town/city combobox: the user types, picks a suggestion and we keep its
-// coordinates. Free text without picking a suggestion is not a valid location.
+// Town/city combobox: the user types and picks a suggestion. Free text without
+// picking a suggestion is not a valid location.
 
 // PROPS
 const props = defineProps({
-  /** { name, lat, lng } or null */
+  /** { name, key?, province?, community?, country? } or null */
   modelValue: { type: Object, default: null },
   label: { type: String, default: 'Ciudad o pueblo' },
   hint: { type: String, default: '' },
@@ -64,7 +64,7 @@ const onInput = () => {
 
 const choose = (place) => {
   query.value = place.name
-  emit('update:modelValue', { name: place.name, lat: place.lat, lng: place.lng })
+  emit('update:modelValue', { name: place.name, key: place.key, province: place.province, community: place.community, country: place.country })
   open.value = false
 }
 

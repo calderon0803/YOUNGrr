@@ -30,9 +30,9 @@
  * @property {string} lastName
  * @property {string | null} avatarUrl   public bucket (basic identification)
  * @property {string | null} coverPath   private bucket; coverUrl is a signed URL when visible
- * @property {string} city               optional (only for "Cerca de ti")
- * @property {number | null} cityLat     town-level coordinates; only ever sent to their owner
- * @property {number | null} cityLng
+ * @property {string} city               optional; suggests the place groups of your area
+ * @property {null} cityLat              no longer kept (always null)
+ * @property {null} cityLng
  * @property {string} bio
  * @property {string | null} birthday    YYYY-MM-DD, only for its owner
  * @property {string | null} birthdayDay MM-DD, what other people get
@@ -56,11 +56,10 @@
 /**
  * @typedef {object} UserSettings
  * @property {{ profileVisibility: Visibility, cityVisibility: Visibility,
- *   distanceVisibility: Visibility, friendRequests: RequestPolicy }} privacy
+ *   friendRequests: RequestPolicy }} privacy
  *   profileVisibility also governs posts and photos (account and profile share one setting).
  * @property {{ grr: boolean, comments: boolean, friendRequests: boolean, events: boolean, messages: boolean, tags: boolean }} notifications
  * @property {{ theme: ThemePreference }} appearance
- * @property {{ radiusKm: 10 | 25 | 50 }} nearby   radius of the "Cerca de ti" feed
  */
 
 /**
@@ -150,7 +149,6 @@
  *   newFriendsTotal: number,
  *   tagged: { id: string, url: string, width: number, height: number }[],
  *   taggedTotal: number,
- *   nearby?: { city: string | null, distanceKm: number | null },
  * }} ActivityBlock
  */
 

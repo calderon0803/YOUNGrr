@@ -94,6 +94,11 @@ export const activityBlock = (db, me, personId, { since, until = null, day = nul
           .sort((a, b) => b.sharedAt.localeCompare(a.sharedAt))
           .map(({ code, level, sharedAt }) => ({ code, level, sharedAt }))
       : [],
+    // Films and series rated and artists liked that day.
+    ...(() => {
+      const tastes = (db.tastes ?? []).filter((t) => t.userId === personId && inRange(t.updatedAt)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      return { tastes: tastes.slice(0, 6).map(({ userId, createdAt, ...t }) => t), tastesTotal: tastes.length }
+    })(),
   }
 }
 

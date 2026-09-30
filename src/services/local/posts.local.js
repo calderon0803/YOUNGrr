@@ -27,6 +27,7 @@ export const activityEvents = (db, me, people, since) => [
     })
     .map((t) => ({ person: t.userId, at: t.createdAt })),
   ...(db.achievements ?? []).filter((a) => people.has(a.userId) && a.sharedAt && a.sharedAt >= since).map((a) => ({ person: a.userId, at: a.sharedAt })),
+  ...(db.tastes ?? []).filter((t) => people.has(t.userId) && t.updatedAt >= since && canViewProfile(db, me, t.userId)).map((t) => ({ person: t.userId, at: t.updatedAt })),
 ]
 
 /** Local day of a moment, with its start and end. */

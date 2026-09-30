@@ -1,4 +1,5 @@
 // Database rows (snake_case) to the app's model (camelCase), see types/models.js.
+import { toTaste } from '@/services/supabase/tastes.supabase'
 
 /** @returns {import('@/types/models').Profile} */
 export const toProfile = (row) => ({
@@ -179,6 +180,9 @@ export const toActivityBlock = (json, urls = {}) => ({
   tagged: json.tagged.map((t) => ({ id: t.id, url: urls[t.storage_path] ?? null, width: t.width, height: t.height })),
   taggedTotal: json.tagged_total,
   achievements: (json.achievements ?? []).map((a) => ({ code: a.code, level: a.level, sharedAt: a.shared_at })),
+  // Films and series rated and artists liked that day.
+  tastes: (json.tastes ?? []).map(toTaste),
+  tastesTotal: json.tastes_total ?? 0,
 })
 
 /** Storage paths of every photo in an activity block. */

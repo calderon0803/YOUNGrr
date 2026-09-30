@@ -52,6 +52,11 @@ import { LIMITS } from '@/utils/validation'
         persona invitada hasta que crea su cuenta.
       </li>
       <li>
+        <strong>Gustos:</strong> los artistas, películas y series que añades a tu perfil, con las estrellas que das a
+        películas y series. Los ve quien puede ver tu perfil, y lo que añades o valoras aparece en las Novedades de tus
+        amigos (y en las de un grupo, si en él enseñas tu perfil completo).
+      </li>
+      <li>
         <strong>Logros:</strong> a partir de lo que ya haces en YOUNGrr (fotos, amigos, planes, Grr, tablón) calculamos
         los logros que consigues y cuándo. Se ven en tu perfil, para quien puede verlo, y solo aparecen en las Novedades de
         tus amigos si decides compartirlos.
@@ -159,6 +164,11 @@ import { LIMITS } from '@/utils/validation'
         <strong>OpenStreetMap (Nominatim)</strong>: cuando buscas tu ciudad o pueblo, recibe el texto que escribes y tu
         dirección IP. Está en el Reino Unido, que cuenta con una decisión de adecuación de la Unión Europea.
       </li>
+      <li>
+        <strong>TMDB</strong> (películas y series) y <strong>MusicBrainz</strong> (artistas): cuando buscas algo para tus
+        gustos, reciben el texto que escribes y tu dirección IP, nunca tu cuenta. Están en Estados Unidos. Las carátulas se
+        cargan desde TMDB.
+      </li>
     </ul>
 
     <h2>Cuánto tiempo los guardamos</h2>
@@ -197,7 +207,7 @@ import { LIMITS } from '@/utils/validation'
     <h2>Tus derechos</h2>
     <p>Puedes ejercerlos desde la propia app o escribiendo a <a :href="`mailto:${LEGAL.contactEmail}`">{{ LEGAL.contactEmail }}</a>:</p>
     <ul>
-      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
+      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus gustos, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
       <li><strong>Rectificación:</strong> puedes editar tu perfil y tu contenido en cualquier momento.</li>
       <li><strong>Supresión:</strong> <em>Configuración &gt; Cuenta &gt; Eliminar mi cuenta</em>.</li>
       <li><strong>Oposición y limitación:</strong> por correo, explicando tu caso.</li>

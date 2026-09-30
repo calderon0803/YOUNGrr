@@ -100,6 +100,33 @@ export const GEOCODER = {
 }
 
 /**
+ * Catalogues for tastes. Films and series: TMDB (the key is public by design,
+ * read-only, set in VITE_TMDB_API_KEY; without it the demo uses a sample list).
+ * Artists: MusicBrainz, at most one search per second.
+ */
+export const CATALOGS = {
+  tmdb: {
+    url: 'https://api.themoviedb.org/3',
+    imageUrl: 'https://image.tmdb.org/t/p/w185',
+    key: import.meta.env.VITE_TMDB_API_KEY ?? '',
+  },
+  musicbrainz: { url: 'https://musicbrainz.org/ws/2', minIntervalMs: 1100 },
+  limit: 8,
+  debounceMs: 400,
+  minQueryLength: 2,
+}
+
+/** Tastes per kind, and what each section is called. */
+export const TASTES = {
+  max: 500,
+  kinds: [
+    { key: 'artist', label: 'Música', add: 'Añadir artista', empty: 'Sin artistas todavía.' },
+    { key: 'movie', label: 'Películas', add: 'Añadir película', empty: 'Sin películas todavía.' },
+    { key: 'series', label: 'Series', add: 'Añadir serie', empty: 'Sin series todavía.' },
+  ],
+}
+
+/**
  * Automatic check of uploaded images, in the browser (NSFWJS). An image is not
  * uploaded when the pornographic classes (Porn + Hentai) reach `explicit`, or
  * "Sexy" alone reaches `suggestive`. Beach and swimsuit photos usually score

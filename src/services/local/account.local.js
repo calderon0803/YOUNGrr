@@ -26,6 +26,7 @@ export const purgeLocalUser = (db, id) => {
   db.groupJoinRequests = (db.groupJoinRequests ?? []).filter((r) => r.userId !== id)
   db.groupNotices = (db.groupNotices ?? []).filter((n) => n.userId !== id)
   db.placeRequests = (db.placeRequests ?? []).filter((r) => r.userId !== id)
+  db.tastes = (db.tastes ?? []).filter((t) => t.userId !== id)
   db.conversationInvites = (db.conversationInvites ?? []).filter((i) => i.userId !== id && i.invitedBy !== id)
   for (const g of db.groups ?? []) if (g.createdBy === id) g.createdBy = null
   const conversationIds = new Set(db.conversations.filter((c) => c.kind !== 'group' && c.memberIds.includes(id)).map((c) => c.id))
@@ -110,6 +111,7 @@ export const buildLocalExport = (db, id) => {
       .filter((i) => i.userId === id)
       .map((i) => ({ group: db.groups.find((g) => g.id === i.groupId)?.name, created_at: i.createdAt })),
     place_group_requests: (db.placeRequests ?? []).filter((r) => r.userId === id).map((r) => ({ place: r.placeName, created_at: r.createdAt })),
+    tastes: (db.tastes ?? []).filter((t) => t.userId === id).map(({ kind, title, year, source, externalId, rating, createdAt }) => ({ kind, title, year, source, external_id: externalId, stars: rating, created_at: createdAt })),
     wall_messages_written: db.wallMessages.filter((w) => w.authorId === id).map(({ text, createdAt }) => ({ text, created_at: createdAt })),
     invitations_sent: db.invitations.filter((i) => i.inviterId === id).map(({ email, createdAt, usedBy }) => ({ email, created_at: createdAt, used: !!usedBy })),
     achievements: (db.achievements ?? []).filter((a) => a.userId === id).map(({ code, level, earnedAt, sharedAt }) => ({ code, level, earned_at: earnedAt, shared_at: sharedAt })),

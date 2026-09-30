@@ -12,6 +12,7 @@ import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
 import ProfilePhotos from '@/components/profile/ProfilePhotos.vue'
 import ProfileTaggedPhotos from '@/components/profile/ProfileTaggedPhotos.vue'
 import ProfileAlbums from '@/components/profile/ProfileAlbums.vue'
+import ProfileTastes from '@/components/tastes/ProfileTastes.vue'
 import ProfileFriends from '@/components/profile/ProfileFriends.vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -27,12 +28,13 @@ const notifications = useNotificationsStore()
 
 // DATA
 const editing = ref(false)
-const TAB_KEYS = ['wall', 'photos', 'tagged', 'albums', 'friends']
+const TAB_KEYS = ['wall', 'photos', 'tagged', 'albums', 'tastes', 'friends']
 const TABS = [
   { key: 'wall', label: 'Tablón' },
   { key: 'photos', label: 'Fotos' },
   { key: 'tagged', label: 'Etiquetas' },
   { key: 'albums', label: 'Álbumes' },
+  { key: 'tastes', label: 'Gustos' },
   { key: 'friends', label: 'Amigos' },
 ]
 // Your own tabs clear the home counters they cover.
@@ -102,6 +104,7 @@ watch(tab, loadTab)
             <ProfilePhotos v-else-if="tab === 'photos'" :view="view" />
             <ProfileTaggedPhotos v-else-if="tab === 'tagged'" :view="view" />
             <ProfileAlbums v-else-if="tab === 'albums'" :view="view" />
+            <ProfileTastes v-else-if="tab === 'tastes'" :view="view" />
             <ProfileFriends v-else :view="view" />
           </section>
         </div>

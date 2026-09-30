@@ -146,6 +146,15 @@ peticiones (`app_settings.place_group_threshold`, y `PLACE_GROUPS` para la demo)
 grupo, dentro de su provincia, con todos ellos, que reciben un aviso. Las peticiones caducan a
 los 90 días.
 
+### Gustos
+
+Pestaña «Gustos» en el perfil: artistas (MusicBrainz), películas y series (TMDB), buscados en sus
+catálogos para que el mismo título sea el mismo para todos. Las películas y series se valoran con
+estrellas, de media a cinco; los artistas solo se añaden. Los ve quien puede ver el perfil y salen
+en las Novedades de los amigos. La clave de TMDB va en `VITE_TMDB_API_KEY` (es pública por diseño:
+solo lee el catálogo); sin ella, la demo usa un catálogo de ejemplo (`src/data/catalog.js`). Hay
+que citar a TMDB: «Este producto usa la API de TMDB, pero TMDB no lo avala ni lo certifica».
+
 ### Logros
 
 La base de datos calcula los logros a partir de lo que ya existe (fotos, amigos, planes, Grr,

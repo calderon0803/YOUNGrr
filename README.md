@@ -226,7 +226,13 @@ protege los datos.
   (estado, fotos, álbumes, tablón, amigos, información) solo lo ven sus amigos. Los demás
   ven el cumpleaños sin el año; las coordenadas solo las ve su dueño.
 - **Mensajes.** Solo los participantes leen una conversación. Cada uno puede eliminar sus
-  mensajes: el texto se borra para los dos y queda «Mensaje eliminado».
+  mensajes: el texto se borra para todos y queda «Mensaje eliminado».
+- **Chats de grupo.** Con amigos (no hace falta que lo sean entre sí), hasta 20 personas. Quien
+  lo crea le pone nombre, añade y quita gente; cualquiera puede salir, y si sale el creador lo
+  sustituye el miembro más antiguo. No se puede añadir a alguien con quien hay un bloqueo; si el
+  bloqueo llega después, los dos siguen pero dejan de ver los mensajes del otro. Al borrar una
+  cuenta se van sus mensajes y el chat sigue. Sus mensajes llegan a moderación con 2 reportes si
+  el chat tiene más de 5 personas.
 - **Invitaciones.** Cada enlace es un código aleatorio de 32 caracteres, sirve para una
   sola cuenta (si dos personas lo usan a la vez, la segunda alta se cancela) y caduca a los
   30 días. No guarda datos de la persona invitada. Quien lo tenga puede usarlo: por eso se

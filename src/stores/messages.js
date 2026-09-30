@@ -105,6 +105,53 @@ export const useMessagesStore = defineStore('messages', () => {
     return id
   }
 
+  // ---- Group chats ----------------------------------------------------------------
+  const setConversation = (conversation) => {
+    const state = threads[conversation.id]
+    if (state) state.conversation = { ...state.conversation, ...conversation }
+    const i = inbox.items.findIndex((c) => c.id === conversation.id)
+    if (i !== -1) inbox.items[i] = { ...inbox.items[i], ...conversation }
+  }
+
+  /** Throws on error so the dialog can show it; returns the new chat id. */
+  const createGroupChat = async (title, people) => {
+    const id = await messagesService.createGroupChat(title, people)
+    await loadConversations()
+    return id
+  }
+
+  const renameGroupChat = async (conversationId, title) => {
+    setConversation(await messagesService.renameGroupChat(conversationId, title))
+    toast.success('Nombre del grupo cambiado.')
+  }
+
+  const addToGroupChat = async (conversationId, people) => {
+    setConversation(await messagesService.addToGroupChat(conversationId, people))
+    toast.success(people.length === 1 ? 'Persona añadida al grupo.' : 'Personas añadidas al grupo.')
+  }
+
+  const removeFromGroupChat = async (conversationId, userId) => {
+    try {
+      setConversation(await messagesService.removeFromGroupChat(conversationId, userId))
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
+  const leaveGroupChat = async (conversationId) => {
+    try {
+      await messagesService.leaveGroupChat(conversationId)
+      closeWindow(conversationId)
+      delete threads[conversationId]
+      inbox.items = inbox.items.filter((c) => c.id !== conversationId)
+      toast.success('Has salido del grupo.')
+      return true
+    } catch (error) {
+      toast.error(errorMessage(error))
+      return false
+    }
+  }
+
   // ---- Chat dock (tablet and desktop) ---------------------------------------
   // A panel at the bottom right and the open chat windows to its left,
   // nearest first. Minimized windows keep their unread messages.
@@ -182,6 +229,11 @@ export const useMessagesStore = defineStore('messages', () => {
     discardFailed,
     deleteMessage,
     openWith,
+    createGroupChat,
+    renameGroupChat,
+    addToGroupChat,
+    removeFromGroupChat,
+    leaveGroupChat,
     dock,
     restoreDock,
     openWindow,

@@ -2,7 +2,7 @@
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNow } from '@/composables/useNow'
-import { fullName } from '@/utils/text'
+import { conversationAvatar, conversationName } from '@/utils/chat'
 import { shortStamp } from '@/utils/time'
 
 // PROPS
@@ -29,10 +29,10 @@ const now = useNow()
         :to="{ name: 'conversation', params: { id: c.id } }"
         :aria-current="c.id === activeId ? 'page' : undefined"
       >
-        <UserAvatar :person="c.other" :size="compact ? 'sm' : 'md'" />
+        <UserAvatar :person="conversationAvatar(c)" :size="compact ? 'sm' : 'md'" />
         <span class="conversations__body">
           <span class="conversations__top">
-            <span class="conversations__name">{{ fullName(c.other) }}</span>
+            <span class="conversations__name">{{ conversationName(c) }}</span>
             <time v-if="c.lastMessage" class="conversations__time" :datetime="c.lastMessage.createdAt">{{ shortStamp(c.lastMessage.createdAt, now) }}</time>
           </span>
           <span class="conversations__preview">

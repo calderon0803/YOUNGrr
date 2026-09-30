@@ -32,6 +32,8 @@ export const BREAKPOINTS = { tablet: 768, desktop: 1200 }
 /** Chat windows that fit next to the chat panel. */
 export const CHAT_MAX_WINDOWS = { tablet: 1, desktop: 3 }
 /** How often open chats check for new messages. */
+/** People in a group chat, its creator included. */
+export const GROUP_CHAT_MAX = 20
 export const CHAT_POLL_INTERVAL_MS = 10_000
 
 /** Browser chrome color per theme (matches $blue-600 / $blue-850). */
@@ -110,6 +112,7 @@ export const TEXT_LIMITS = {
   commentText: 500,
   wallText: 500,
   messageText: 2000,
+  groupChatTitle: 60,
   name: 40,
   city: 60,
   bio: 300,
@@ -147,8 +150,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30.2',
-  updatedOn: '30 de septiembre de 2026 (revisión 2)',
+  version: '2026-09-30.3',
+  updatedOn: '30 de septiembre de 2026 (revisión 3)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

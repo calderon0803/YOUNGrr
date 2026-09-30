@@ -56,7 +56,7 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
-        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno), y
+        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno, o con dos en un chat de más de 5 personas), y
         quien modera ve cuántos reportes hay y sus motivos, no quién los hizo. La persona reportada no sabe quién la ha
         reportado. Si se retira algo tuyo, deja de verse
         pero guardamos una copia durante 14 días (o hasta que se resuelva tu apelación) para poder devolvértelo, y un
@@ -94,7 +94,8 @@ import { LIMITS } from '@/utils/validation'
     <p>
       Cualquier persona con cuenta puede ver tu nombre y tu foto de perfil. El resto de tu perfil y de lo que publicas lo
       ve quien permitas en <em>Configuración &gt; Privacidad</em>. Los mensajes privados solo los ven las personas de la
-      conversación. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
+      conversación; en un chat de grupo, sus miembros ven tu nombre y tus mensajes, y quien lo creó puede añadir o quitar
+      personas. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
     </p>
     <ul>
       <li>
@@ -150,8 +151,9 @@ import { LIMITS } from '@/utils/validation'
       </tbody>
     </table>
     <p>
-      Si eliminas tu cuenta, se borran en ese momento tu perfil, tus archivos y todo lo que has publicado, incluidas las
-      conversaciones en las que participas (también para la otra persona). Solo se conservan, sin tu nombre, los
+      Si eliminas tu cuenta, se borran en ese momento tu perfil, tus archivos y todo lo que has publicado, incluidas tus
+      conversaciones de dos personas (también para la otra persona) y tus mensajes en los chats de grupo, que siguen
+      para los demás. Solo se conservan, sin tu nombre, los
       reportes que hiciste, hasta que venza su plazo. Los registros técnicos de los proveedores se borran según sus
       propios ciclos.
     </p>

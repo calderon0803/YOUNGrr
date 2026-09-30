@@ -1,11 +1,12 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { Minus, X } from 'lucide-vue-next'
+import { Minus, Users, X } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import NavBadge from '@/components/layout/NavBadge.vue'
 import ChatThread from '@/components/messages/ChatThread.vue'
+import GroupChatDialog from '@/components/messages/GroupChatDialog.vue'
 import { useMessagesStore } from '@/stores/messages'
-import { fullName } from '@/utils/text'
+import { conversationAvatar, conversationName } from '@/utils/chat'
 
 // One open conversation in the chat dock. Clicking the header minimizes it
 // to a bar that still shows new messages.
@@ -21,11 +22,14 @@ const messages = useMessagesStore()
 
 // DATA
 const thread = ref(null)
+const managing = ref(false)
 
 // COMPUTED
 const state = computed(() => messages.threads[props.conversationId])
-const other = computed(() => state.value?.conversation?.other ?? null)
-const title = computed(() => (other.value ? fullName(other.value) : 'Conversación'))
+const conversation = computed(() => state.value?.conversation ?? null)
+const avatar = computed(() => conversationAvatar(conversation.value))
+const title = computed(() => conversationName(conversation.value))
+const isGroup = computed(() => conversation.value?.kind === 'group')
 const unread = computed(() => (props.minimized ? (state.value?.conversation?.unreadCount ?? 0) : 0))
 
 // WATCHERS
@@ -52,9 +56,12 @@ watch(
         :aria-label="minimized ? `Abrir el chat con ${title}` : `Minimizar el chat con ${title}`"
         @click="messages.toggleWindow(conversationId)"
       >
-        <UserAvatar v-if="other" :person="other" size="xs" />
+        <UserAvatar v-if="avatar" :person="avatar" size="xs" />
         <span class="chat-window__name">{{ title }}</span>
         <NavBadge :count="unread" label="mensajes sin leer" />
+      </button>
+      <button v-if="isGroup && !minimized" type="button" class="chat-window__action" aria-label="Personas del grupo" @click="managing = true">
+        <Users aria-hidden="true" />
       </button>
       <button
         v-if="!minimized"
@@ -73,6 +80,7 @@ watch(
     <div v-show="!minimized" class="chat-window__body">
       <ChatThread ref="thread" embedded :conversation-id="conversationId" />
     </div>
+    <GroupChatDialog v-if="isGroup" :open="managing" :conversation-id="conversationId" @close="managing = false" />
   </section>
 </template>
 

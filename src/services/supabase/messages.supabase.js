@@ -16,7 +16,12 @@ const toMessage = (json) => ({
 
 const toConversation = (json) => ({
   id: json.id,
-  other: toSummary(json.other),
+  // "direct" (two people) or "group" (named, managed by its creator).
+  kind: json.kind ?? 'direct',
+  title: json.title ?? null,
+  createdById: json.created_by ?? null,
+  other: json.other ? toSummary(json.other) : null,
+  members: (json.members ?? []).map(toSummary),
   lastMessage: json.last_message ? toMessage(json.last_message) : null,
   unreadCount: json.unread_count,
   updatedAt: json.updated_at,
@@ -35,6 +40,29 @@ export const supabaseMessagesService = {
   /** Finds or creates the one-to-one conversation with a friend. */
   async openWith(userId) {
     return rpc('start_conversation', { other: userId }, 'No se ha podido abrir la conversación.')
+  },
+
+  /** A named chat with at least two friends; returns its id. */
+  async createGroupChat(title, people) {
+    validate(rules.required(title, 'El nombre del grupo'), rules.max(title, LIMITS.groupChatTitle, 'El nombre del grupo'))
+    return rpc('create_group_chat', { title, people }, 'No se ha podido crear el grupo.')
+  },
+
+  async renameGroupChat(conversationId, title) {
+    validate(rules.required(title, 'El nombre del grupo'), rules.max(title, LIMITS.groupChatTitle, 'El nombre del grupo'))
+    return toConversation(await rpc('rename_group_chat', { target: conversationId, title }, 'No se ha podido cambiar el nombre.'))
+  },
+
+  async addToGroupChat(conversationId, people) {
+    return toConversation(await rpc('add_to_group_chat', { target: conversationId, people }, 'No se han podido añadir.'))
+  },
+
+  async removeFromGroupChat(conversationId, userId) {
+    return toConversation(await rpc('remove_from_group_chat', { target: conversationId, person: userId }, 'No se ha podido quitar del grupo.'))
+  },
+
+  async leaveGroupChat(conversationId) {
+    await rpc('leave_group_chat', { target: conversationId }, 'No se ha podido salir del grupo.')
   },
 
   async sendMessage(conversationId, text) {

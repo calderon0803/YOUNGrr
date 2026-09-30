@@ -1,5 +1,6 @@
 // Account deletion and data export for the local demo backend (same result as
 // delete_my_account() and export_my_data() in the database).
+import { leaveGroupChat } from '@/services/local/messages.local'
 
 const fullNameOf = (db, id) => {
   const p = db.profiles.find((x) => x.id === id)
@@ -11,7 +12,10 @@ export const purgeLocalUser = (db, id) => {
   const photoIds = new Set(db.photos.filter((p) => p.ownerId === id).map((p) => p.id))
   const postIds = new Set(db.posts.filter((p) => p.authorId === id).map((p) => p.id))
   const eventIds = new Set(db.events.filter((e) => e.creatorId === id).map((e) => e.id))
-  const conversationIds = new Set(db.conversations.filter((c) => c.memberIds.includes(id)).map((c) => c.id))
+  // Direct chats go for both people; group chats go on without this person.
+  for (const c of db.conversations.filter((x) => x.kind === 'group' && x.memberIds.includes(id))) leaveGroupChat(db, id, c)
+  db.messages = db.messages.filter((m) => m.senderId !== id)
+  const conversationIds = new Set(db.conversations.filter((c) => c.kind !== 'group' && c.memberIds.includes(id)).map((c) => c.id))
   const gone = (targetType, targetId) => (targetType === 'post' ? postIds.has(targetId) : photoIds.has(targetId))
 
   db.users = db.users.filter((u) => u.id !== id)
@@ -63,6 +67,8 @@ export const buildLocalExport = (db, id) => {
     conversations: db.conversations
       .filter((c) => c.memberIds.includes(id))
       .map((c) => ({
+        kind: c.kind ?? 'direct',
+        title: c.title ?? null,
         with: c.memberIds.filter((x) => x !== id).map((x) => fullNameOf(db, x)),
         messages: db.messages
           .filter((m) => m.conversationId === c.id)

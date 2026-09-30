@@ -122,7 +122,13 @@ const putBack = (db, removal) => {
 
 const person = (db, id) => (id && db.profiles.some((p) => p.id === id) ? summaryOf(db, id) : null)
 
-const thresholdFor = (kind) => (kind === 'message' ? 1 : REPORT_THRESHOLD)
+// A message needs 1 report, or 2 in a chat of more than 5 people.
+const thresholdFor = (db, kind, targetId) => {
+  if (kind !== 'message') return REPORT_THRESHOLD
+  const message = db.messages.find((m) => m.id === targetId)
+  const size = db.conversations.find((c) => c.id === message?.conversationId)?.memberIds.length ?? 2
+  return size > 5 ? 2 : 1
+}
 
 /** Reports grouped by content, newest group first; pending groups need the minimum. */
 const reportGroups = (db, filter) => {
@@ -135,7 +141,7 @@ const reportGroups = (db, filter) => {
   }
   return [...groups.values()]
     .map((g) => g.sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
-    .filter((g) => filter !== 'pending' || g.length >= thresholdFor(g[0].targetType))
+    .filter((g) => filter !== 'pending' || g.length >= thresholdFor(db, g[0].targetType, g[0].targetId))
     .sort((a, b) => b.at(-1).createdAt.localeCompare(a.at(-1).createdAt))
 }
 

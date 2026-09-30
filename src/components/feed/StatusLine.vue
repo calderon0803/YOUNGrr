@@ -2,10 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import { Pencil } from 'lucide-vue-next'
 import RelativeTime from '@/components/common/RelativeTime.vue'
+import EmojiPicker from '@/components/common/EmojiPicker.vue'
 import { useFeedStore } from '@/stores/feed'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useEmojiInsert } from '@/composables/useEmojiInsert'
 import { errorMessage } from '@/services/errors'
 import { LIMITS } from '@/utils/validation'
 
@@ -22,6 +24,8 @@ const toast = useToast()
 // DATA
 const text = ref('')
 const saving = ref(false)
+const input = ref(null)
+const { insert: addEmoji } = useEmojiInsert(input, text, () => LIMITS.status)
 
 // COMPUTED
 const current = computed(() => user.profiles[auth.meId]?.data?.status ?? null)
@@ -66,6 +70,7 @@ watch(current, (status) => (text.value = status?.text ?? ''), { immediate: true 
     <div class="status-line__field">
       <input
         id="status-line-input"
+        ref="input"
         v-model="text"
         class="status-line__input"
         type="text"
@@ -78,6 +83,7 @@ watch(current, (status) => (text.value = status?.text ?? ''), { immediate: true 
       />
       <Pencil class="status-line__pencil" aria-hidden="true" />
     </div>
+    <EmojiPicker :disabled="saving" @pick="addEmoji" />
     <span v-if="dirty && remaining < 30" class="status-line__count" aria-live="polite">{{ remaining }}</span>
     <button v-if="dirty" type="submit" class="btn btn--primary btn--sm" :disabled="saving">
       {{ saving ? 'Guardando…' : text.trim() ? 'Guardar' : 'Borrar estado' }}

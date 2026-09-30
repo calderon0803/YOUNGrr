@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import ToastHost from '@/components/common/ToastHost.vue'
@@ -9,9 +9,11 @@ import PwaUpdatePrompt from '@/components/common/PwaUpdatePrompt.vue'
 import OfflineScreen from '@/components/common/OfflineScreen.vue'
 import { useOnline } from '@/composables/useOnline'
 import { useAuthStore } from '@/stores/auth'
+import { SETUP_REQUIRED_EVENT } from '@/config/app'
 
 // STORES
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 
 // DATA
@@ -20,6 +22,22 @@ const online = useOnline()
 // COMPUTED
 // Public pages (the legal texts) open inside the app once the account is ready.
 const layout = computed(() => (route.meta.layout === 'auth' || !auth.isAuthenticated || (route.meta.public && auth.needsSetup) ? AuthLayout : AppLayout))
+
+// METHODS
+// The database asked to complete the account (e.g. new terms while the app was
+// open): reload the profile and go to the setup page, once at a time.
+let checking = false
+const onSetupRequired = async () => {
+  if (checking) return
+  checking = true
+  await auth.refresh()
+  checking = false
+  if (auth.needsSetup && route.name !== 'setup') router.replace({ name: 'setup' })
+}
+
+// LIFECYCLE
+onMounted(() => window.addEventListener(SETUP_REQUIRED_EVENT, onSetupRequired))
+onBeforeUnmount(() => window.removeEventListener(SETUP_REQUIRED_EVENT, onSetupRequired))
 </script>
 
 <template>

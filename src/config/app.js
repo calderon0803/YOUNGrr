@@ -65,6 +65,11 @@ export const INVITATION_EVERY_DAYS = 7
 export const INVITATION_DAYS = 30
 export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000
+/** Fired when the database says the account must complete something first (App.vue). */
+export const SETUP_REQUIRED_EVENT = 'youngrr:setup-required'
+
+/** "Actualizar" reloads when the new version takes control, or after this at the latest. */
+export const PWA_RELOAD_FALLBACK_MS = 1500
 export const TOAST_DURATION_MS = 3200
 export const GRR_TOAST_DURATION_MS = 1800
 export const SEARCH_DEBOUNCE_MS = 250

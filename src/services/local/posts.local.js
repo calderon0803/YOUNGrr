@@ -6,7 +6,7 @@ import { activityBlock, postView } from '@/services/local/views'
 import { ensure, ensureAccess, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
-import { nowIso } from '@/utils/time'
+import { nowIso, toDateInput } from '@/utils/time'
 import { ACTIVITY_WINDOW_DAYS, FEED_PAGE_SIZE, NEARBY_DEFAULT_RADIUS_KM, NEARBY_RADII_KM } from '@/config/app'
 import { distanceKm, hasLocation } from '@/utils/geo'
 
@@ -14,14 +14,22 @@ const DAY_MS = 86_400_000
 
 const windowStart = () => new Date(Date.now() - ACTIVITY_WINDOW_DAYS * DAY_MS).toISOString()
 
-/** Latest activity per person, newest first, one page after `before`. */
-const pageOfPeople = (events, before) => {
+/** One card per person and (local) day, newest first, one page after `before`. */
+const pageOfDays = (events, before) => {
   const last = new Map()
-  for (const { person, at } of events) if (!last.has(person) || at > last.get(person)) last.set(person, at)
+  for (const { person, at } of events) {
+    const key = `${person}|${toDateInput(new Date(at))}`
+    if (!last.has(key) || at > last.get(key)) last.set(key, at)
+  }
   const sorted = [...last.entries()]
     .filter(([, at]) => !before || at < before)
     .sort((a, b) => b[1].localeCompare(a[1]))
-  return { people: sorted.slice(0, FEED_PAGE_SIZE), hasMore: sorted.length > FEED_PAGE_SIZE }
+    .map(([key, at]) => {
+      const [person, day] = key.split('|')
+      const [y, m, d] = day.split('-').map(Number)
+      return { person, day, at, from: new Date(y, m - 1, d).toISOString(), to: new Date(y, m - 1, d + 1).toISOString() }
+    })
+  return { cards: sorted.slice(0, FEED_PAGE_SIZE), hasMore: sorted.length > FEED_PAGE_SIZE }
 }
 
 const removePost = (db, postId) => {
@@ -68,9 +76,9 @@ export const localPostsService = {
         .map((t) => ({ person: t.userId, at: t.createdAt })),
       ...(db.achievements ?? []).filter((a) => friends.has(a.userId) && a.sharedAt && a.sharedAt >= since).map((a) => ({ person: a.userId, at: a.sharedAt })),
     ]
-    const { people, hasMore } = pageOfPeople(events, before)
+    const { cards, hasMore } = pageOfDays(events, before)
     return {
-      items: people.map(([person, at]) => activityBlock(db, me, person, { since, withSocial: true, lastActivityAt: at })),
+      items: cards.map((c) => activityBlock(db, me, c.person, { since: c.from > since ? c.from : since, until: c.to, day: c.day, withSocial: true, lastActivityAt: c.at })),
       hasMore,
     }
   },
@@ -96,13 +104,13 @@ export const localPostsService = {
     }
     const since = windowStart()
     const events = db.posts.filter((p) => distances.has(p.authorId) && p.createdAt >= since).map((p) => ({ person: p.authorId, at: p.createdAt }))
-    const { people, hasMore } = pageOfPeople(events, before)
+    const { cards, hasMore } = pageOfDays(events, before)
     // The town if the person allows it; otherwise, the approximate distance if
     // allowed. Never exact positions.
-    const items = people.map(([person, at]) => {
+    const items = cards.map(({ person, day, at, from, to }) => {
       const showCity = canViewCity(db, me, person)
       return {
-        ...activityBlock(db, me, person, { since, withSocial: false, lastActivityAt: at }),
+        ...activityBlock(db, me, person, { since: from > since ? from : since, until: to, day, withSocial: false, lastActivityAt: at }),
         nearby: {
           city: showCity ? profileOf(db, person).city : null,
           distanceKm: !showCity && canViewDistance(db, me, person) ? Math.round(distances.get(person)) : null,

@@ -15,7 +15,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import { errorMessage } from '@/services/errors'
 import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
 import { IMAGE } from '@/config/app'
-import { fullDate } from '@/utils/time'
+import { monthYear } from '@/utils/time'
 import { fullName, plural } from '@/utils/text'
 
 // Tuenti-style profile sidebar: big picture, actions, details and friends.
@@ -63,7 +63,7 @@ const details = computed(() =>
     { label: 'Cumpleaños', value: birthday.value },
     { label: 'Estudios', value: profile.value.studies },
     { label: 'Trabajo', value: profile.value.work },
-    { label: 'En YOUNGrr desde', value: fullDate(profile.value.createdAt) },
+    { label: 'Miembro desde', value: monthYear(profile.value.createdAt) },
   ].filter((row) => row.value),
 )
 

@@ -65,6 +65,11 @@ export const INVITATION_EVERY_DAYS = 7
 export const INVITATION_DAYS = 30
 export const ACTIVITY_LIMITS = { uploads: 3, newFriends: 5, tagged: 4 }
 export const BADGE_POLL_INTERVAL_MS = 30_000
+/** Fired when the database says the account must complete something first (App.vue). */
+export const SETUP_REQUIRED_EVENT = 'youngrr:setup-required'
+
+/** "Actualizar" reloads when the new version takes control, or after this at the latest. */
+export const PWA_RELOAD_FALLBACK_MS = 1500
 export const TOAST_DURATION_MS = 3200
 export const GRR_TOAST_DURATION_MS = 1800
 export const SEARCH_DEBOUNCE_MS = 250
@@ -120,6 +125,13 @@ export const TEXT_LIMITS = {
   minAge: 18,
 }
 
+/**
+ * Different people who must report something before it reaches moderation
+ * (1 for private messages, which only two people see). The database has its
+ * own value in app_settings.report_threshold; this one is for the demo.
+ */
+export const REPORT_THRESHOLD = 10
+
 /** Days to appeal a removal of your content, from its notice. */
 export const APPEAL_DAYS = 14
 
@@ -135,8 +147,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30',
-  updatedOn: '30 de septiembre de 2026',
+  version: '2026-09-30.2',
+  updatedOn: '30 de septiembre de 2026 (revisión 2)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

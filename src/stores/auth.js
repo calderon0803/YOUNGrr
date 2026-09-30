@@ -36,6 +36,15 @@ export const useAuthStore = defineStore('auth', () => {
   )
   const meId = computed(() => me.value?.id ?? null)
 
+  /** Loads the profile again (e.g. when the database says something is pending). */
+  const refresh = async () => {
+    try {
+      me.value = await authService.getSession()
+    } catch {
+      // Keeps the current state; the next call will tell.
+    }
+  }
+
   const restore = async () => {
     if (ready.value) return
     try {
@@ -116,6 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
     me,
     meId,
     ready,
+    refresh,
     isAuthenticated,
     needsSetup,
     needsTerms,

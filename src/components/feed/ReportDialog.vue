@@ -61,8 +61,7 @@ watch(
         </label>
       </fieldset>
       <p class="report__hint">
-        <template v-if="kind === 'status'">Dejarás de verla en tu inicio. </template>
-        La otra persona no sabrá quién ha hecho el reporte.
+        Llega a moderación cuando lo reportan varias personas. Nadie sabrá quién ha hecho el reporte.
       </p>
       <p v-if="error" class="field__error" role="alert">{{ error }}</p>
     </form>

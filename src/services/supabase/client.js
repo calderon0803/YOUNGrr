@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE } from '@/config/app'
+import { SETUP_REQUIRED_EVENT, SUPABASE } from '@/config/app'
 import { ApiError } from '@/services/errors'
 
 let client = null
@@ -42,6 +42,9 @@ export const rpc = async (name, args = {}, fallback) => {
   const { data, error } = await getSupabase().rpc(name, args)
   if (error) {
     const match = YG_ERROR.exec(error.message ?? '')
+    // Something is pending on the account (new terms, age...): the app takes the
+    // person to the setup page instead of showing errors (see App.vue).
+    if (match?.[1] === 'setup_required' && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SETUP_REQUIRED_EVENT))
     // For inaccessible content the owner's id comes in the detail, to redirect to their profile.
     if (match) throw new ApiError(match[1], match[2], match[1] === 'forbidden' && error.details ? { ownerId: error.details } : {})
     throw toApiError(error, fallback)

@@ -1,10 +1,11 @@
 <script setup>
 import { nextTick, onBeforeUnmount, ref, useId } from 'vue'
 import { Ellipsis } from 'lucide-vue-next'
+import NavBadge from '@/components/layout/NavBadge.vue'
 
 // PROPS
 defineProps({
-  /** [{ key, label, danger? }] */
+  /** [{ key, label, danger?, count?, badge? }]: count shows a badge, badge describes it. */
   items: { type: Array, required: true },
   label: { type: String, default: 'Opciones' },
   onDark: { type: Boolean, default: false },
@@ -83,6 +84,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
       @click="toggle"
     >
       <Ellipsis aria-hidden="true" />
+      <NavBadge class="dropdown__badge" :count="items.reduce((n, item) => n + (item.count ?? 0), 0)" label="pendientes en este menú" />
     </button>
     <Transition name="dropdown">
       <ul v-if="open" :id="menuId" ref="menu" class="dropdown__menu" role="menu" @keydown="onKeydown">
@@ -95,6 +97,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
             @click="choose(item.key)"
           >
             {{ item.label }}
+            <NavBadge :count="item.count ?? 0" :label="item.badge ?? 'pendientes'" />
           </button>
         </li>
       </ul>
@@ -105,6 +108,16 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 <style lang="scss" scoped>
 .dropdown {
   position: relative;
+
+  &__badge {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.2rem;
+  }
+
+  &__trigger {
+    position: relative;
+  }
 
   &__trigger--on-dark {
     color: $color-viewer-text;
@@ -132,6 +145,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
     padding: $space-2 $space-3;
     border-radius: $radius-sm;
     text-align: left;
+
+    .badge {
+      margin-left: $space-2;
+    }
     font-size: $fs-base;
 
     &:hover,

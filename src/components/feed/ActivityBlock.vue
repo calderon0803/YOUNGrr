@@ -10,11 +10,13 @@ import { usePhotosStore } from '@/stores/photos'
 import { useFeedStore } from '@/stores/feed'
 import { formatDistance } from '@/utils/geo'
 import { plural } from '@/utils/text'
+import { dayLabel } from '@/utils/time'
 import { achievementLabel } from '@/config/achievements'
 
-// One friend in "Novedades de tus amigos", as in Tuenti: their current status
-// (with its comments) on top and, apart below, what they have done lately in
-// compact lines (photos uploaded, new friends, photos where they were tagged).
+// One friend and one day in "Novedades de tus amigos": the status they set that
+// day (with its comments) on top and, apart below, what else they did that day
+// in compact lines (photos uploaded, new friends, tagged photos, achievements).
+// New activity makes a new card; the cards of other days stay as they were.
 
 // PROPS
 const props = defineProps({
@@ -29,6 +31,7 @@ const photos = usePhotosStore()
 // COMPUTED
 const hasStatus = computed(() => !!props.block.statusId && !!feed.posts[props.block.statusId])
 const moreFriends = computed(() => props.block.newFriendsTotal - props.block.newFriends.length)
+const moreUploads = computed(() => (props.block.uploadsTotal ?? props.block.uploadIds.length) - props.block.uploadIds.length)
 const hasMore = computed(() => props.block.uploadIds.length > 0 || props.block.newFriends.length > 0 || props.block.tagged.length > 0 || !!props.block.achievements?.length)
 // "Fotógrafo · Oro y Cuadrilla · Plata".
 const achievementText = computed(() => {
@@ -64,15 +67,19 @@ const openTagged = (photoId) =>
       <p class="block__who">
         <PersonLink :person="block.person" />
         <span v-if="placeLabel" class="block__place">{{ placeLabel }}</span>
+        <span v-if="block.day" class="block__place">{{ dayLabel(block.day) }}</span>
       </p>
     </header>
 
     <section v-if="hasMore" class="block__activity" :aria-label="`Actividad de ${block.person.firstName}`">
-      <h3 class="block__label" aria-hidden="true">Actividad</h3>
+      <h3 class="block__label" aria-hidden="true">Actividad<template v-if="block.day && hasStatus"> · {{ dayLabel(block.day) }}</template></h3>
       <ul class="block__more" role="list">
         <li v-for="id in block.uploadIds" :key="id" class="block__row">
           <Images class="block__icon" aria-hidden="true" />
           <PostCard bare compact :post-id="id" />
+        </li>
+        <li v-if="moreUploads > 0" class="block__row block__row--more">
+          <RouterLink :to="profileTab('photos')">y {{ plural(moreUploads, 'subida más', 'subidas más') }}</RouterLink>
         </li>
 
         <li v-if="block.newFriends.length" class="block__row">
@@ -169,6 +176,12 @@ const openTagged = (photoId) =>
     display: flex;
     align-items: flex-start;
     gap: $space-2;
+
+    // "y N subidas más", aligned with the text of the rows above (icon + gap).
+    &--more {
+      padding-left: calc(0.95rem + #{$space-2});
+      font-size: $fs-sm;
+    }
   }
 
   &__icon {

@@ -1,13 +1,34 @@
 <script setup>
+import { ref } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
+import { PWA_RELOAD_FALLBACK_MS } from '@/config/app'
 
 // DATA
 // Registers the service worker; with registerType "prompt" we ask before updating.
 const { needRefresh, updateServiceWorker } = useRegisterSW({ immediate: true })
+const updating = ref(false)
 
 // METHODS
 const dismiss = () => {
   needRefresh.value = false
+}
+
+// The plugin only reloads when a version controlled the page at registration;
+// after a hard reload (Ctrl+F5) none does, so the button seemed to do nothing,
+// and an uncontrolled page never gets "controllerchange" either. So: reload as
+// soon as the new version takes control, and in any case shortly after.
+const update = async () => {
+  if (updating.value) return
+  updating.value = true
+  let reloaded = false
+  const reload = () => {
+    if (reloaded) return
+    reloaded = true
+    window.location.reload()
+  }
+  navigator.serviceWorker?.addEventListener('controllerchange', reload, { once: true })
+  setTimeout(reload, PWA_RELOAD_FALLBACK_MS)
+  await updateServiceWorker(true)
 }
 </script>
 
@@ -18,8 +39,8 @@ const dismiss = () => {
         Hay una nueva versión de YOUNGrr.
       </p>
       <div class="pwa__actions">
-        <button type="button" class="btn btn--primary btn--sm" @click="updateServiceWorker(true)">
-          Actualizar
+        <button type="button" class="btn btn--primary btn--sm" :disabled="updating" @click="update">
+          {{ updating ? 'Actualizando…' : 'Actualizar' }}
         </button>
         <button type="button" class="btn btn--ghost btn--sm" @click="dismiss">
           Más tarde

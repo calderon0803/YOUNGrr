@@ -56,7 +56,9 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
-        que se pueda revisar. La persona reportada no sabe quién la ha reportado. Si se retira algo tuyo, deja de verse
+        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno), y
+        quien modera ve cuántos reportes hay y sus motivos, no quién los hizo. La persona reportada no sabe quién la ha
+        reportado. Si se retira algo tuyo, deja de verse
         pero guardamos una copia durante 14 días (o hasta que se resuelva tu apelación) para poder devolvértelo, y un
         aviso para ti con el motivo. Si apelas, guardamos también tu explicación.
       </li>
@@ -140,6 +142,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Solicitudes de amistad rechazadas o canceladas</td><td>A los 30 días</td></tr>
         <tr><td>Invitaciones para compartir una foto rechazadas</td><td>A los 30 días</td></tr>
         <tr><td>Reportes ya revisados, con su copia del contenido</td><td>Al año de la decisión</td></tr>
+        <tr><td>Reportes que no llegan al mínimo para revisarse</td><td>A los 90 días</td></tr>
         <tr><td>Recuento de acciones por minuto</td><td>En una hora</td></tr>
         <tr><td>Marca de visita a un perfil</td><td>A las 6 horas</td></tr>
         <tr><td>Copia de contenido retirado</td><td>A los 14 días, o al resolverse la apelación</td></tr>

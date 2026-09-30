@@ -10,8 +10,11 @@ const toReport = (json, urls) => ({
   id: json.id,
   targetType: json.target_type,
   targetId: json.target_id,
-  reason: json.reason,
+  // How many people reported it, and for which reasons ({ reason: count }).
+  reportCount: json.report_count ?? 1,
+  reasons: json.reasons ?? {},
   createdAt: json.created_at,
+  lastReportedAt: json.last_reported_at ?? json.created_at,
   status: json.status,
   snapshot: {
     text: json.snapshot.text ?? json.snapshot.caption ?? json.snapshot.bio ?? '',
@@ -21,7 +24,6 @@ const toReport = (json, urls) => ({
   },
   contentExists: !!json.content_exists,
   contentRemoved: !!json.content_removed,
-  reporter: json.reporter ? toSummary(json.reporter) : null,
   targetOwner: json.target_owner ? toSummary(json.target_owner) : null,
   resolvedBy: json.resolved_by ? toSummary(json.resolved_by) : null,
   resolvedAt: json.resolved_at,
@@ -88,6 +90,11 @@ export const supabaseModerationService = {
     if (!paths.length) return
     await removePhotos(paths)
     await rpc('mark_moderation_files_deleted', { paths }, 'No se han podido revisar los archivos retirados.')
+  },
+
+  /** Content that reached the minimum of reports, plus pending appeals. */
+  async pendingCount() {
+    return rpc('moderation_pending_count', {}, 'No se ha podido revisar la moderación.')
   },
 
   async isModerator() {

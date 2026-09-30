@@ -71,7 +71,6 @@ export const toSettings = (row) => ({
   privacy: {
     profileVisibility: row.profile_visibility,
     cityVisibility: row.city_visibility,
-    distanceVisibility: row.distance_visibility,
     friendRequests: row.friend_requests,
   },
   notifications: {
@@ -81,15 +80,14 @@ export const toSettings = (row) => ({
     events: row.notify_events,
     messages: row.notify_messages,
     tags: row.notify_tags,
+    groups: row.notify_groups ?? true,
   },
   appearance: { theme: row.theme },
-  nearby: { radiusKm: row.nearby_radius_km },
 })
 
 export const fromSettings = (settings) => ({
   profile_visibility: settings.privacy.profileVisibility,
   city_visibility: settings.privacy.cityVisibility,
-  distance_visibility: settings.privacy.distanceVisibility,
   friend_requests: settings.privacy.friendRequests,
   notify_grr: settings.notifications.grr,
   notify_comments: settings.notifications.comments,
@@ -97,8 +95,8 @@ export const fromSettings = (settings) => ({
   notify_events: settings.notifications.events,
   notify_messages: settings.notifications.messages,
   notify_tags: settings.notifications.tags,
+  notify_groups: settings.notifications.groups ?? true,
   theme: settings.appearance.theme,
-  nearby_radius_km: settings.nearby.radiusKm,
 })
 
 const toSummary = (json) => ({
@@ -170,7 +168,6 @@ export const toActivityBlock = (json, urls = {}) => ({
   tagged: json.tagged.map((t) => ({ id: t.id, url: urls[t.storage_path] ?? null, width: t.width, height: t.height })),
   taggedTotal: json.tagged_total,
   achievements: (json.achievements ?? []).map((a) => ({ code: a.code, level: a.level, sharedAt: a.shared_at })),
-  ...(json.nearby ? { nearby: { city: json.nearby.city ?? null, distanceKm: json.nearby.distance_km ?? null } } : {}),
 })
 
 /** Storage paths of every photo in an activity block. */

@@ -25,13 +25,7 @@ const QUESTIONS = [
   {
     key: 'cityVisibility',
     title: 'Quién puede ver mi ciudad o pueblo',
-    hint: 'En tu perfil y en tus publicaciones de «Cerca de ti».',
-    options: VISIBILITY,
-  },
-  {
-    key: 'distanceVisibility',
-    title: 'Quién puede ver a qué distancia estoy',
-    hint: 'Solo aparece en «Cerca de ti» si ocultas tu ciudad o pueblo. Es aproximada, nunca tu ubicación exacta.',
+    hint: 'En tu perfil y en las listas de personas.',
     options: VISIBILITY,
   },
   {

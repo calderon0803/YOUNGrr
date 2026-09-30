@@ -1,16 +1,18 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { ArrowLeft } from 'lucide-vue-next'
+import { ArrowLeft, Users } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import StateMessage from '@/components/common/StateMessage.vue'
 import MessageComposer from '@/components/messages/MessageComposer.vue'
 import ReportDialog from '@/components/feed/ReportDialog.vue'
+import GroupChatDialog from '@/components/messages/GroupChatDialog.vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirm } from '@/composables/useConfirm'
 import { clockTime, fullDate } from '@/utils/time'
 import { fullName } from '@/utils/text'
+import { conversationAvatar, conversationName } from '@/utils/chat'
 
 // PROPS
 const props = defineProps({
@@ -29,10 +31,17 @@ const scroller = ref(null)
 /** Id of the message being reported. */
 const reportingId = ref(null)
 const composer = ref(null)
+const managing = ref(false)
 
 // COMPUTED
 const state = computed(() => messages.threads[props.conversationId] ?? { status: 'loading', error: null, conversation: null, messages: [] })
-const other = computed(() => state.value.conversation?.other)
+const conversation = computed(() => state.value.conversation)
+const other = computed(() => conversation.value?.other ?? null)
+const isGroup = computed(() => conversation.value?.kind === 'group')
+const name = computed(() => conversationName(conversation.value))
+// In groups, each message shows who wrote it (by first name).
+const senders = computed(() => Object.fromEntries((conversation.value?.members ?? []).map((p) => [p.id, p])))
+const senderName = (id) => senders.value[id]?.firstName ?? 'Alguien'
 
 // Messages grouped by day, with a date separator for each.
 const days = computed(() => {
@@ -50,7 +59,7 @@ const days = computed(() => {
 const remove = async (message) => {
   const ok = await confirm({
     title: 'Eliminar mensaje',
-    message: 'Desaparecerá para los dos y quedará «Mensaje eliminado». No se puede deshacer.',
+    message: `Desaparecerá para ${isGroup.value ? 'todos' : 'los dos'} y quedará «Mensaje eliminado». No se puede deshacer.`,
     confirmLabel: 'Eliminar',
     danger: true,
   })
@@ -71,7 +80,7 @@ watch(() => state.value.messages.length, scrollToEnd)
 </script>
 
 <template>
-  <section class="thread" :class="{ 'thread--embedded': embedded }" :aria-label="other ? `Conversación con ${fullName(other)}` : 'Conversación'">
+  <section class="thread" :class="{ 'thread--embedded': embedded }" :aria-label="conversation ? `Conversación: ${name}` : 'Conversación'">
     <header v-if="!embedded" class="thread__header">
       <RouterLink class="thread__back btn btn--ghost btn--icon" :to="{ name: 'messages' }" aria-label="Volver a las conversaciones">
         <ArrowLeft aria-hidden="true" />
@@ -80,12 +89,24 @@ watch(() => state.value.messages.length, scrollToEnd)
         <UserAvatar :person="other" size="sm" />
         <RouterLink class="thread__name" :to="{ name: 'profile', params: { id: other.id } }">{{ fullName(other) }}</RouterLink>
       </template>
+      <template v-else-if="isGroup">
+        <UserAvatar :person="conversationAvatar(conversation)" size="sm" />
+        <span class="thread__name">{{ name }}</span>
+        <button type="button" class="thread__people btn btn--ghost btn--sm" @click="managing = true">
+          <Users aria-hidden="true" />
+          {{ conversation.members.length }}
+        </button>
+      </template>
     </header>
 
     <div ref="scroller" class="thread__scroll" aria-live="polite">
       <AsyncState :status="state.status" :error="state.error" :empty="!state.messages.length" @retry="messages.loadThread(conversationId)">
         <template #empty>
-          <StateMessage compact :title="`Empieza a hablar con ${other?.firstName ?? 'tu amigo'}.`" text="Los mensajes solo los veis vosotros dos." />
+          <StateMessage
+            compact
+            :title="isGroup ? `Empieza a hablar en ${name}.` : `Empieza a hablar con ${other?.firstName ?? 'tu amigo'}.`"
+            :text="isGroup ? 'Los mensajes solo los ven las personas del grupo.' : 'Los mensajes solo los veis vosotros dos.'"
+          />
         </template>
         <div v-for="day in days" :key="day.label" class="thread__day">
           <p class="thread__date"><span>{{ day.label }}</span></p>
@@ -101,7 +122,8 @@ watch(() => state.value.messages.length, scrollToEnd)
                 'bubble--deleted': message.deleted,
               }"
             >
-              <span class="visually-hidden">{{ message.senderId === auth.meId ? 'Tú' : other?.firstName }}:</span>
+              <span v-if="isGroup && message.senderId !== auth.meId" class="bubble__sender">{{ senderName(message.senderId) }}</span>
+              <span v-else class="visually-hidden">{{ message.senderId === auth.meId ? 'Tú' : other?.firstName }}:</span>
               <span v-if="message.deleted" class="bubble__text">Mensaje eliminado</span>
               <span v-else class="bubble__text user-text">{{ message.text }}</span>
               <span class="bubble__meta">
@@ -137,12 +159,17 @@ watch(() => state.value.messages.length, scrollToEnd)
     </div>
 
     <ReportDialog v-if="reportingId" :open="!!reportingId" kind="message" :target-id="reportingId" @close="reportingId = null" />
-    <MessageComposer ref="composer" v-if="state.status === 'success' && other" :recipient="fullName(other)" :send="(text) => messages.send(conversationId, text)" />
+    <MessageComposer ref="composer" v-if="state.status === 'success' && conversation" :recipient="name" :send="(text) => messages.send(conversationId, text)" />
+    <GroupChatDialog v-if="isGroup && !embedded" :open="managing" :conversation-id="conversationId" @close="managing = false" />
   </section>
 </template>
 
 <style lang="scss" scoped>
 .thread {
+  &__people {
+    margin-left: auto;
+  }
+
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -198,6 +225,13 @@ watch(() => state.value.messages.length, scrollToEnd)
 }
 
 .bubble {
+  &__sender {
+    display: block;
+    font-size: $fs-xs;
+    font-weight: 700;
+    color: $color-brand-strong;
+  }
+
   display: flex;
   flex-direction: column;
   max-width: 78%;

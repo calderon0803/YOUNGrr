@@ -20,6 +20,8 @@ export const useEventsStore = defineStore('events', () => {
   /** Upcoming public events you can join (Inicio). */
   const publicList = reactive({ status: 'idle', error: null, ids: [] })
   const details = reactive({})
+  /** Each group's events, by group id: { status, error, upcoming, past }. */
+  const groupLists = reactive({})
 
   const pendingCount = computed(() => overview.invitations.length)
 
@@ -57,6 +59,22 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
+  const loadGroupEvents = async (groupId) => {
+    groupLists[groupId] ??= { status: 'idle', error: null, upcoming: [], past: [] }
+    const state = groupLists[groupId]
+    state.status = state.status === 'success' ? 'success' : 'loading'
+    state.error = null
+    try {
+      const result = await eventsService.listGroupEvents(groupId)
+      state.upcoming = keep([...result.invitations, ...result.upcoming])
+      state.past = keep(result.past)
+      state.status = 'success'
+    } catch (error) {
+      state.status = 'error'
+      state.error = errorMessage(error)
+    }
+  }
+
   const loadEvent = async (eventId) => {
     details[eventId] ??= { status: 'idle', error: null }
     const state = details[eventId]
@@ -75,6 +93,7 @@ export const useEventsStore = defineStore('events', () => {
     const event = await eventsService.createEvent(input, inviteeIds)
     events[event.id] = event
     overview.upcoming = [event.id, ...overview.upcoming]
+    if (event.group && groupLists[event.group.id]) groupLists[event.group.id].upcoming = [event.id, ...groupLists[event.group.id].upcoming]
     toast.success('Evento creado.')
     return event
   }
@@ -87,6 +106,7 @@ export const useEventsStore = defineStore('events', () => {
   const deleteEvent = async (eventId) => {
     await eventsService.deleteEvent(eventId)
     for (const key of ['invitations', 'upcoming', 'past']) overview[key] = overview[key].filter((id) => id !== eventId)
+    for (const list of Object.values(groupLists)) for (const key of ['upcoming', 'past']) list[key] = list[key].filter((id) => id !== eventId)
     delete events[eventId]
     toast.success('Evento eliminado.')
   }
@@ -104,8 +124,8 @@ export const useEventsStore = defineStore('events', () => {
         overview.invitations = overview.invitations.filter((id) => id !== eventId)
         overview.upcoming = [...overview.upcoming, eventId]
       }
-      // Joining a public event takes it out of the ones to discover.
-      if (publicList.ids.includes(eventId)) {
+      // Joining a public or group event takes it out of the ones to discover.
+      if (publicList.ids.includes(eventId) || (events[eventId].group && !overview.upcoming.includes(eventId))) {
         publicList.ids = publicList.ids.filter((id) => id !== eventId)
         if (!overview.upcoming.includes(eventId)) overview.upcoming = [...overview.upcoming, eventId]
       }
@@ -115,5 +135,5 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
-  return { events, overview, publicList, details, pendingCount, loadEvents, loadPublic, loadEvent, createEvent, updateEvent, deleteEvent, invite, respond }
+  return { events, overview, publicList, details, groupLists, pendingCount, loadEvents, loadPublic, loadGroupEvents, loadEvent, createEvent, updateEvent, deleteEvent, invite, respond }
 })

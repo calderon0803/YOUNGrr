@@ -139,15 +139,7 @@ export const useUserStore = defineStore('user', () => {
   /** Town suggestions for the location picker (OpenStreetMap). */
   const searchPlaces = (query, options) => geoService.searchPlaces(query, options)
 
-  /** Radius of the "Cerca de ti" feed, saved with the rest of the settings. */
-  const setNearbyRadius = async (radiusKm) => {
-    if (!settings.value || settings.value.nearby?.radiusKm === radiusKm) return
-    const next = draftSettings()
-    next.nearby = { radiusKm }
-    await updateSettings(next, `Mostrando gente a menos de ${radiusKm} km.`)
-  }
-
-  return { cleanOldProfileImages, profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, setNearbyRadius, registerVisit, draftSettings }
+  return { cleanOldProfileImages, profiles, settings, loadProfile, updateProfile, updateImage, loadSettings, updateSettings, searchPlaces, registerVisit, draftSettings }
 })
 
 // Follow OS changes while the preference is "system".

@@ -4,7 +4,7 @@ import { removePhotos, signPhotoUrls } from '@/services/supabase/storage'
 import { blockPhotoPaths, postPhotoPaths, toActivityBlock, toPost } from '@/services/supabase/mappers'
 import { validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
-import { FEED_PAGE_SIZE, NEARBY_DEFAULT_RADIUS_KM, NEARBY_RADII_KM, REPORT_REASONS } from '@/config/app'
+import { FEED_PAGE_SIZE, REPORT_REASONS } from '@/config/app'
 
 const withPhotos = async (items) => {
   const urls = await signPhotoUrls(items.flatMap(postPhotoPaths))
@@ -21,12 +21,6 @@ const blocksPage = async (items) => {
 export const supabasePostsService = {
   async getActivity({ before = null } = {}) {
     return blocksPage(await rpc('friend_activity', { before, page_size: FEED_PAGE_SIZE }, 'No se han podido cargar las novedades.'))
-  },
-
-  async getNearbyActivity({ before = null, radiusKm = NEARBY_DEFAULT_RADIUS_KM } = {}) {
-    validate(NEARBY_RADII_KM.includes(radiusKm) ? null : 'Radio no válido.')
-    const data = await rpc('nearby_activity', { radius_km: radiusKm, before, page_size: FEED_PAGE_SIZE }, 'No se ha podido cargar «Cerca de ti».')
-    return { ...(await blocksPage(data.items)), needsLocation: data.needs_location, originCity: data.origin_city }
   },
 
   async getPost(postId) {

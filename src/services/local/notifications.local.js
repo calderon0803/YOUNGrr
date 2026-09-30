@@ -3,7 +3,7 @@
 import { commit, getDb } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
 import { canSeeEvent } from '@/services/local/views'
-import { settingsOf, summaryOf } from '@/services/local/access'
+import { isBlockedBetween, isGroupAdmin, settingsOf, summaryOf } from '@/services/local/access'
 import { buildSummary, typesSeenAt } from '@/services/notifications.groups'
 import { nowIso } from '@/utils/time'
 
@@ -32,6 +32,9 @@ export const localNotificationsService = {
       sharePhotoIds: db.photoOwners
         .filter((o) => o.userId === me && o.status === 'pending' && db.photos.some((p) => p.id === o.photoId))
         .map((o) => o.photoId),
+      groupInviteIds: (db.groupInvites ?? []).filter((i) => i.userId === me && !isBlockedBetween(db, me, i.invitedBy)).map((i) => i.groupId),
+      groupRequestIds: (db.groupJoinRequests ?? []).filter((r) => isGroupAdmin(db, r.groupId, me) && !isBlockedBetween(db, me, r.userId)).map((r) => r.groupId),
+      groupNoticeCount: (db.groupNotices ?? []).filter((n) => n.userId === me).length,
       unread: db.notifications
         .filter((n) => n.userId === me && !n.readAt && db.profiles.some((p) => p.id === n.actorId))
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),

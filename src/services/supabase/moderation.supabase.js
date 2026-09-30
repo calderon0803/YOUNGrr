@@ -21,6 +21,8 @@ const toReport = (json, urls) => ({
     name: json.snapshot.name ?? null,
     photoUrl: urls[json.snapshot.storage_path] ?? null,
     storagePath: json.snapshot.storage_path ?? null,
+    // Gallinero content: the group it was in.
+    group: json.snapshot.group ?? null,
   },
   contentExists: !!json.content_exists,
   contentRemoved: !!json.content_removed,
@@ -43,7 +45,7 @@ const toNotice = (n) => ({
 })
 
 export const supabaseModerationService = {
-  /** @param {'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message'} kind */
+  /** @param {'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message' | 'group_post' | 'group_reply'} kind */
   async reportContent(kind, targetId, reason) {
     validate(REPORT_REASONS.includes(reason) ? null : 'Elige un motivo.')
     await rpc('report_content', { kind, target: targetId, reason }, 'No se ha podido enviar el reporte.')

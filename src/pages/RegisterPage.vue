@@ -165,7 +165,7 @@ watch(inviteToken, checkInvitation, { immediate: true })
       <CityPicker
         v-model="form.location"
         label="¿Dónde vives? Ciudad o pueblo (opcional)"
-        hint="Solo para «Cerca de ti». Si no la pones, puedes usar todo lo demás. Nunca se muestra tu ubicación exacta."
+        hint="Para sugerirte los grupos de tu zona. Si no la pones, puedes usar todo lo demás."
         :error="errors.location ?? ''"
       />
       <TermsConsent id="reg-terms" v-model="form.acceptedTerms" :error="errors.acceptedTerms ?? ''" />

@@ -19,7 +19,6 @@ export const useFeedStore = defineStore('feed', () => {
 
   const posts = reactive(/** @type {Record<string, PostView>} */ ({}))
   const home = reactive(listState())
-  const nearby = reactive({ ...listState(), radiusKm: null, needsLocation: false, originCity: '' })
   const grrPending = ref(new Set())
 
   const toBlock = ({ status, uploads, ...block }) => {
@@ -57,30 +56,14 @@ export const useFeedStore = defineStore('feed', () => {
 
   const loadActivity = (options) => loadInto(home, (before) => postsService.getActivity({ before }), options)
 
-  const loadNearby = (radiusKm, options = {}) => {
-    if (!options.more && nearby.radiusKm !== radiusKm) nearby.blocks = []
-    nearby.radiusKm = radiusKm
-    return loadInto(
-      nearby,
-      async (before) => {
-        const page = await postsService.getNearbyActivity({ before, radiusKm })
-        nearby.needsLocation = page.needsLocation
-        nearby.originCity = page.originCity
-        return page
-      },
-      options,
-    )
-  }
-
   /** Friendships changed: the next visit reloads. */
   const invalidate = () => {
     home.stale = true
-    nearby.stale = true
   }
 
   /** Takes a status or album upload out of the blocks; empty blocks go away. */
   const removeEverywhere = (postId) => {
-    for (const state of [home, nearby]) {
+    for (const state of [home]) {
       state.blocks = state.blocks
         .map((b) => ({ ...b, statusId: b.statusId === postId ? null : b.statusId, uploadIds: b.uploadIds.filter((id) => id !== postId) }))
         .filter((b) => b.statusId || b.uploadIds.length || b.newFriends.length || b.tagged.length || b.achievements?.length)
@@ -179,10 +162,8 @@ export const useFeedStore = defineStore('feed', () => {
   return {
     posts,
     home,
-    nearby,
     grrPending,
     loadActivity,
-    loadNearby,
     loadPost,
     invalidate,
     setStatus,

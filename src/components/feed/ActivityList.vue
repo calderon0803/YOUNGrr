@@ -3,7 +3,7 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import ActivityBlock from '@/components/feed/ActivityBlock.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 
-// Friends' news (or "Cerca de ti"): a list state of activity blocks
+// Friends' news: a list state of activity blocks
 // ({ blocks, status, error, hasMore, loadingMore }), loading more on scroll.
 
 // PROPS

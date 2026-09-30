@@ -5,7 +5,6 @@ import CityPicker from '@/components/common/CityPicker.vue'
 import { useUserStore } from '@/stores/user'
 import { errorMessage } from '@/services/errors'
 import { LIMITS } from '@/utils/validation'
-import { hasLocation } from '@/utils/geo'
 
 // PROPS
 const props = defineProps({
@@ -43,7 +42,7 @@ watch(
   (open) => {
     if (!open) return
     const p = props.profile
-    Object.assign(form, { firstName: p.firstName, lastName: p.lastName, location: hasLocation(p) ? { name: p.city, lat: p.cityLat, lng: p.cityLng } : null, bio: p.bio, birthday: p.birthday ?? '', studies: p.studies, work: p.work })
+    Object.assign(form, { firstName: p.firstName, lastName: p.lastName, location: p.city ? { name: p.city } : null, bio: p.bio, birthday: p.birthday ?? '', studies: p.studies, work: p.work })
     error.value = ''
   },
   { immediate: true },
@@ -69,7 +68,7 @@ watch(
         <p class="field__hint">{{ LIMITS.bio - form.bio.length }} caracteres disponibles</p>
       </div>
       <div class="profile-form__row">
-        <CityPicker v-model="form.location" label="Ciudad o pueblo (opcional)" hint="Sin ciudad no verás «Cerca de ti». Bórrala para quitarla." />
+        <CityPicker v-model="form.location" label="Ciudad o pueblo (opcional)" hint="Te sugeriremos los grupos de tu zona. Bórrala para quitarla." />
         <div class="field">
           <label class="field__label" for="pf-birthday">Cumpleaños (opcional)</label>
           <input id="pf-birthday" v-model="form.birthday" class="input" type="date" aria-describedby="pf-birthday-hint" />

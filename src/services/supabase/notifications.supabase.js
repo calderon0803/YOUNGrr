@@ -15,6 +15,9 @@ export const supabaseNotificationsService = {
       requestCount: state.request_count,
       invitationEventIds: state.invitation_event_ids,
       sharePhotoIds: state.share_photo_ids,
+      groupInviteIds: state.group_invite_ids ?? [],
+      groupRequestIds: state.group_request_ids ?? [],
+      groupNoticeCount: state.group_notice_count ?? 0,
       unread: state.unread.map((n) => ({ type: n.type, targetId: n.target_id })),
     })
   },

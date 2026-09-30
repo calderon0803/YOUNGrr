@@ -14,7 +14,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v20',
+  db: 'youngrr:db:v21',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -33,6 +33,21 @@ export const BREAKPOINTS = { tablet: 768, desktop: 1200 }
 export const CHAT_MAX_WINDOWS = { tablet: 1, desktop: 3 }
 /** How often open chats check for new messages. */
 export const CHAT_POLL_INTERVAL_MS = 10_000
+/** People in a group chat, its creator included. */
+export const GROUP_CHAT_MAX = 20
+
+/**
+ * Groups (also enforced by the database): members, groups one person can have
+ * created, days a group nobody joined lasts, and Gallinero posts per page.
+ */
+export const GROUPS = { maxMembers: 200, maxCreated: 10, emptyDays: 7, pageSize: 10 }
+
+/**
+ * Groups of places: people who must ask for the group of a town before it is
+ * created (the database has its own value in app_settings.place_group_threshold;
+ * this one is for the demo), and days a request lasts.
+ */
+export const PLACE_GROUPS = { threshold: 5, requestDays: 90 }
 
 /** Browser chrome color per theme (matches $blue-600 / $blue-850). */
 export const THEME_COLORS = { light: '#2350a0', dark: '#142a57' }
@@ -74,10 +89,6 @@ export const TOAST_DURATION_MS = 3200
 export const GRR_TOAST_DURATION_MS = 1800
 export const SEARCH_DEBOUNCE_MS = 250
 
-/** "Cerca de ti" feed. */
-export const NEARBY_RADII_KM = [10, 25, 50]
-export const NEARBY_DEFAULT_RADIUS_KM = 25
-
 /** OpenStreetMap geocoding (Nominatim). Its usage policy allows 1 request per second. */
 export const GEOCODER = {
   url: 'https://nominatim.openstreetmap.org/search',
@@ -110,6 +121,12 @@ export const TEXT_LIMITS = {
   commentText: 500,
   wallText: 500,
   messageText: 2000,
+  groupChatTitle: 60,
+  groupName: 60,
+  groupDescription: 500,
+  // The Gallinero: short posts, as a tweet.
+  groupPost: 280,
+  groupReply: 280,
   name: 40,
   city: 60,
   bio: 300,
@@ -147,8 +164,8 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30.2',
-  updatedOn: '30 de septiembre de 2026 (revisión 2)',
+  version: '2026-09-30.4',
+  updatedOn: '30 de septiembre de 2026 (revisión 4)',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
 }

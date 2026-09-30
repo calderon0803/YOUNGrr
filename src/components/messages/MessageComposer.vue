@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref, useId } from 'vue'
 import { Send } from 'lucide-vue-next'
+import EmojiPicker from '@/components/common/EmojiPicker.vue'
+import { useEmojiInsert } from '@/composables/useEmojiInsert'
 import { LIMITS } from '@/utils/validation'
 
 // PROPS
@@ -14,6 +16,7 @@ const props = defineProps({
 const inputId = useId()
 const text = ref('')
 const input = ref(null)
+const { insert: addEmoji } = useEmojiInsert(input, text, () => LIMITS.messageText)
 
 // COMPUTED
 const canSend = computed(() => text.value.trim().length > 0 && text.value.length <= LIMITS.messageText)
@@ -53,6 +56,7 @@ defineExpose({ focus })
       enterkeyhint="send"
       @keydown="onKeydown"
     />
+    <EmojiPicker placement="top" @pick="addEmoji" />
     <button type="submit" class="btn btn--primary btn--icon" aria-label="Enviar mensaje" :disabled="!canSend">
       <Send aria-hidden="true" />
     </button>

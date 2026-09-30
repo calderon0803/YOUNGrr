@@ -98,6 +98,42 @@ visita deja en la tabla `visit_marks` solo un SHA-256 de una sal secreta (`app_s
 el visitante y el perfil, que nadie puede leer por la API y que se borra a las 6 horas. El
 navegador, además, no reenvía la visita al recargar.
 
+### Grupos
+
+Sección «Grupos» en la cabecera y en la barra inferior del móvil, y un bloque «Tus grupos» en
+Inicio con las publicaciones nuevas de cada uno (lo de los grupos no se mezcla con las
+Novedades de tus amigos).
+
+- **Cerrados o secretos.** Un grupo cerrado lo encuentra cualquiera por su nombre y pide
+  entrar; uno secreto solo lo ven sus personas y los invitados. Lo de dentro (el Gallinero,
+  las personas y los eventos) es solo para sus miembros.
+- **Papeles.** Quien lo crea es propietario: nombra administradores y puede pasar el grupo.
+  Quien administra acepta solicitudes, edita el grupo, quita miembros y borra publicaciones.
+  Si sale el propietario, lo sustituye el administrador más antiguo (o el miembro más antiguo);
+  un grupo vacío se borra.
+- **Límites.** Hasta 200 personas y 10 grupos creados por persona (`GROUPS` en
+  `src/config/app.js` y en la migración `groups`). Los miembros invitan a sus amigos.
+- **Sin grupos vacíos.** Si en 7 días no se une nadie, la tarea nocturna `yg_cleanup_groups()`
+  lo borra y avisa a quien lo creó.
+- **Gallinero.** Publicaciones de hasta 280 caracteres con una foto opcional (bucket privado
+  `photos`, solo la leen los miembros), respuestas y Grr. Los bloqueos ocultan lo de la otra
+  persona. Un reporte llega a moderación con el 30% de los miembros (entre 3 y 10).
+- **Eventos de grupo.** Al crear un evento se elige «Con invitación», «Público» o «De un
+  grupo»; los de grupo los ven sus miembros, que se apuntan sin invitación.
+
+**Grupos de lugares.** Hay uno por cada comunidad autónoma y provincia (las comunidades de una
+sola provincia, como Cantabria, son un único grupo), con las claves de `src/config/places.js`.
+Cualquiera entra directamente, no tienen límite de personas ni cuentan en los 10 grupos y los
+administra la moderación (que puede nombrar administradores). Dentro solo se ve por nombre a
+los amigos y a quien administra.
+
+Los de pueblos y ciudades no los crea nadie a mano, para no tener grupos vacíos: se piden con
+«Quiero un grupo de…», eligiendo el lugar en la lista del buscador (su id de OpenStreetMap es la
+clave del grupo, así que no hay duplicados). Solo se ve cuántas personas lo han pedido. Con 5
+peticiones (`app_settings.place_group_threshold`, y `PLACE_GROUPS` para la demo) se crea el
+grupo, dentro de su provincia, con todos ellos, que reciben un aviso. Las peticiones caducan a
+los 90 días.
+
 ### Logros
 
 La base de datos calcula los logros a partir de lo que ya existe (fotos, amigos, planes, Grr,
@@ -145,21 +181,14 @@ update app_settings set value = now()::text where key = 'founders_until';
 - **Tablón**: lo que te escriben tus amigos en tu perfil. Lo lee quien puede ver tu
   perfil, escriben tú y tus amigos, y lo borra quien lo escribió o tú.
 
-### Cerca de ti
+### Ciudad o pueblo
 
-El inicio tiene dos pestañas: **Amigos** y **Cerca de ti**. La segunda muestra
-el estado y las fotos subidas de gente a menos de 10, 25 o 50 km (lo elige cada usuario) de su ciudad
-o pueblo. Es **opcional**: sin pueblo se puede usar todo lo demás. Se elige con un
-buscador de OpenStreetMap (Nominatim), que recibe el texto escrito (a partir de 3 letras,
-como mucho una búsqueda por segundo), la IP y el origen de la web; nunca la cuenta.
-
-- Quién aparece lo decide **Quién puede ver mi perfil** (cualquier persona o solo mis
-  amigos): cuenta y perfil comparten la privacidad, y el estado y las fotos la
-  siguen. Las fotos no tienen permisos propios.
-- **Quién puede ver mi ciudad o pueblo** y **Quién puede ver a qué distancia estoy**
-  son permisos separados. Si se ve el pueblo, no se muestra la distancia; la distancia
-  solo aparece cuando el autor oculta el pueblo.
-- Solo se guardan coordenadas a nivel de pueblo y nunca salen del backend.
+Es **opcional**: sin pueblo se puede usar todo. Se elige con un buscador de OpenStreetMap
+(Nominatim), que recibe el texto escrito (a partir de 3 letras, como mucho una búsqueda por
+segundo), la IP y el origen de la web; nunca la cuenta. Solo se guarda el nombre (un trigger
+descarta las coordenadas), lo ve quien permite **Quién puede ver mi ciudad o pueblo** y sirve
+para sugerir los grupos de tu zona. «Cerca de ti» ya no existe: la sustituyen los grupos de
+lugares.
 
 El backend local imita al servidor: cada llamada se hace como el usuario de la sesión
 y comprueba permisos y privacidad (`services/local/access.js`), igual que harían las
@@ -186,12 +215,12 @@ privado de Storage para las fotos.
 Estado de la conexión con Supabase (`src/services/supabase/`):
 
 - **Hecho:** registro, login, sesión, cierre de sesión y cambio de contraseña con Supabase
-  Auth. El registro guarda nombre y pueblo (con coordenadas) en los metadatos y el trigger
+  Auth. El registro guarda nombre y pueblo en los metadatos y el trigger
   crea el perfil, los ajustes y el álbum Mis fotos.
 - **Hecho:** perfiles (ver, editar, avatar y portada en el bucket público `avatars`,
   visitas), ajustes y amigos (lista, solicitudes, buscar personas, sugerencias). La
   privacidad se calcula en funciones de la base de datos como el usuario que consulta.
-- **Hecho:** estado, novedades de amigos por bloques y «Cerca de ti», comentarios y Grr.
+- **Hecho:** estado, novedades de amigos por bloques, comentarios y Grr.
   Las fotos van al bucket privado `photos` y se muestran con URLs firmadas.
 - **Hecho:** fotos y álbumes (subir, pies de foto, portada, visor, etiquetas, fotos
   compartidas con invitación y novedades «ha subido N fotos»), eventos (con
@@ -224,9 +253,15 @@ protege los datos.
   una declaración del usuario: no hay verificación de identidad.
 - **Perfil privado.** Cualquiera con sesión encuentra el nombre y la foto; el resto
   (estado, fotos, álbumes, tablón, amigos, información) solo lo ven sus amigos. Los demás
-  ven el cumpleaños sin el año; las coordenadas solo las ve su dueño.
+  ven el cumpleaños sin el año.
 - **Mensajes.** Solo los participantes leen una conversación. Cada uno puede eliminar sus
-  mensajes: el texto se borra para los dos y queda «Mensaje eliminado».
+  mensajes: el texto se borra para todos y queda «Mensaje eliminado».
+- **Chats de grupo.** Con amigos (no hace falta que lo sean entre sí), hasta 20 personas. Quien
+  lo crea le pone nombre, añade y quita gente; cualquiera puede salir, y si sale el creador lo
+  sustituye el miembro más antiguo. No se puede añadir a alguien con quien hay un bloqueo; si el
+  bloqueo llega después, los dos siguen pero dejan de ver los mensajes del otro. Al borrar una
+  cuenta se van sus mensajes y el chat sigue. Sus mensajes llegan a moderación con 2 reportes si
+  el chat tiene más de 5 personas.
 - **Invitaciones.** Cada enlace es un código aleatorio de 32 caracteres, sirve para una
   sola cuenta (si dos personas lo usan a la vez, la segunda alta se cancela) y caduca a los
   30 días. No guarda datos de la persona invitada. Quien lo tenga puede usarlo: por eso se
@@ -304,6 +339,7 @@ select run_retention();
 -- Tareas nocturnas que también programa pg_cron: logros de todos y fin de las retiradas
 select yg_check_all_achievements();
 select yg_purge_removals();
+select yg_cleanup_groups();  -- grupos sin nadie a los 7 días y peticiones de pueblos a los 90
 
 -- Archivos de Storage que ya no usa nadie (bórralos desde el panel de Storage)
 select * from admin_storage_orphans();
@@ -322,7 +358,8 @@ la política de privacidad: si cambias uno, cambia también el otro.
   cambias, sube la versión en **dos sitios**, `LEGAL.version` y `yg_terms_version()` (con una
   migración nueva). Todo el mundo tendrá que aceptarlos de nuevo al entrar; quien no quiera
   puede descargar sus datos y eliminar su cuenta desde esa misma pantalla.
-- «Descargar mis datos» incluye las conversaciones completas (mensajes enviados y recibidos).
+- «Descargar mis datos» incluye las conversaciones completas (mensajes enviados y recibidos)
+  y los grupos, con lo publicado en su Gallinero y las peticiones de grupos de pueblos.
 
 ## Diseño
 

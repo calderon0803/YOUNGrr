@@ -32,13 +32,20 @@ import { LIMITS } from '@/utils/validation'
         cumpleaños, estudios, trabajo y ciudad o pueblo.
       </li>
       <li>
-        <strong>Ubicación (opcional):</strong> si eliges tu ciudad o pueblo, guardamos sus coordenadas aproximadas para
-        «Cerca de ti». Nunca pedimos la ubicación de tu dispositivo, y a los demás no se les muestran tus coordenadas.
+        <strong>Ciudad o pueblo (opcional):</strong> si lo eliges, guardamos solo su nombre, para mostrarlo en tu perfil a
+        quien permitas y para sugerirte los grupos de tu zona. No guardamos coordenadas y nunca pedimos la ubicación de tu
+        dispositivo.
       </li>
       <li>
         <strong>Lo que publicas y haces:</strong> estados, fotos, álbumes, etiquetas, comentarios, Grr, mensajes del
         tablón, eventos, mensajes privados, amistades, solicitudes, bloqueos y el contador de visitas de tu perfil (solo
         el número, no quién te visita).
+      </li>
+      <li>
+        <strong>Grupos:</strong> los grupos que creas o en los que estás, tu papel en cada uno (propietario,
+        administración o miembro) y cuándo entraste, las invitaciones y solicitudes para entrar, lo que publicas en su
+        Gallinero (textos, fotos, respuestas y Grr) y, para saber qué es nuevo para ti, cuándo lo visitaste por última vez.
+        Si pides el grupo de un pueblo o ciudad, guardamos tu petición (el lugar y cuándo la hiciste).
       </li>
       <li>
         <strong>Invitaciones:</strong> los enlaces que creas, quién entró con cada uno y cuándo. No guardamos datos de la
@@ -56,7 +63,7 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
-        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno), y
+        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno, o con dos en un chat de más de 5 personas; en el Gallinero de un grupo, el 30% de sus personas, entre 3 y 10), y
         quien modera ve cuántos reportes hay y sus motivos, no quién los hizo. La persona reportada no sabe quién la ha
         reportado. Si se retira algo tuyo, deja de verse
         pero guardamos una copia durante 14 días (o hasta que se resuelva tu apelación) para poder devolvértelo, y un
@@ -72,8 +79,8 @@ import { LIMITS } from '@/utils/validation'
     <h2>Para qué y con qué base legal</h2>
     <ul>
       <li>
-        <strong>Prestarte el servicio</strong> (tu cuenta, tu perfil, compartir con tus amigos, mensajes, eventos,
-        «Cerca de ti» si lo activas): es necesario para cumplir las condiciones de uso que aceptas (art. 6.1.b RGPD).
+        <strong>Prestarte el servicio</strong> (tu cuenta, tu perfil, compartir con tus amigos, mensajes, grupos, eventos,
+        grupos de lugares): es necesario para cumplir las condiciones de uso que aceptas (art. 6.1.b RGPD).
       </li>
       <li>
         <strong>Seguridad y convivencia</strong> (comprobar la edad, límites de uso, bloqueos, revisar reportes, retirar
@@ -94,7 +101,8 @@ import { LIMITS } from '@/utils/validation'
     <p>
       Cualquier persona con cuenta puede ver tu nombre y tu foto de perfil. El resto de tu perfil y de lo que publicas lo
       ve quien permitas en <em>Configuración &gt; Privacidad</em>. Los mensajes privados solo los ven las personas de la
-      conversación. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
+      conversación; en un chat de grupo, sus miembros ven tu nombre y tus mensajes, y quien lo creó puede añadir o quitar
+      personas. Quien modera solo accede al contenido que se ha reportado y, si apelas una retirada, a tu explicación.
     </p>
     <ul>
       <li>
@@ -108,12 +116,29 @@ import { LIMITS } from '@/utils/validation'
         eventos con invitación solo los ven quien los organiza y las personas invitadas.
       </li>
       <li>
+        <strong>Grupos:</strong> un grupo cerrado lo encuentra cualquier persona con cuenta, con su nombre, su
+        descripción, quién es su propietario y cuántas personas tiene; un grupo secreto solo lo ven sus personas y quienes
+        están invitados. Lo de dentro (el Gallinero, la lista de personas con su papel y los eventos del grupo) solo lo ven
+        sus personas. Quien administra el grupo ve quién pide entrar y puede borrar lo que se publica en él. Estar en el
+        mismo grupo no da acceso al resto de tu perfil, que sigue tu privacidad.
+      </li>
+      <li>
+        <strong>Grupos de lugares:</strong> los de comunidades, provincias, pueblos y ciudades los ve cualquier persona
+        con cuenta, con cuántas personas tienen. Dentro, de la gente del grupo solo ves por nombre a tus amigos y a quien
+        lo administra (la moderación de YOUNGrr y quien esta nombre); lo que publicas en su Gallinero lo ven todas sus
+        personas. De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
+      </li>
+      <li>
+        <strong>Eventos de un grupo:</strong> los ven las personas del grupo, que pueden apuntarse; si te apuntas, verán tu
+        nombre y tu respuesta.
+      </li>
+      <li>
         <strong>Logros:</strong> los ve quien puede ver tu perfil. En las Novedades de tus amigos solo aparecen los que tú
         decides compartir.
       </li>
       <li>
-        <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro, sus eventos
-        públicos y sus sugerencias. No se avisa a la otra persona.
+        <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro (también en
+        los grupos y chats de grupo que compartáis), sus eventos públicos y sus sugerencias. No se avisa a la otra persona.
       </li>
     </ul>
     <p>Además, estos proveedores tratan datos por nuestra cuenta, solo para prestar el servicio:</p>
@@ -147,11 +172,17 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Marca de visita a un perfil</td><td>A las 6 horas</td></tr>
         <tr><td>Copia de contenido retirado</td><td>A los 14 días, o al resolverse la apelación</td></tr>
         <tr><td>Aviso de contenido retirado y apelación</td><td>Al cerrarlo, una vez resuelto</td></tr>
+        <tr><td>Grupo al que no se ha unido nadie</td><td>A los 7 días, con todo lo publicado en él</td></tr>
+        <tr><td>Aviso de grupo eliminado por estar vacío o de grupo de tu pueblo creado</td><td>Al cerrarlo, o a los 30 días</td></tr>
+        <tr><td>Petición del grupo de un pueblo o ciudad</td><td>Al crearse el grupo, al retirarla, o a los 90 días</td></tr>
       </tbody>
     </table>
     <p>
-      Si eliminas tu cuenta, se borran en ese momento tu perfil, tus archivos y todo lo que has publicado, incluidas las
-      conversaciones en las que participas (también para la otra persona). Solo se conservan, sin tu nombre, los
+      Si eliminas tu cuenta, se borran en ese momento tu perfil, tus archivos y todo lo que has publicado, incluidas tus
+      conversaciones de dos personas (también para la otra persona) y tus mensajes en los chats de grupo, que siguen
+      para los demás. Sales de tus grupos, que siguen sin ti (si eras propietario, pasa a serlo quien más tiempo lleve
+      administrando o, si no hay nadie, en el grupo), y se borra lo que publicaste en ellos. Si el propietario elimina un
+      grupo, se borra todo lo publicado en él. Solo se conservan, sin tu nombre, los
       reportes que hiciste, hasta que venza su plazo. Los registros técnicos de los proveedores se borran según sus
       propios ciclos.
     </p>
@@ -159,7 +190,7 @@ import { LIMITS } from '@/utils/validation'
     <h2>Tus derechos</h2>
     <p>Puedes ejercerlos desde la propia app o escribiendo a <a :href="`mailto:${LEGAL.contactEmail}`">{{ LEGAL.contactEmail }}</a>:</p>
     <ul>
-      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
+      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
       <li><strong>Rectificación:</strong> puedes editar tu perfil y tu contenido en cualquier momento.</li>
       <li><strong>Supresión:</strong> <em>Configuración &gt; Cuenta &gt; Eliminar mi cuenta</em>.</li>
       <li><strong>Oposición y limitación:</strong> por correo, explicando tu caso.</li>

@@ -8,7 +8,6 @@ import PhotoStrip from '@/components/photos/PhotoStrip.vue'
 import PostCard from '@/components/feed/PostCard.vue'
 import { usePhotosStore } from '@/stores/photos'
 import { useFeedStore } from '@/stores/feed'
-import { formatDistance } from '@/utils/geo'
 import { plural } from '@/utils/text'
 import { dayLabel } from '@/utils/time'
 import { achievementLabel } from '@/config/achievements'
@@ -39,14 +38,6 @@ const achievementText = computed(() => {
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names.at(-1)}` : (names[0] ?? '')
 })
 
-// The town; the distance only replaces it when the person hides the town.
-const placeLabel = computed(() => {
-  const info = props.block.nearby
-  if (!info) return ''
-  if (info.city) return info.city
-  return info.distanceKm === null ? '' : formatDistance(info.distanceKm)
-})
-
 const profileTab = (tab) => ({ name: 'profile', params: { id: props.block.person.id }, query: { tab } })
 
 // METHODS
@@ -59,14 +50,13 @@ const openTagged = (photoId) =>
 
 <template>
   <article class="block">
-    <PostCard v-if="hasStatus" :post-id="block.statusId" :nearby="block.nearby ?? null" />
+    <PostCard v-if="hasStatus" :post-id="block.statusId" />
     <header v-else class="block__head">
       <RouterLink class="block__avatar" :to="{ name: 'profile', params: { id: block.person.id } }" tabindex="-1" aria-hidden="true">
         <UserAvatar :person="block.person" size="md" />
       </RouterLink>
       <p class="block__who">
         <PersonLink :person="block.person" />
-        <span v-if="placeLabel" class="block__place">{{ placeLabel }}</span>
         <span v-if="block.day" class="block__place">{{ dayLabel(block.day) }}</span>
       </p>
     </header>

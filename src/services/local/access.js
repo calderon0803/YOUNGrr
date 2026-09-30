@@ -55,14 +55,10 @@ export const isBlockedBetween = (db, a, b) =>
 export const canViewProfile = (db, viewer, ownerId) =>
   !isBlockedBetween(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.profileVisibility)
 
-/** Town (profile, people lists, "Cerca de ti") and distance ("Cerca de ti") have separate settings. */
+/** Who sees the town of a profile (profile and people lists). */
 export const canViewCity = (db, viewer, ownerId) =>
   canViewProfile(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.cityVisibility ?? 'friends')
 
-export const canViewDistance = (db, viewer, ownerId) =>
-  canViewProfile(db, viewer, ownerId) && allowedBy(db, viewer, ownerId, settingsOf(db, ownerId).privacy.distanceVisibility ?? 'friends')
-
-/** Coordinates never leave the backend, except to their owner. */
 export const visibleCity = (db, viewer, profile) => (canViewCity(db, viewer, profile.id) ? profile.city : '')
 
 export const canSendRequest = (db, me, other) => {
@@ -125,3 +121,20 @@ export const personView = (db, me, id) => {
     canSendRequest: canSendRequest(db, me, id),
   }
 }
+
+// ---- Groups ------------------------------------------------------------------
+
+/** 'owner' | 'admin' | 'member', or null when not in the group. */
+export const groupRole = (db, groupId, userId) =>
+  (db.groupMembers ?? []).find((m) => m.groupId === groupId && m.userId === userId)?.role ?? null
+
+export const isGroupMember = (db, groupId, userId) => groupRole(db, groupId, userId) !== null
+
+/** Also the moderators who are in a place group. */
+export const isGroupAdmin = (db, groupId, userId) => {
+  const role = groupRole(db, groupId, userId)
+  if (role === 'owner' || role === 'admin') return true
+  return !!role && (db.moderators ?? []).includes(userId) && db.groups?.find((g) => g.id === groupId)?.kind === 'place'
+}
+
+export const groupMemberCount = (db, groupId) => (db.groupMembers ?? []).filter((m) => m.groupId === groupId).length

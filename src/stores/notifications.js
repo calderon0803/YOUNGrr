@@ -11,6 +11,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const summary = reactive({ status: 'idle', error: null, groups: [] })
 
   const total = computed(() => summary.groups.reduce((sum, g) => sum + g.count, 0))
+  /** Group invitations, requests to join your groups and group notices (the "Grupos" badge). */
+  const groupsCount = computed(() => summary.groups.filter((g) => g.key.startsWith('group_')).reduce((sum, g) => sum + g.count, 0))
 
   const loadSummary = async () => {
     summary.status = summary.status === 'success' ? 'success' : 'loading'
@@ -36,5 +38,5 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  return { summary, total, loadSummary, markSeen }
+  return { summary, total, groupsCount, loadSummary, markSeen }
 })

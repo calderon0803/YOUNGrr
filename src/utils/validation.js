@@ -16,10 +16,8 @@ export const rules = {
       : `La contraseña debe tener al menos ${LIMITS.passwordMin} caracteres.`,
   date: (value) => (/^\d{4}-\d{2}-\d{2}$/.test(String(value ?? '')) ? null : 'Elige una fecha válida.'),
   /** A town picked from the geocoder: { name, lat, lng }. */
-  location: (value) =>
-    value?.name?.trim() && Number.isFinite(value.lat) && Number.isFinite(value.lng) && Math.abs(value.lat) <= 90 && Math.abs(value.lng) <= 180
-      ? null
-      : 'Elige tu ciudad o pueblo de la lista de sugerencias.',
+  /** A town picked from the list of suggestions (only its name is kept). */
+  location: (value) => (value?.name?.trim() ? null : 'Elige tu ciudad o pueblo de la lista de sugerencias.'),
   /** Optional town: empty is fine, a half-filled one is not. */
   optionalLocation: (value) => (value ? rules.location(value) : null),
   /** Birth date (YYYY-MM-DD) of someone aged LIMITS.minAge or over. */

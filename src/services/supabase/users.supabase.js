@@ -5,7 +5,6 @@ import { fromSettings, toPerson, toProfile, toProfileView, toSettings } from '@/
 import { avatarPathFromUrl, avatarUrl, listOwnFiles, removeFiles, signUrls, uploadImage } from '@/services/supabase/storage'
 import { ApiError, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
-import { NEARBY_RADII_KM } from '@/config/app'
 
 const PROFILE_VISIBILITIES = ['everyone', 'friends']
 const VISIBILITIES = ['everyone', 'friends', 'only_me']
@@ -45,7 +44,7 @@ export const supabaseUsersService = {
     )
     const row = await rpc(
       'complete_profile_setup',
-      { first_name: firstName, last_name: lastName, city: location?.name ?? '', city_lat: location?.lat ?? null, city_lng: location?.lng ?? null },
+      { first_name: firstName, last_name: lastName, city: location?.name ?? '', city_lat: null, city_lng: null },
       'No se ha podido guardar tu perfil.',
     )
     return toProfile(row)
@@ -85,10 +84,11 @@ export const supabaseUsersService = {
         birthday: update.birthday || null,
         studies: update.studies,
         work: update.work,
-        // Without a town there is no "Cerca de ti", but the profile is still valid.
+        // The town is optional (it only suggests the groups of your area).
         city: update.location?.name ?? '',
-        city_lat: update.location?.lat ?? null,
-        city_lng: update.location?.lng ?? null,
+        // Only the name of the town is kept.
+        city_lat: null,
+        city_lng: null,
       },
       'No se ha podido guardar el perfil.',
     )
@@ -146,10 +146,8 @@ export const supabaseUsersService = {
     validate(
       PROFILE_VISIBILITIES.includes(next.privacy.profileVisibility) ? null : 'Opción de privacidad no válida.',
       VISIBILITIES.includes(next.privacy.cityVisibility) ? null : 'Opción de privacidad no válida.',
-      VISIBILITIES.includes(next.privacy.distanceVisibility) ? null : 'Opción de privacidad no válida.',
       REQUEST_POLICIES.includes(next.privacy.friendRequests) ? null : 'Opción de solicitudes no válida.',
       THEMES.includes(next.appearance.theme) ? null : 'Tema no válido.',
-      NEARBY_RADII_KM.includes(next.nearby?.radiusKm) ? null : 'Radio no válido.',
     )
     ensureOnline()
     const id = await currentUserId()

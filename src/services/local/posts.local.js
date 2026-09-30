@@ -1,14 +1,13 @@
 import { commit, getDb, latency } from '@/services/local/db'
 import { requireUserId } from '@/services/local/session'
-import { canViewCity, canViewDistance, canViewPhoto, canViewPost, canViewProfile, findOr404, friendIdsOf, profileOf } from '@/services/local/access'
+import { canViewPhoto, canViewPost, canViewProfile, findOr404, friendIdsOf, profileOf } from '@/services/local/access'
 import { dropNotifications } from '@/services/local/notify'
 import { activityBlock, postView } from '@/services/local/views'
 import { ensure, ensureAccess, validate } from '@/services/errors'
 import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso, toDateInput } from '@/utils/time'
-import { ACTIVITY_WINDOW_DAYS, FEED_PAGE_SIZE, NEARBY_DEFAULT_RADIUS_KM, NEARBY_RADII_KM } from '@/config/app'
-import { distanceKm, hasLocation } from '@/utils/geo'
+import { ACTIVITY_WINDOW_DAYS, FEED_PAGE_SIZE } from '@/config/app'
 
 const DAY_MS = 86_400_000
 
@@ -81,43 +80,6 @@ export const localPostsService = {
       items: cards.map((c) => activityBlock(db, me, c.person, { since: c.from > since ? c.from : since, until: c.to, day: c.day, withSocial: true, lastActivityAt: c.at })),
       hasMore,
     }
-  },
-
-  /**
-   * "Cerca de ti": status and album uploads of people whose town is within
-   * `radiusKm`, if their profile is visible to you.
-   */
-  async getNearbyActivity({ before = null, radiusKm = NEARBY_DEFAULT_RADIUS_KM } = {}) {
-    validate(NEARBY_RADII_KM.includes(radiusKm) ? null : 'Radio no válido.')
-    await latency()
-    const db = await getDb()
-    const me = requireUserId(db)
-    const origin = profileOf(db, me)
-    if (!hasLocation(origin)) return { items: [], hasMore: false, needsLocation: true, originCity: '' }
-
-    const here = { lat: origin.cityLat, lng: origin.cityLng }
-    const distances = new Map()
-    for (const person of db.profiles) {
-      if (person.id === me || !hasLocation(person) || !canViewProfile(db, me, person.id)) continue
-      const km = distanceKm(here, { lat: person.cityLat, lng: person.cityLng })
-      if (km <= radiusKm) distances.set(person.id, km)
-    }
-    const since = windowStart()
-    const events = db.posts.filter((p) => distances.has(p.authorId) && p.createdAt >= since).map((p) => ({ person: p.authorId, at: p.createdAt }))
-    const { cards, hasMore } = pageOfDays(events, before)
-    // The town if the person allows it; otherwise, the approximate distance if
-    // allowed. Never exact positions.
-    const items = cards.map(({ person, day, at, from, to }) => {
-      const showCity = canViewCity(db, me, person)
-      return {
-        ...activityBlock(db, me, person, { since: from > since ? from : since, until: to, day, withSocial: false, lastActivityAt: at }),
-        nearby: {
-          city: showCity ? profileOf(db, person).city : null,
-          distanceKm: !showCity && canViewDistance(db, me, person) ? Math.round(distances.get(person)) : null,
-        },
-      }
-    })
-    return { items, hasMore, needsLocation: false, originCity: origin.city }
   },
 
   async getPost(postId) {

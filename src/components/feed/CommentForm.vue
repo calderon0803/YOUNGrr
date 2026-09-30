@@ -1,8 +1,10 @@
 <script setup>
 import { computed, ref, useId } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import EmojiPicker from '@/components/common/EmojiPicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useEmojiInsert } from '@/composables/useEmojiInsert'
 import { errorMessage } from '@/services/errors'
 import { LIMITS } from '@/utils/validation'
 
@@ -11,6 +13,8 @@ const props = defineProps({
   /** async (text) => void — the form clears itself when it resolves. */
   submit: { type: Function, required: true },
   placeholder: { type: String, default: 'Escribe un comentario...' },
+  /** Length limit (replies in the Gallinero are shorter). */
+  max: { type: Number, default: LIMITS.commentText },
 })
 
 // STORES
@@ -22,9 +26,10 @@ const text = ref('')
 const sending = ref(false)
 const input = ref(null)
 const inputId = useId()
+const { insert: addEmoji } = useEmojiInsert(input, text, () => props.max)
 
 // COMPUTED
-const canSend = computed(() => text.value.trim().length > 0 && text.value.length <= LIMITS.commentText && !sending.value)
+const canSend = computed(() => text.value.trim().length > 0 && text.value.length <= props.max && !sending.value)
 
 // METHODS
 const send = async () => {
@@ -55,10 +60,11 @@ defineExpose({ focus })
       v-model="text"
       class="input comment-form__input"
       :placeholder="placeholder"
-      :maxlength="LIMITS.commentText"
+      :maxlength="max"
       autocomplete="off"
       enterkeyhint="send"
     />
+    <EmojiPicker @pick="addEmoji" />
     <button type="submit" class="btn btn--soft btn--sm" :disabled="!canSend">
       {{ sending ? 'Publicando…' : 'Publicar' }}
     </button>

@@ -25,7 +25,7 @@ Medidas de seguridad comunes a todos los tratamientos: ver el apartado final.
   de mayoría de edad (no la fecha de nacimiento), versión de las condiciones aceptada y fecha,
   contador de visitas, ajustes de privacidad y avisos.
 - **Destinatarios:** Supabase (encargado). Lo que se ve de cada perfil, según sus ajustes.
-- **Transferencias internacionales:** no (Supabase en la UE). Ver el documento de encargados.
+- **Transferencias internacionales:** no (Supabase en la UE, región `eu-west-1`, Irlanda). Ver el documento de encargados.
 - **Plazo:** mientras exista la cuenta; se borra al eliminarla.
 
 ## 2. Contenido y relaciones

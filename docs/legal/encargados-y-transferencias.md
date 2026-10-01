@@ -24,8 +24,8 @@ copia (PDF o captura con la fecha).
 ## Condiciones de uso de los servicios de datos
 
 - **TMDB:** uso no comercial con la clave actual; frase de atribución y enlace en la web (están en el
-  diálogo de gustos y en Créditos). Sus normas piden además su **logo** en los créditos: pendiente
-  de añadir el archivo oficial. Si hubiera ingresos, hace falta su licencia comercial.
+  diálogo de gustos y en Créditos) y su logo oficial en Créditos (`public/credits/tmdb-logo.svg`,
+  descargado de su página de logos y atribución). Si hubiera ingresos, hace falta su licencia comercial.
 - **MusicBrainz:** datos CC0; como mucho una petición por segundo (la app lo respeta).
 - **Nominatim:** como mucho una petición por segundo, sin uso masivo, atribución a OpenStreetMap (está
   puesta). Si el uso crece, contratar un servicio de geocodificación o montar uno propio.

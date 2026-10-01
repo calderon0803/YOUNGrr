@@ -68,7 +68,8 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
-        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno, o con dos en un chat de más de 5 personas; en el Gallinero de un grupo, el 30% de sus personas, entre 3 y 10), y
+        que se pueda revisar. Si avisas de contenido ilegal, guardamos también tu explicación; si lo haces por correo,
+        tu nombre y tu correo, solo para tramitar el aviso y responderte. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno, o con dos en un chat de más de 5 personas; en el Gallinero de un grupo, el 30% de sus personas, entre 3 y 10), y
         quien modera ve cuántos reportes hay y sus motivos, no quién los hizo. La persona reportada no sabe quién la ha
         reportado. Si se retira algo tuyo, deja de verse
         pero guardamos una copia durante 14 días (o hasta que se resuelva tu apelación) para poder devolvértelo, y un
@@ -137,8 +138,9 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         <strong>Grupos de lugares:</strong> los de comunidades, provincias, pueblos y ciudades los ve cualquier persona
-        con cuenta, con cuántas personas tienen. Dentro, como en los demás grupos, sus personas aparecen con su nombre, y lo
-        administra la moderación de YOUNGrr (y quien esta nombre). De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
+        con cuenta, con cuántas personas tienen, y cualquiera puede entrar. Por eso, al unirte te avisamos de que tu nombre
+        y tu foto aparecerán en su lista de personas, lo que dice dónde vives, y en <em>Mi privacidad y avisos</em> del
+        grupo puedes elegir solo contar en el total. Los administra la moderación de YOUNGrr (y quien esta nombre). De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
       </li>
       <li>
         <strong>Eventos de un grupo:</strong> los ven las personas del grupo, que pueden apuntarse; si te apuntas, verán tu
@@ -185,6 +187,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Invitaciones para compartir una foto rechazadas</td><td>A los 30 días</td></tr>
         <tr><td>Reportes ya revisados, con su copia del contenido</td><td>Al año de la decisión</td></tr>
         <tr><td>Reportes que no llegan al mínimo para revisarse</td><td>A los 90 días</td></tr>
+        <tr><td>Avisos de contenido ilegal por correo</td><td>Al año de resolverse</td></tr>
         <tr><td>Recuento de acciones por minuto</td><td>En una hora</td></tr>
         <tr><td>Marca de visita a un perfil</td><td>A las 6 horas</td></tr>
         <tr><td>Copia de contenido retirado</td><td>A los 14 días, o al resolverse la apelación</td></tr>

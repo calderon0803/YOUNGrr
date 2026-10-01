@@ -34,7 +34,7 @@ const toGroup = (json) => ({
   requested: !!json.requested,
   requestCount: json.request_count ?? 0,
   // Your settings in it: what non-friends see of you and your notices.
-  mySettings: json.my_settings ? { profileShare: json.my_settings.profile_share, notify: json.my_settings.notify } : null,
+  mySettings: json.my_settings ? { profileShare: json.my_settings.profile_share, notify: json.my_settings.notify, hidden: !!json.my_settings.hidden } : null,
   // Following your notices for this group.
   newPosts: json.new_posts ?? 0,
   mentions: json.mentions ?? 0,
@@ -182,8 +182,10 @@ export const supabaseGroupsService = {
   },
 
   /** Your settings in a group: what non-friends see of you and your notices. */
-  async setMySettings(groupId, { profileShare, notify }) {
-    return toGroup(await rpc('set_my_group_settings', { target: groupId, profile_share: profileShare, notify }, 'No se han podido guardar tus ajustes.'))
+  async setMySettings(groupId, { profileShare, notify, hidden = false }) {
+    return toGroup(
+      await rpc('set_my_group_settings', { target: groupId, profile_share: profileShare, notify, hidden }, 'No se han podido guardar tus ajustes.'),
+    )
   },
 
   /**

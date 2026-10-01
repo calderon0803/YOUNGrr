@@ -1,8 +1,8 @@
 <script setup>
 import { LEGAL } from '@/config/app'
 
-// Frame shared by the terms of use and the privacy policy: title, version date
-// and readable typography for the text in the slot.
+// Frame shared by the legal pages: title, version date, readable typography
+// for the text in the slot and links to the other legal pages.
 
 // PROPS
 defineProps({
@@ -22,6 +22,9 @@ defineProps({
     <footer class="legal__foot">
       <RouterLink :to="{ name: 'terms' }">Condiciones de uso</RouterLink>
       <RouterLink :to="{ name: 'privacy' }">Política de privacidad</RouterLink>
+      <RouterLink :to="{ name: 'legal-notice' }">Aviso legal</RouterLink>
+      <RouterLink :to="{ name: 'illegal-report' }">Avisar de contenido ilegal</RouterLink>
+      <RouterLink :to="{ name: 'credits' }">Créditos</RouterLink>
     </footer>
   </article>
 </template>

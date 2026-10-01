@@ -4,6 +4,7 @@ import { Info } from 'lucide-vue-next'
 import BaseModal from '@/components/common/BaseModal.vue'
 import { useModerationStore } from '@/stores/moderation'
 import { errorMessage } from '@/services/errors'
+import { MODERATION_RULES } from '@/config/app'
 import { fullDate } from '@/utils/time'
 
 // Inicio: a simple notice when moderation removed something of yours after a
@@ -30,6 +31,11 @@ const error = ref('')
 
 // METHODS
 const what = (notice) => WHAT[notice.contentKind] ?? 'contenido tuyo'
+
+const ruleText = (notice) => {
+  const rule = MODERATION_RULES.find((r) => r.key === notice.rule)
+  return rule ? `la norma ${rule.n} de las condiciones (${rule.label.toLowerCase()})` : 'las condiciones de uso'
+}
 
 const openAppeal = (notice) => {
   appealing.value = notice
@@ -69,9 +75,16 @@ onMounted(() => moderation.loadNotices())
           <p>Hemos revisado tu apelación y mantenemos la retirada de {{ what(notice) }}.</p>
         </template>
         <template v-else>
-          <p>Hemos retirado {{ what(notice) }} porque se reportó como «{{ notice.reason }}» y no cumple las normas de YOUNGrr.</p>
+          <p>
+            Hemos retirado {{ what(notice) }}. Se reportó como «{{ notice.reason }}» y una persona de moderación ha
+            comprobado que incumple
+            <RouterLink :to="{ name: 'terms', hash: '#normas' }">{{ ruleText(notice) }}</RouterLink>.
+          </p>
           <p v-if="notice.appealedAt" class="notices__hint">Has apelado. Te avisaremos cuando lo revisemos.</p>
-          <p v-else-if="notice.canAppeal" class="notices__hint">Si crees que es un error, puedes apelar hasta el {{ fullDate(notice.appealUntil) }}.</p>
+          <p v-else-if="notice.canAppeal" class="notices__hint">
+            Si crees que es un error, puedes apelar hasta el {{ fullDate(notice.appealUntil) }}. También puedes acudir a un
+            órgano de resolución extrajudicial certificado o a los tribunales.
+          </p>
         </template>
       </div>
       <div v-if="!(notice.appealedAt && !notice.decision)" class="notices__actions">

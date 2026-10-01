@@ -16,6 +16,9 @@ const routes = [
   // Readable by everyone, also while completing the account (to accept them).
   { path: '/legal/terms', name: 'terms', component: () => import('@/pages/TermsPage.vue'), meta: { public: true, title: 'Condiciones de uso' } },
   { path: '/legal/privacy', name: 'privacy', component: () => import('@/pages/PrivacyPage.vue'), meta: { public: true, title: 'Política de privacidad' } },
+  { path: '/legal/notice', name: 'legal-notice', component: () => import('@/pages/LegalNoticePage.vue'), meta: { public: true, title: 'Aviso legal' } },
+  { path: '/legal/report', name: 'illegal-report', component: () => import('@/pages/IllegalReportPage.vue'), meta: { public: true, title: 'Avisar de contenido ilegal' } },
+  { path: '/legal/credits', name: 'credits', component: () => import('@/pages/CreditsPage.vue'), meta: { public: true, title: 'Créditos' } },
   { path: '/register', name: 'register', component: () => import('@/pages/RegisterPage.vue'), meta: { guest: true, layout: 'auth', title: 'Crear cuenta' } },
 
   app('/setup', 'setup', () => import('@/pages/SetupPage.vue'), { layout: 'auth', title: 'Completa tu perfil' }),
@@ -50,6 +53,7 @@ export const router = createRouter({
   routes,
   scrollBehavior(to, from, saved) {
     if (saved) return saved
+    if (to.hash) return { el: to.hash, top: 80 }
     // Opening a photo updates ?photo= without jumping to the top.
     if (to.path === from.path) return false
     return { top: 0 }

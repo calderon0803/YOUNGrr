@@ -10,7 +10,7 @@ import RelativeTime from '@/components/common/RelativeTime.vue'
 import AppealsList from '@/components/moderation/AppealsList.vue'
 import { useModerationStore } from '@/stores/moderation'
 import { useConfirm } from '@/composables/useConfirm'
-import { APPEAL_DAYS } from '@/config/app'
+import { APPEAL_DAYS, ILLEGAL_CATEGORIES, MODERATION_RULES } from '@/config/app'
 import { plural } from '@/utils/text'
 
 // Reports for moderators: who reported what, why and when, with a copy of the
@@ -40,6 +40,9 @@ const KIND_LABEL = {
   group_reply: 'Respuesta del Gallinero',
 }
 const notes = reactive({})
+// The rule each removal is based on (it goes in the owner's notice).
+const rules = reactive({})
+const categoryLabel = (key) => ILLEGAL_CATEGORIES.find((c) => c.key === key)?.label ?? key
 
 // COMPUTED
 const filter = computed(() => (TABS.some((t) => t.key === route.query.estado) ? route.query.estado : 'pending'))
@@ -56,6 +59,8 @@ const tabRoute = (key) => ({ query: key === 'pending' ? {} : { estado: key } })
 
 const resolve = async (report, decision, removeContent = false) => {
   if (removeContent) {
+    rules[report.id] ??= report.illegal ? 'illegal' : null
+    if (!rules[report.id]) return
     const ok = await confirm({
       title: 'Retirar el contenido',
       message: `Dejará de verse para todo el mundo. Su dueño podrá apelar durante ${APPEAL_DAYS} días; si no apela o se rechaza la apelación, se borrará del todo.`,
@@ -64,7 +69,7 @@ const resolve = async (report, decision, removeContent = false) => {
     })
     if (!ok) return
   }
-  await moderation.resolve(report.id, decision, { removeContent, note: notes[report.id] ?? '' })
+  await moderation.resolve(report.id, decision, { removeContent, note: notes[report.id] ?? '', rule: removeContent ? rules[report.id] : null })
 }
 
 // LIFECYCLE
@@ -94,7 +99,10 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
         </template>
 
         <ul class="moderation__list" role="list">
-          <li v-for="report in moderation.reports.items" :key="report.id" class="report">
+          <li v-for="report in moderation.reports.items" :key="report.id" class="report" :class="{ 'report--illegal': report.illegal }">
+            <p v-if="report.illegal" class="report__illegal">
+              Avisado como contenido ilegal: {{ report.illegalCategories.map(categoryLabel).join(' · ') }}. Hay que revisarlo aunque solo haya un aviso.
+            </p>
             <p class="report__head">
               <span class="report__kind">{{ KIND_LABEL[report.targetType] }}</span>
               <strong>{{ plural(report.reportCount, 'reporte', 'reportes') }}</strong>
@@ -115,6 +123,9 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
               <p v-if="report.snapshot.text" class="user-text">{{ report.snapshot.text }}</p>
               <p v-if="!report.snapshot.text && !report.snapshot.photoUrl && !report.snapshot.name" class="report__muted">Sin contenido guardado.</p>
             </blockquote>
+            <ul v-if="report.details.length" class="report__details" role="list" aria-label="Explicaciones de quienes lo avisaron">
+              <li v-for="(detail, i) in report.details" :key="i" class="user-text">«{{ detail }}»</li>
+            </ul>
             <p class="report__muted">
               {{ report.contentRemoved ? 'Contenido retirado.' : report.contentExists ? 'El contenido sigue publicado.' : 'Su autor ya lo borró.' }}
             </p>
@@ -129,6 +140,13 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
                 maxlength="500"
                 placeholder="Nota interna (opcional)"
               />
+              <label v-if="report.targetType !== 'profile' && report.contentExists" class="field report__rule">
+                <span class="field__label">Norma que incumple (si lo retiras)</span>
+                <select v-model="rules[report.id]" class="select">
+                  <option :value="undefined" disabled>Elige una norma</option>
+                  <option v-for="rule in MODERATION_RULES" :key="rule.key" :value="rule.key">{{ rule.n }}. {{ rule.label }}</option>
+                </select>
+              </label>
               <div class="report__actions">
                 <button type="button" class="btn btn--secondary btn--sm" @click="resolve(report, 'dismissed')">Descartar</button>
                 <button type="button" class="btn btn--secondary btn--sm" @click="resolve(report, 'resolved')">Resolver</button>
@@ -136,6 +154,7 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
                   v-if="report.targetType !== 'profile' && report.contentExists"
                   type="button"
                   class="btn btn--danger btn--sm"
+                  :disabled="!rules[report.id] && !report.illegal"
                   @click="resolve(report, 'resolved', true)"
                 >
                   Resolver y retirar el contenido
@@ -156,6 +175,32 @@ watch(filter, (value) => value !== 'appeals' && moderation.loadReports(value), {
 </template>
 
 <style lang="scss" scoped>
+.report--illegal {
+  border-left: 3px solid $color-danger;
+}
+
+.report__illegal {
+  padding: $space-2 $space-3;
+  border-radius: $radius-sm;
+  background: $color-danger-soft;
+  color: $color-danger;
+  font-size: $fs-sm;
+  font-weight: 700;
+}
+
+.report__details {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  margin: 0;
+  padding: 0;
+  font-size: $fs-sm;
+}
+
+.report__rule {
+  max-width: 28rem;
+}
+
 .moderation {
   max-width: 44rem;
   margin: 0 auto;

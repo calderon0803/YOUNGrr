@@ -34,8 +34,9 @@ export const useModerationStore = defineStore('moderation', () => {
   }
 
   /** Throws on error so the dialog can show it. */
-  const report = async (kind, targetId, reason) => {
-    await moderationService.reportContent(kind, targetId, reason)
+  /** @param {{ illegalCategory?: string, details?: string }} [extra] illegal content */
+  const report = async (kind, targetId, reason, extra = {}) => {
+    await moderationService.reportContent(kind, targetId, reason, extra)
     toast.success('Gracias. Lo revisaremos.')
   }
 

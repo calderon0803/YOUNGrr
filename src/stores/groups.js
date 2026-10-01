@@ -4,6 +4,7 @@ import { groupsService } from '@/services/groups.service'
 import { errorMessage } from '@/services/errors'
 import { useToast } from '@/composables/useToast'
 import { useNotificationsStore } from '@/stores/notifications'
+import { useUiStore } from '@/stores/ui'
 import { plural } from '@/utils/text'
 
 /** Groups, your invitations, the place groups and each group's Gallinero. */
@@ -139,6 +140,17 @@ export const useGroupsStore = defineStore('groups', () => {
   }
 
   const requestToJoin = async (groupId) => {
+    // In a place group, people see who lives in each place: say so before joining.
+    const group = groups[groupId]
+    if (group?.kind === 'place' && !group.myRole) {
+      const ok = await useUiStore().confirm({
+        title: `Unirte a ${group.name}`,
+        message:
+          'Tu nombre y tu foto aparecerán en la lista de personas del grupo, y cualquiera puede entrar en él. Si prefieres solo contar en el total, cámbialo después en «Mi privacidad y avisos» del grupo.',
+        confirmLabel: 'Unirme',
+      })
+      if (!ok) return
+    }
     try {
       groups[groupId] = await groupsService.requestToJoin(groupId)
       toast.success(groups[groupId].myRole ? 'Ya formas parte del grupo.' : 'Solicitud enviada. Te avisarán cuando la acepten.')

@@ -33,6 +33,9 @@ const accountMenu = computed(() => [
   ...(moderation.isModerator ? [{ key: 'moderation', label: 'Moderación', count: moderation.pendingCount, badge: 'pendientes de revisar' }] : []),
   { key: 'terms', label: 'Condiciones de uso' },
   { key: 'privacy', label: 'Privacidad' },
+  { key: 'legal-notice', label: 'Aviso legal' },
+  { key: 'illegal-report', label: 'Avisar de contenido ilegal' },
+  { key: 'credits', label: 'Créditos' },
   { key: 'logout', label: 'Salir' },
 ])
 
@@ -54,7 +57,7 @@ const submitSearch = () => {
 const onAccountMenu = (key) => {
   if (key === 'settings') router.push({ name: 'settings' })
   else if (key === 'moderation') router.push({ name: 'moderation' })
-  else if (key === 'terms' || key === 'privacy') router.push({ name: key })
+  else if (['terms', 'privacy', 'legal-notice', 'illegal-report', 'credits'].includes(key)) router.push({ name: key })
   else auth.logout()
 }
 

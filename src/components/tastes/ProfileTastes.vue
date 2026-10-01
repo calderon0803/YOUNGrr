@@ -61,7 +61,7 @@ watch(userId, (id) => props.view.canViewProfile && tastes.load(id), { immediate:
         </div>
         <p v-if="!section.items.length" class="tastes__empty">{{ section.empty }}</p>
         <ul v-else class="tastes__list" :class="{ 'tastes__list--names': section.key === 'artist' }" role="list">
-          <li v-for="taste in section.items" :key="taste.id" class="tastes__item">
+          <li v-for="taste in section.items" :key="taste.id" class="tastes__item" :class="{ 'tastes__item--removable': isSelf }">
             <img v-if="taste.imagePath" class="tastes__poster" :src="catalogService.imageUrl(taste.imagePath)" alt="" loading="lazy" />
             <span v-else-if="section.key !== 'artist'" class="tastes__poster tastes__poster--empty" aria-hidden="true">
               <component :is="ICONS[section.key]" />
@@ -159,13 +159,22 @@ watch(userId, (id) => props.view.canViewProfile && tastes.load(id), { immediate:
     min-width: 0;
   }
 
+  // Artists: one chip per name, the text centred whether or not it can be removed.
   &__list--names &__item {
     flex-direction: row;
     align-items: center;
-    padding: 0.2rem $space-1 0.2rem $space-3;
+    justify-content: center;
+    gap: $space-1;
+    min-height: 1.875rem;
+    padding: 0 $space-3;
     border: 1px solid $color-border;
     border-radius: $radius-pill;
     font-size: $fs-sm;
+    line-height: 1;
+  }
+
+  &__list--names &__item--removable {
+    padding-right: 0.2rem;
   }
 
   &__poster {
@@ -195,6 +204,7 @@ watch(userId, (id) => props.view.canViewProfile && tastes.load(id), { immediate:
 
   &__list--names &__text {
     flex-direction: row;
+    align-items: center;
   }
 
   &__name {

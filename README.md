@@ -374,7 +374,15 @@ la política de privacidad: si cambias uno, cambia también el otro.
 - **Condiciones de uso** (`/legal/terms`) y **política de privacidad** (`/legal/privacy`), en
   `src/pages/TermsPage.vue` y `src/pages/PrivacyPage.vue`. Se leen sin sesión y durante la
   configuración inicial, y con sesión están en el menú de la cuenta y en «Más» (móvil).
-- El responsable y el correo de contacto están en `LEGAL` (`src/config/app.js`).
+- **Aviso legal** (`/legal/notice`), **Avisar de contenido ilegal** (`/legal/report`, también para quien no tiene
+  cuenta, por correo) y **Créditos** (`/legal/credits`).
+- El responsable, el correo de contacto, el NIF y el domicilio están en `LEGAL` (`src/config/app.js`). **NIF y
+  domicilio están vacíos: hay que rellenarlos antes de abrir la web al público.**
+- **Contenido ilegal (DSA):** en «Reportar», «Es ilegal» (con tipo y explicación) llega a moderación con un solo
+  aviso; el resto de motivos necesita el mínimo de reportes. Al retirar algo, moderación elige la norma incumplida
+  (`MODERATION_RULES`, numeradas como en las condiciones) y el aviso al dueño la incluye, con cómo recurrir.
+- Documentación interna (registro de tratamientos, evaluación de impacto, brechas, encargados y lo pendiente antes
+  de publicar) en [`docs/legal`](docs/legal/README.md).
 - Al registrarse hay que aceptarlos, y la base de datos guarda la versión aceptada. Si los
   cambias, sube la versión en **dos sitios**, `LEGAL.version` y `yg_terms_version()` (con una
   migración nueva). Todo el mundo tendrá que aceptarlos de nuevo al entrar; quien no quiera

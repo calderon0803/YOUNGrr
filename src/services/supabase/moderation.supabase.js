@@ -4,7 +4,7 @@ import { rpc } from '@/services/supabase/client'
 import { toSummary } from '@/services/supabase/mappers'
 import { removePhotos, signPhotoUrls } from '@/services/supabase/storage'
 import { validate } from '@/services/errors'
-import { REPORT_REASONS } from '@/config/app'
+import { ILLEGAL_CATEGORIES, ILLEGAL_REASON, MODERATION_RULES, REPORT_REASONS } from '@/config/app'
 
 const toReport = (json, urls) => ({
   id: json.id,
@@ -13,6 +13,10 @@ const toReport = (json, urls) => ({
   // How many people reported it, and for which reasons ({ reason: count }).
   reportCount: json.report_count ?? 1,
   reasons: json.reasons ?? {},
+  // Reported as illegal: it is reviewed even with a single report.
+  illegal: !!json.illegal,
+  illegalCategories: json.illegal_categories ?? [],
+  details: json.details ?? [],
   createdAt: json.created_at,
   lastReportedAt: json.last_reported_at ?? json.created_at,
   status: json.status,
@@ -36,6 +40,9 @@ const toNotice = (n) => ({
   id: n.id,
   contentKind: n.content_kind,
   reason: n.reason,
+  // The rule of the terms it broke, and whether a person decided it.
+  rule: n.rule ?? null,
+  automated: !!n.automated,
   removedAt: n.removed_at,
   appealUntil: n.appeal_until,
   canAppeal: !!n.can_appeal,
@@ -46,9 +53,19 @@ const toNotice = (n) => ({
 
 export const supabaseModerationService = {
   /** @param {'status' | 'photo' | 'comment' | 'wall_message' | 'profile' | 'message' | 'group_post' | 'group_reply'} kind */
-  async reportContent(kind, targetId, reason) {
-    validate(REPORT_REASONS.includes(reason) ? null : 'Elige un motivo.')
-    await rpc('report_content', { kind, target: targetId, reason }, 'No se ha podido enviar el reporte.')
+  /** @param {{ illegalCategory?: string, details?: string }} [extra] illegal content: type and explanation */
+  async reportContent(kind, targetId, reason, { illegalCategory = null, details = null } = {}) {
+    const illegal = reason === ILLEGAL_REASON
+    validate(
+      REPORT_REASONS.includes(reason) || illegal ? null : 'Elige un motivo.',
+      illegal && !ILLEGAL_CATEGORIES.some((c) => c.key === illegalCategory) ? 'Elige qué tipo de contenido ilegal es.' : null,
+      illegal && (details ?? '').trim().length < 10 ? 'Explica por qué es ilegal.' : null,
+    )
+    await rpc(
+      'report_content',
+      { kind, target: targetId, reason, details: illegal ? details : null, illegal_category: illegal ? illegalCategory : null },
+      'No se ha podido enviar el reporte.',
+    )
   },
 
   /** Notices about your content removed by moderation, with the appeal state. */
@@ -113,10 +130,11 @@ export const supabaseModerationService = {
 
   /**
    * @param {'resolved' | 'dismissed'} decision
-   * @param {{ removeContent?: boolean, note?: string }} options
+   * @param {{ removeContent?: boolean, note?: string, rule?: string }} options rule: the norm a removal is based on
    */
-  async resolveReport(reportId, decision, { removeContent = false, note = '' } = {}) {
+  async resolveReport(reportId, decision, { removeContent = false, note = '', rule = null } = {}) {
+    validate(removeContent && !MODERATION_RULES.some((r) => r.key === rule) ? 'Elige qué norma incumple.' : null)
     // A removed photo keeps its file while it can be appealed (see cleanUpRemovedFiles).
-    await rpc('resolve_report', { target: reportId, decision, remove_content: removeContent, note }, 'No se ha podido guardar la decisión.')
+    await rpc('resolve_report', { target: reportId, decision, remove_content: removeContent, note, rule: removeContent ? rule : null }, 'No se ha podido guardar la decisión.')
   },
 }

@@ -20,7 +20,7 @@ const emit = defineEmits(['close'])
 const groups = useGroupsStore()
 
 // DATA
-const form = reactive({ profileShare: 'basic', notify: 'all' })
+const form = reactive({ profileShare: 'basic', notify: 'all', hidden: false })
 const saving = ref(false)
 const error = ref('')
 
@@ -53,6 +53,7 @@ watch(
     if (!open) return
     const mine = group.value?.mySettings
     form.profileShare = mine?.profileShare ?? 'basic'
+    form.hidden = !!mine?.hidden
     form.notify = isPlace.value && mine?.notify === 'all' ? 'mentions' : (mine?.notify ?? 'all')
     error.value = ''
   },
@@ -69,6 +70,18 @@ watch(
         <label v-for="option in GROUP_SHARE_OPTIONS" :key="option.value" class="group-settings__option">
           <input v-model="form.profileShare" type="radio" name="group-share" :value="option.value" />
           <span>{{ option.label }}</span>
+        </label>
+      </fieldset>
+      <fieldset v-if="isPlace" class="group-settings__options">
+        <legend class="group-settings__title">En la lista de personas</legend>
+        <p class="group-settings__hint">Cualquiera puede entrar en un grupo de lugar: aparecer en él dice dónde vives.</p>
+        <label class="group-settings__option">
+          <input v-model="form.hidden" type="radio" name="group-hidden" :value="false" />
+          <span>Aparecer con mi nombre y mi foto</span>
+        </label>
+        <label class="group-settings__option">
+          <input v-model="form.hidden" type="radio" name="group-hidden" :value="true" />
+          <span>Solo contar en el total</span>
         </label>
       </fieldset>
       <fieldset class="group-settings__options">

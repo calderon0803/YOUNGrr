@@ -9,8 +9,8 @@ copia (PDF o captura con la fecha).
 
 | Proveedor | Qué hace | Dónde | Contrato (DPA) | Estado |
 |---|---|---|---|---|
-| Supabase | Base de datos, cuentas, archivos, correos de la cuenta | UE: región `eu-west-1` (Irlanda), comprobado el 1 de octubre de 2026 | DPA de Supabase (versión 1, 1 de agosto de 2026): forma parte de sus condiciones de servicio y se aplica al aceptarlas, sin firma aparte. Está en supabase.com/legal/customer-resources/data-processing-addendum; no hay descarga: se guarda imprimiéndolo a PDF. Lista de subencargados: supabase.com/legal/customer-resources/subprocessor-list | **Pendiente: guardar el PDF** |
-| Netlify | Aloja la web | EE. UU. y red global | DPA de Netlify, en PDF en netlify.com/pdf/netlify-dpa.pdf (enlazado desde netlify.com/gdpr-ccpa) | **Pendiente: guardar el PDF** |
+| Supabase | Base de datos, cuentas, archivos, correos de la cuenta | UE: región `eu-west-1` (Irlanda), comprobado el 1 de octubre de 2026 | DPA de Supabase (versión 1, 1 de agosto de 2026): forma parte de sus condiciones de servicio y se aplica al aceptarlas, sin firma aparte. Está en supabase.com/legal/customer-resources/data-processing-addendum; no hay descarga: se guarda imprimiéndolo a PDF. Lista de subencargados: supabase.com/legal/customer-resources/subprocessor-list | Guardado en PDF (1/10/2026) |
+| Netlify | Aloja la web | EE. UU. y red global | DPA de Netlify, en PDF en netlify.com/pdf/netlify-dpa.pdf (enlazado desde netlify.com/gdpr-ccpa) | Guardado en PDF (1/10/2026) |
 
 ## Transferencias fuera del Espacio Económico Europeo
 

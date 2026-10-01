@@ -1,5 +1,12 @@
-/** What UserAvatar shows for a group: its initials. */
-export const groupAvatar = (group) => ({ id: group.id, firstName: group.name, lastName: '', avatarUrl: null })
+import { placeFlagUrl } from '@/utils/places'
+
+/** What UserAvatar shows for a group: its image, its place's flag, or its initials. */
+export const groupAvatar = (group) => ({
+  id: group.id,
+  firstName: group.name,
+  lastName: '',
+  avatarUrl: group.kind === 'place' ? placeFlagUrl(group) : (group.imageUrl ?? null),
+})
 
 export const PRIVACY_LABEL = { closed: 'Grupo cerrado', secret: 'Grupo secreto' }
 

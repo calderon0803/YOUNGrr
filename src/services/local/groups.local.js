@@ -85,7 +85,9 @@ const groupView = (db, me, group) => {
     description: group.description,
     createdAt: group.createdAt,
     placeLevel: group.placeLevel ?? null,
+    placeKey: group.placeKey ?? null,
     parent: parentOf(db, group),
+    imageUrl: group.imageUrl ?? null,
     canManage: isGroupAdmin(db, group.id, me),
     owner: owner ? summaryOf(db, owner) : null,
     memberCount: groupMemberCount(db, group.id),
@@ -188,7 +190,7 @@ const cleanUpEmptyGroups = (db) => {
 
 const parentOf = (db, group) => {
   const parent = group.parentId ? db.groups.find((g) => g.id === group.parentId) : null
-  return parent ? { id: parent.id, name: parent.name } : null
+  return parent ? { id: parent.id, name: parent.name, placeKey: parent.placeKey ?? null } : null
 }
 
 const placeStatusOf = (db, me, key) => {
@@ -350,6 +352,17 @@ export const localGroupsService = {
       privacy: group.kind === 'user' ? (input.secret ? 'secret' : 'closed') : group.privacy,
       updatedAt: nowIso(),
     })
+    await commit()
+    return groupView(db, me, group)
+  },
+
+  async setImage(groupId, dataUrl) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const group = adminGroup(db, me, groupId)
+    ensure(group.kind === 'user', 'forbidden', 'Los grupos de lugares llevan la bandera de su lugar.')
+    group.imageUrl = dataUrl ?? null
     await commit()
     return groupView(db, me, group)
   },

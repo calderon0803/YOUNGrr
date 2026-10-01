@@ -44,7 +44,7 @@ import { LIMITS } from '@/utils/validation'
       <li>
         <strong>Grupos:</strong> los grupos que creas o en los que estás, tu papel en cada uno (propietario,
         administración o miembro) y cuándo entraste, las invitaciones y solicitudes para entrar, lo que publicas en su
-        Gallinero (textos, fotos, respuestas, Grr y a quién mencionas), tus ajustes de privacidad y avisos en cada grupo y,
+        Gallinero (textos, fotos, respuestas, Grr y a quién mencionas), tus ajustes de privacidad y avisos en cada grupo, la imagen de los grupos que administras y,
         para saber qué es nuevo para ti, cuándo lo visitaste por última vez. Si pides el grupo de un pueblo o ciudad, guardamos tu petición (el lugar y cuándo la hiciste).
       </li>
       <li>

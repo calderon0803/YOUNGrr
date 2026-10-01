@@ -133,6 +133,11 @@ Novedades de tus amigos).
 - **Novedades del grupo.** Una pestaña con quién ha entrado, los eventos nuevos y la actividad
   de sus personas (de quien puedes ver), como las Novedades de tus amigos. El Gallinero va aparte.
 
+**Imágenes.** Los grupos de usuarios pueden tener imagen (la ponen propietario y administradores; bucket privado
+`photos`, la ve quien ve el grupo). Los de lugares llevan la bandera de su comunidad o provincia (`public/flags`,
+miniaturas de Wikimedia Commons con su autoría en `src/config/flags.js` y en Créditos); los pueblos, la de su
+provincia, y las provincias sin bandera oficial, la de su comunidad.
+
 **Grupos de lugares.** Hay uno por cada comunidad autónoma y provincia (las comunidades de una
 sola provincia, como Cantabria, son un único grupo), con las claves de `src/config/places.js`.
 Cualquiera entra directamente, no tienen límite de personas ni cuentan en los 10 grupos y los

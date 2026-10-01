@@ -1,4 +1,5 @@
 import { PLACES } from '@/config/places'
+import { FLAG_KEYS } from '@/config/flags'
 import { normalize } from '@/utils/text'
 
 const names = (place) => [place.name, ...place.aliases].map(normalize)
@@ -22,3 +23,16 @@ export const placeParentKey = (place) => {
   return found.key
 }
 
+const communityOf = (key) => PLACES.find((c) => c.key === key || (c.provinces ?? []).some((p) => p.key === key))?.key ?? null
+
+/**
+ * The flag of a place group: its own, or its community's when it has none
+ * official; towns show the one of the place above them.
+ * @param {{ placeKey?: string | null, placeLevel?: string | null, parent?: { placeKey?: string | null } | null }} group
+ */
+export const placeFlagUrl = (group) => {
+  const key = group?.placeLevel === 'municipality' ? group.parent?.placeKey : group?.placeKey
+  if (!key) return null
+  const flag = FLAG_KEYS.has(key) ? key : communityOf(key)
+  return flag && FLAG_KEYS.has(flag) ? `/flags/${flag}.png` : null
+}

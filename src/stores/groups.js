@@ -27,8 +27,15 @@ export const useGroupsStore = defineStore('groups', () => {
   const suggested = reactive({ status: 'idle', error: null, ids: [] })
   const placeRequests = reactive({ status: 'idle', error: null, items: [] })
 
+  /** Stores a group; keeps its signed image when the new copy brings none for the same file. */
+  const put = (group) => {
+    const known = groups[group.id]
+    groups[group.id] = !group.imageUrl && known?.imageUrl && known.imagePath === group.imagePath ? { ...group, imageUrl: known.imageUrl } : group
+    return groups[group.id]
+  }
+
   const keep = (list) => {
-    for (const g of list) groups[g.id] = g
+    for (const g of list) put(g)
     return list.map((g) => g.id)
   }
 
@@ -75,7 +82,7 @@ export const useGroupsStore = defineStore('groups', () => {
     if (groups[groupId] && state.status !== 'success') state.status = 'success'
     return load(state, async () => {
       const data = await groupsService.getGroup(groupId)
-      groups[groupId] = data.group
+      put(data.group)
       state.members = data.members
       state.requests = data.requests
     })
@@ -96,15 +103,20 @@ export const useGroupsStore = defineStore('groups', () => {
 
   const createGroup = async (input) => {
     const group = await groupsService.createGroup(input)
-    groups[group.id] = group
+    put(group)
     mine.ids = [group.id, ...mine.ids]
     toast.success('Grupo creado.')
     return group
   }
 
   const updateGroup = async (groupId, input) => {
-    groups[groupId] = await groupsService.updateGroup(groupId, input)
+    put(await groupsService.updateGroup(groupId, input))
     toast.success('Grupo actualizado.')
+  }
+
+  /** Throws so the dialog shows it. */
+  const setImage = async (groupId, dataUrl) => {
+    groups[groupId] = await groupsService.setImage(groupId, dataUrl)
   }
 
   const deleteGroup = async (groupId) => {
@@ -127,7 +139,7 @@ export const useGroupsStore = defineStore('groups', () => {
       const group = await groupsService.answerInvite(groupId, accept)
       invitations.ids = invitations.ids.filter((id) => id !== groupId)
       if (group) {
-        groups[groupId] = group
+        put(group)
         mine.ids = [groupId, ...mine.ids.filter((id) => id !== groupId)]
       }
       toast.success(accept ? 'Ya formas parte del grupo.' : 'Invitación rechazada.')
@@ -152,7 +164,7 @@ export const useGroupsStore = defineStore('groups', () => {
       if (!ok) return
     }
     try {
-      groups[groupId] = await groupsService.requestToJoin(groupId)
+      put(await groupsService.requestToJoin(groupId))
       toast.success(groups[groupId].myRole ? 'Ya formas parte del grupo.' : 'Solicitud enviada. Te avisarán cuando la acepten.')
       if (groups[groupId].myRole) {
         if (!mine.ids.includes(groupId)) mine.ids = [groupId, ...mine.ids]
@@ -166,7 +178,7 @@ export const useGroupsStore = defineStore('groups', () => {
   const cancelRequest = async (groupId) => {
     try {
       const group = await groupsService.cancelRequest(groupId)
-      if (group) groups[groupId] = group
+      if (group) put(group)
       toast.success('Solicitud retirada.')
     } catch (error) {
       toast.error(errorMessage(error))
@@ -219,7 +231,7 @@ export const useGroupsStore = defineStore('groups', () => {
 
   /** Your settings in a group: what non-friends see of you and your notices. */
   const setMySettings = async (groupId, settings) => {
-    groups[groupId] = await groupsService.setMySettings(groupId, settings)
+    put(await groupsService.setMySettings(groupId, settings))
     toast.success('Ajustes del grupo guardados.')
     notifications.loadSummary()
   }
@@ -263,7 +275,7 @@ export const useGroupsStore = defineStore('groups', () => {
   const requestPlace = async (place) => {
     const status = await groupsService.requestPlace(place)
     if (status.group) {
-      groups[status.group.id] = status.group
+      put(status.group)
       if (!mine.ids.includes(status.group.id)) mine.ids = [status.group.id, ...mine.ids]
       toast.success(`Ya estás en el grupo de ${status.group.name}.`)
     } else {
@@ -384,6 +396,7 @@ export const useGroupsStore = defineStore('groups', () => {
     loadGroup,
     createGroup,
     updateGroup,
+    setImage,
     deleteGroup,
     invite,
     answerInvite,

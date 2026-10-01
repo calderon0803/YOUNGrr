@@ -1,8 +1,13 @@
 <script setup>
 import LegalDocument from '@/components/legal/LegalDocument.vue'
+import { FLAG_CREDITS } from '@/config/flags'
+import { PLACES } from '@/config/places'
 
 // Credits: the data and code of others that YOUNGrr uses, with the attribution
 // their terms ask for.
+
+// DATA
+const PLACE_NAMES = Object.fromEntries(PLACES.flatMap((c) => [c, ...(c.provinces ?? [])]).map((p) => [p.key, p.name]))
 </script>
 
 <template>
@@ -29,6 +34,22 @@ import LegalDocument from '@/components/legal/LegalDocument.vue'
       </li>
     </ul>
 
+    <h2>Banderas</h2>
+    <p>
+      Las banderas de los grupos de lugares son imágenes de
+      <a href="https://commons.wikimedia.org" rel="noopener" target="_blank">Wikimedia Commons</a>, reducidas para la web.
+      Las provincias sin bandera oficial usan la de su comunidad, y los pueblos y ciudades, la de su provincia.
+    </p>
+    <details class="credits__flags">
+      <summary>Autoría y licencia de cada bandera</summary>
+      <ul>
+        <li v-for="flag in FLAG_CREDITS" :key="flag.key">
+          <a :href="flag.url" rel="noopener" target="_blank">{{ PLACE_NAMES[flag.key] ?? flag.file }}</a>:
+          {{ flag.author }} · {{ flag.license }}
+        </li>
+      </ul>
+    </details>
+
     <h2>Programas</h2>
     <ul>
       <li>Iconos: <a href="https://lucide.dev" rel="noopener" target="_blank">Lucide</a> (licencia ISC).</li>
@@ -44,6 +65,19 @@ import LegalDocument from '@/components/legal/LegalDocument.vue'
 
 <style lang="scss" scoped>
 // TMDB asks for its logo, never more prominent than YOUNGrr's.
+.credits__flags {
+  font-size: $fs-sm;
+
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  ul {
+    margin-top: $space-2;
+  }
+}
+
 .credits__logo {
   display: block;
   width: fit-content;

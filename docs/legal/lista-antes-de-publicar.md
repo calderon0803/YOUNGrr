@@ -17,7 +17,9 @@ Lo que ya está hecho en la app y lo que queda pendiente. Versión del 1 de octu
 
 - [ ] **NIF y domicilio** en `LEGAL.taxId` y `LEGAL.address` (`src/config/app.js`), o crear antes una
       asociación o sociedad y poner sus datos.
-- [ ] **Aceptar y guardar los DPA** de Supabase y Netlify (ver `encargados-y-transferencias.md`).
+- [ ] **Guardar en PDF los DPA** de Supabase y Netlify y la lista de subencargados de Supabase (ver
+      `encargados-y-transferencias.md`). Ya comprobado: Supabase en la UE (`eu-west-1`) y Netlify activo en el
+      Marco de Privacidad UE-EE. UU.
 - [ ] **Marca:** registrar «YOUNGrr» en la OEPM o la EUIPO si vas en serio. No usar «Tuenti» en
       ningún sitio.
 - [ ] **Revisión por un abogado** de las condiciones, la privacidad, el aviso legal y estos documentos.

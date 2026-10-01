@@ -16,7 +16,7 @@ copia (PDF o captura con la fecha).
 
 | Destino | Qué datos | Garantía |
 |---|---|---|
-| Netlify (EE. UU.) | Datos de conexión al cargar la web (IP, navegador) | Marco de Privacidad de Datos UE-EE. UU. (si Netlify está certificado) y cláusulas contractuales tipo. **Comprobar su certificación en dataprivacyframework.gov.** |
+| Netlify (EE. UU.) | Datos de conexión al cargar la web (IP, navegador) | Marco de Privacidad de Datos UE-EE. UU.: Netlify, Inc. figura como **activo** (también en la extensión de Reino Unido y en el marco suizo) para datos que no son de recursos humanos, comprobado en dataprivacyframework.gov el 1 de octubre de 2026. Además, las cláusulas contractuales tipo de su DPA. |
 | TMDB (EE. UU.) | IP y texto buscado, desde el navegador | No es encargado: el navegador hace la petición. Informado en la política de privacidad. |
 | MusicBrainz / MetaBrainz (EE. UU.) | IP y texto buscado, desde el navegador | Igual que TMDB. |
 | OpenStreetMap / Nominatim (Reino Unido) | IP y texto buscado, desde el navegador | Decisión de adecuación de la UE para el Reino Unido. |

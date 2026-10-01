@@ -9,7 +9,7 @@ copia (PDF o captura con la fecha).
 
 | Proveedor | Qué hace | Dónde | Contrato (DPA) | Estado |
 |---|---|---|---|---|
-| Supabase | Base de datos, cuentas, archivos, correos de la cuenta | UE (región del proyecto) | DPA de Supabase: se acepta y descarga desde el panel de la organización (*Legal Documents*) | **Pendiente: aceptar y guardar** |
+| Supabase | Base de datos, cuentas, archivos, correos de la cuenta | UE (región del proyecto: comprobar en *Project Settings > General*) | DPA de Supabase (versión 1, 1 de agosto de 2026): forma parte de sus condiciones de servicio y se aplica al aceptarlas, sin firma aparte. Está en supabase.com/legal/customer-resources/data-processing-addendum; no hay descarga: se guarda imprimiéndolo a PDF. Lista de subencargados: supabase.com/legal/customer-resources/subprocessor-list | **Pendiente: guardar el PDF** |
 | Netlify | Aloja la web | EE. UU. y red global | DPA de Netlify (anexo a sus condiciones) | **Pendiente: aceptar y guardar** |
 
 ## Transferencias fuera del Espacio Económico Europeo

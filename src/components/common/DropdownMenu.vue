@@ -132,6 +132,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
     margin: 0;
     padding: $space-1;
     list-style: none;
+    // Its own text color: in the header it would inherit the light text of the bar.
+    color: $color-text;
     background: $color-surface;
     border: 1px solid $color-border-strong;
     border-radius: $radius;
@@ -144,12 +146,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
     width: 100%;
     padding: $space-2 $space-3;
     border-radius: $radius-sm;
+    font-size: $fs-base;
     text-align: left;
 
     .badge {
       margin-left: $space-2;
     }
-    font-size: $fs-base;
 
     &:hover,
     &:focus-visible {

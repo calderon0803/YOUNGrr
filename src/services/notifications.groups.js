@@ -52,13 +52,20 @@ const singleLink = (me, kind, targetId) => {
   return listLink(me, 'friends')
 }
 
-const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, sharePhotoIds, groupInviteIds = [], groupRequestIds = [], groupNoticeCount = 0, groupMentionIds = [], chatInviteIds = [] }) => [
+const pendingGroups = ({ conversationIds, requestCount, invitationEventIds, sharePhotoIds, groupInviteIds = [], groupRequestIds = [], groupNoticeCount = 0, groupMentionIds = [], chatInviteIds = [], levelUp = null, me = '' }) => [
   {
     key: 'messages',
     pref: 'messages',
     count: conversationIds.length,
     label: pick(conversationIds.length, 'mensaje privado nuevo', 'mensajes privados nuevos'),
     link: conversationIds.length === 1 ? `/messages/${conversationIds[0]}` : '/messages',
+  },
+  {
+    key: 'level_up',
+    pref: 'levels',
+    count: levelUp ? 1 : 0,
+    label: levelUp ? `Has subido al nivel ${levelUp}` : '',
+    link: `/profile/${me}`,
   },
   {
     key: 'chat_invites',
@@ -153,6 +160,7 @@ const storedGroups = (me, unread) =>
  *   groupNoticeCount?: number,
  *   groupMentionIds?: string[],
  *   chatInviteIds?: string[],
+ *   levelUp?: number | null,
  *   unread: { type: string, targetId: string }[],
  * }} state
  */

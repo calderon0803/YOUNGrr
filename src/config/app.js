@@ -14,7 +14,7 @@ export const PHOTO_URL_TTL_S = 60 * 60
 
 export const STORAGE_KEYS = {
   // Bumped when the demo dataset changes shape, so old local data is re-seeded.
-  db: 'youngrr:db:v22',
+  db: 'youngrr:db:v23',
   session: 'youngrr:session',
   theme: 'youngrr:theme',
   // Open chat windows, per user (a per-browser convenience).
@@ -116,6 +116,13 @@ export const CATALOGS = {
   minQueryLength: 2,
 }
 
+/** Spotify links in the status: what is recognised and how it is called. */
+export const SPOTIFY = {
+  oembedUrl: 'https://open.spotify.com/oembed',
+  timeoutMs: 5000,
+  kinds: { track: 'Canción', album: 'Álbum', playlist: 'Lista', artist: 'Artista', show: 'Podcast', episode: 'Episodio' },
+}
+
 /** Tastes per kind, and what each section is called. */
 export const TASTES = {
   max: 500,
@@ -179,6 +186,35 @@ export const REPORT_THRESHOLD = 10
 /** Days to appeal a removal of your content, from its notice. */
 export const APPEAL_DAYS = 14
 
+/**
+ * Illegal content: one report is enough (Digital Services Act, art. 16). The
+ * same keys as reports.illegal_category in the database.
+ */
+export const ILLEGAL_CATEGORIES = [
+  { key: 'crime', label: 'Es un delito o contenido ilegal (estafas, drogas, armas…)' },
+  { key: 'privacy', label: 'Vulnera mi imagen o mi privacidad (o la de otra persona)' },
+  { key: 'copyright', label: 'Vulnera derechos de autor o de marca' },
+  { key: 'minors', label: 'Abuso o explotación de menores' },
+  { key: 'hate', label: 'Odio, amenazas o incitación a la violencia' },
+]
+export const ILLEGAL_REASON = 'Contenido ilegal'
+
+/**
+ * The rules of the terms a removal is based on (statement of reasons, DSA art.
+ * 17). The same keys as moderation_removals.rule; `n` is its number in the terms.
+ */
+export const MODERATION_RULES = [
+  { key: 'harassment', n: 1, label: 'Acoso, amenazas, intimidación o humillación' },
+  { key: 'hate', n: 2, label: 'Incitación al odio o a la violencia, o discriminación' },
+  { key: 'sexual', n: 3, label: 'Contenido sexual explícito, o de otras personas sin su consentimiento' },
+  { key: 'minors', n: 4, label: 'Contenido que implica a menores de forma inapropiada' },
+  { key: 'personal_data', n: 5, label: 'Datos personales de otras personas sin su permiso' },
+  { key: 'spam', n: 6, label: 'Spam, cadenas, publicidad o automatización' },
+  { key: 'illegal', n: 7, label: 'Contenido ilegal' },
+  { key: 'rights', n: 8, label: 'Derechos de otras personas (imagen, autor, marca)' },
+  { key: 'security', n: 9, label: 'Saltarse las medidas de seguridad o acceder a datos ajenos' },
+]
+
 export const REPORT_REASONS = [
   'Es spam',
   'Contenido ofensivo',
@@ -191,8 +227,12 @@ export const REPORT_REASONS = [
 // the database: when the texts change, bump both and everyone accepts the new
 // ones on their next sign in.
 export const LEGAL = {
-  version: '2026-09-30.5',
-  updatedOn: '30 de septiembre de 2026 (revisión 5)',
+  version: '2026-10-01',
+  updatedOn: '1 de octubre de 2026',
   controller: 'Carlos Calderón',
   contactEmail: 'calderon0803+youngrr@gmail.com',
+  // Legal notice (LSSI, art. 10): to fill in before opening YOUNGrr to the
+  // public. While empty, the page says they are pending.
+  taxId: '',
+  address: '',
 }

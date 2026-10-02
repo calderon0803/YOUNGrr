@@ -6,6 +6,7 @@ import TermsConsent from '@/components/legal/TermsConsent.vue'
 import SettingsYourData from '@/components/settings/SettingsYourData.vue'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/services/errors'
+import { reloadToLatestVersion } from '@/utils/pwa'
 import { useToast } from '@/composables/useToast'
 import { LIMITS, firstError, rules } from '@/utils/validation'
 import { toDateInput } from '@/utils/time'
@@ -74,6 +75,13 @@ const submit = async () => {
     toast.success(`Todo listo, ${auth.me.firstName}.`)
     router.replace({ name: 'home' })
   } catch (e) {
+    // An old copy of the app (the PWA kept it) shows terms that are no longer
+    // the current ones: get the new version instead of failing.
+    if (e?.code === 'conflict' && /condiciones han cambiado/i.test(e.message ?? '')) {
+      serverError.value = 'Hay una versión nueva de las condiciones. Actualizando YOUNGrr…'
+      await reloadToLatestVersion()
+      return
+    }
     serverError.value = errorMessage(e)
   } finally {
     submitting.value = false

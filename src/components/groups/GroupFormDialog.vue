@@ -1,12 +1,18 @@
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { ImagePlus, X } from 'lucide-vue-next'
 import BaseModal from '@/components/common/BaseModal.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useGroupsStore } from '@/stores/groups'
 import { errorMessage } from '@/services/errors'
+import { useImagePicker } from '@/composables/useImagePicker'
+import { ACCEPTED_IMAGE_TYPES } from '@/utils/image'
+import { groupAvatar } from '@/utils/groups'
 import { LIMITS, firstError, rules } from '@/utils/validation'
-import { GROUPS } from '@/config/app'
+import { GROUPS, IMAGE } from '@/config/app'
 
-// Creates a group or edits one (its administrators).
+// Creates a group or edits one (its administrators), with its image: the
+// same automatic check as photos; place groups keep their flag.
 
 // PROPS
 const props = defineProps({
@@ -26,11 +32,29 @@ const PRIVACY = [
   { value: true, label: 'Secreto', hint: 'Solo lo conocen sus personas y quienes invitéis. No aparece en las búsquedas.' },
 ]
 const form = reactive({ name: '', description: '', secret: false })
+// The picked image (data URL), '' to remove it, or null to leave it as it is.
+const image = ref(null)
+const fileInput = ref(null)
+const { processing, read } = useImagePicker({ maxSide: IMAGE.avatarMaxSide })
 const errors = reactive({ name: null, description: null })
 const saving = ref(false)
 const serverError = ref('')
 
+// COMPUTED
+const isUserGroup = computed(() => !props.group || props.group.kind === 'user')
+const preview = computed(() => {
+  const base = props.group ?? { id: 'new', name: form.name || 'Grupo', kind: 'user' }
+  const url = image.value === null ? (props.group?.imageUrl ?? null) : image.value || null
+  return { ...groupAvatar({ ...base, name: form.name || base.name }), avatarUrl: base.kind === 'place' ? groupAvatar(base).avatarUrl : url }
+})
+
 // METHODS
+const pickImage = async (event) => {
+  const [picked] = await read([...event.target.files].slice(0, 1))
+  event.target.value = ''
+  if (picked) image.value = picked.dataUrl
+}
+
 const validateForm = () => {
   errors.name = firstError(rules.required(form.name, 'El nombre del grupo'), rules.max(form.name, LIMITS.groupName, 'El nombre del grupo'))
   errors.description = rules.max(form.description, LIMITS.groupDescription, 'La descripción')
@@ -44,9 +68,12 @@ const save = async () => {
   try {
     if (props.group) {
       await groups.updateGroup(props.group.id, { ...form })
+      if (image.value !== null) await groups.setImage(props.group.id, image.value || null)
       emit('saved', props.group)
     } else {
-      emit('saved', await groups.createGroup({ ...form }))
+      const created = await groups.createGroup({ ...form })
+      if (image.value) await groups.setImage(created.id, image.value)
+      emit('saved', created)
     }
     emit('close')
   } catch (e) {
@@ -66,6 +93,7 @@ watch(
       description: props.group?.description ?? '',
       secret: props.group?.privacy === 'secret',
     })
+    image.value = null
     errors.name = null
     errors.description = null
     serverError.value = ''
@@ -77,6 +105,21 @@ watch(
 <template>
   <BaseModal :open="open" :title="group ? 'Editar grupo' : 'Nuevo grupo'" :busy="saving" @close="emit('close')">
     <form id="group-form" class="form-grid" novalidate @submit.prevent="save">
+      <div class="group-form__image">
+        <UserAvatar :person="preview" size="lg" />
+        <template v-if="isUserGroup">
+          <input ref="fileInput" class="visually-hidden" type="file" :accept="ACCEPTED_IMAGE_TYPES" tabindex="-1" aria-hidden="true" @change="pickImage" />
+          <button type="button" class="btn btn--secondary btn--sm" :disabled="processing" @click="fileInput?.click()">
+            <ImagePlus aria-hidden="true" />
+            {{ processing ? 'Revisando…' : preview.avatarUrl ? 'Cambiar imagen' : 'Añadir imagen' }}
+          </button>
+          <button v-if="preview.avatarUrl" type="button" class="btn btn--ghost btn--sm" @click="image = ''">
+            <X aria-hidden="true" />
+            Quitar
+          </button>
+        </template>
+        <p v-else class="group-form__note">Los grupos de lugares llevan la bandera de su lugar.</p>
+      </div>
       <div class="field">
         <label class="field__label" for="group-name">Nombre</label>
         <input
@@ -125,7 +168,7 @@ watch(
     </form>
     <template #footer>
       <button type="button" class="btn btn--secondary" :disabled="saving" @click="emit('close')">Cancelar</button>
-      <button type="submit" form="group-form" class="btn btn--primary" :disabled="saving">
+      <button type="submit" form="group-form" class="btn btn--primary" :disabled="saving || processing">
         {{ saving ? 'Guardando…' : group ? 'Guardar cambios' : 'Crear grupo' }}
       </button>
     </template>
@@ -167,6 +210,13 @@ watch(
     font-size: $fs-sm;
     color: $color-text-muted;
   }
+}
+
+.group-form__image {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-2;
 }
 
 .group-form__note {

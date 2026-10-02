@@ -14,9 +14,13 @@ import ProfileTaggedPhotos from '@/components/profile/ProfileTaggedPhotos.vue'
 import ProfileAlbums from '@/components/profile/ProfileAlbums.vue'
 import ProfileTastes from '@/components/tastes/ProfileTastes.vue'
 import ProfileFriends from '@/components/profile/ProfileFriends.vue'
+import LevelBadge from '@/components/levels/LevelBadge.vue'
+import SpotifyCard from '@/components/feed/SpotifyCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationsStore } from '@/stores/notifications'
+import { useXpStore } from '@/stores/xp'
 import { fullName } from '@/utils/text'
+import { withoutSpotifyLink } from '@/utils/spotify'
 
 // Tuenti-style profile: details on the left; name, current status and the wall
 // (tablón) on the right, with the rest in tabs.
@@ -25,6 +29,7 @@ import { fullName } from '@/utils/text'
 const route = useRoute()
 const user = useUserStore()
 const notifications = useNotificationsStore()
+const xp = useXpStore()
 
 // DATA
 const editing = ref(false)
@@ -45,6 +50,8 @@ const userId = computed(() => String(route.params.id))
 const state = computed(() => user.profiles[userId.value] ?? { status: 'loading', error: null, data: null })
 const view = computed(() => state.value.data)
 const isSelf = computed(() => view.value?.friendship === 'self')
+// With a Spotify card, the link is not repeated in the text.
+const statusText = computed(() => (view.value?.status ? withoutSpotifyLink(view.value.status.text, view.value.status.link) : ''))
 const tab = computed(() => (TAB_KEYS.includes(route.query.tab) ? route.query.tab : 'wall'))
 
 // METHODS
@@ -59,7 +66,10 @@ watch(
   userId,
   async (id) => {
     await user.loadProfile(id, { silent: true })
-    if (user.profiles[id]?.data?.friendship !== 'self') user.registerVisit(id)
+    const self = user.profiles[id]?.data?.friendship === 'self'
+    if (!self) user.registerVisit(id)
+    xp.loadLevel(id)
+    if (self && notifications.summary.groups.some((g) => g.key === 'level_up')) xp.markLevelSeen()
     loadTab()
   },
   { immediate: true },
@@ -76,14 +86,18 @@ watch(tab, loadTab)
 
         <div class="profile__main">
           <header class="profile__head panel">
-            <h1 class="profile__name">{{ fullName(view.profile) }}</h1>
+            <h1 class="profile__name">
+              {{ fullName(view.profile) }}
+              <LevelBadge v-if="xp.levels[view.profile.id]" :level="xp.levels[view.profile.id]" />
+            </h1>
             <p v-if="view.status" class="profile__status">
-              <span class="user-text">{{ view.status.text }}</span>
+              <span v-if="statusText" class="user-text">{{ statusText }}</span>
               <RouterLink class="profile__status-time" :to="{ name: 'post', params: { id: view.status.postId } }">
                 <RelativeTime :value="view.status.createdAt" />
               </RouterLink>
             </p>
-            <p v-else-if="isSelf && view.canViewProfile" class="profile__status profile__status--empty">
+            <SpotifyCard v-if="view.status?.link" :link="view.status.link" />
+            <p v-else-if="isSelf && view.canViewProfile && !view.status" class="profile__status profile__status--empty">
               Todavía no has escrito tu estado. Hazlo desde
               <RouterLink :to="{ name: 'home' }">Inicio</RouterLink>.
             </p>
@@ -134,6 +148,10 @@ watch(tab, loadTab)
   }
 
   &__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space-2;
     font-size: $fs-xl;
     font-weight: 800;
   }

@@ -133,6 +133,11 @@ Novedades de tus amigos).
 - **Novedades del grupo.** Una pestaña con quién ha entrado, los eventos nuevos y la actividad
   de sus personas (de quien puedes ver), como las Novedades de tus amigos. El Gallinero va aparte.
 
+**Imágenes.** Los grupos de usuarios pueden tener imagen (la ponen propietario y administradores; bucket privado
+`photos`, la ve quien ve el grupo). Los de lugares llevan la bandera de su comunidad o provincia (`public/flags`,
+miniaturas de Wikimedia Commons con su autoría en `src/config/flags.js` y en Créditos); los pueblos, la de su
+provincia, y las provincias sin bandera oficial, la de su comunidad.
+
 **Grupos de lugares.** Hay uno por cada comunidad autónoma y provincia (las comunidades de una
 sola provincia, como Cantabria, son un único grupo), con las claves de `src/config/places.js`.
 Cualquiera entra directamente, no tienen límite de personas ni cuentan en los 10 grupos y los
@@ -154,6 +159,39 @@ estrellas, de media a cinco; los artistas solo se añaden. Los ve quien puede ve
 en las Novedades de los amigos. La clave de TMDB va en `VITE_TMDB_API_KEY` (es pública por diseño:
 solo lee el catálogo); sin ella, la demo usa un catálogo de ejemplo (`src/data/catalog.js`). Hay
 que citar a TMDB: «Este producto usa la API de TMDB, pero TMDB no lo avala ni lo certifica».
+
+### Enlaces de Spotify en el estado
+
+Si el estado lleva un enlace de `open.spotify.com` (canción, álbum, lista, artista, podcast o
+episodio), se ve como una tarjeta con portada, título y «Escuchar en Spotify», en el perfil, en
+las Novedades y en la página del estado. Al guardar, el enlace se limpia (sin `/intl-es/` ni el
+código `?si=`, que dice a Spotify quién lo compartió) y el navegador pide a Spotify el título y la
+portada (oEmbed, sin clave: `src/services/spotify.service.js`). Se guardan con el estado en
+`posts.link`; `yg_clean_spotify()` solo los acepta si coinciden con el enlace del texto y la
+portada es de Spotify. Si Spotify no responde, el estado se guarda como texto. Spotify no da el
+artista sin clave, así que la tarjeta no lo muestra.
+
+### Experiencia y niveles
+
+Algunas acciones dan experiencia (XP) y la experiencia sube el nivel
+(`xp_for_level(n) = round(50 * (n - 1)^1.5)`). Lo calcula todo la base de datos, y está pensado
+para que no se pueda farmear:
+
+- Lo publicado (fotos, comentarios en lo de otros, mensajes en tablones ajenos, Gallinero,
+  gustos, Grr recibidos, amistades) solo cuenta si sigue ahí **7 días después**: hasta entonces
+  se ve en la barra de Inicio en un tono más claro. Lo suma cada noche `yg_mature_xp()` (pg_cron, 3:40).
+- Cada cosa cuenta una vez (`xp_ledger`, clave usuario + origen + referencia) y hay límites por
+  día de publicación (amistades, por semana). Los estados no dan nada.
+- Al momento: entrar cada día (+5 a los 7 días seguidos y +20 a los 30), completar el perfil,
+  invitaciones que acaban en alta y logros (no los de nivel).
+- La experiencia ganada no se pierde nunca, aunque luego se borre algo. Lo que retira la
+  moderación antes de los 7 días no llega a dar nada.
+
+El nivel lo ve quien puede ver el perfil; la experiencia exacta y lo pendiente, solo uno mismo
+(caja de Inicio). Los títulos (Habitual, De la casa, Veterano, Institución, Leyenda) son logros
+`nivel_*`, que no se comparten ni dan experiencia. No hay clasificación. Las cantidades y
+límites están en `yg_xp_candidates()` / `yg_award_instant()` y en `src/config/levels.js`: si
+cambias uno, cambia el otro.
 
 ### Logros
 
@@ -361,6 +399,7 @@ select run_retention();
 select yg_check_all_achievements();
 select yg_purge_removals();
 select yg_cleanup_groups();  -- grupos sin nadie a los 7 días y peticiones de pueblos a los 90
+select yg_mature_xp();       -- experiencia de lo publicado hace 7 días
 
 -- Archivos de Storage que ya no usa nadie (bórralos desde el panel de Storage)
 select * from admin_storage_orphans();
@@ -374,7 +413,15 @@ la política de privacidad: si cambias uno, cambia también el otro.
 - **Condiciones de uso** (`/legal/terms`) y **política de privacidad** (`/legal/privacy`), en
   `src/pages/TermsPage.vue` y `src/pages/PrivacyPage.vue`. Se leen sin sesión y durante la
   configuración inicial, y con sesión están en el menú de la cuenta y en «Más» (móvil).
-- El responsable y el correo de contacto están en `LEGAL` (`src/config/app.js`).
+- **Aviso legal** (`/legal/notice`), **Avisar de contenido ilegal** (`/legal/report`, también para quien no tiene
+  cuenta, por correo) y **Créditos** (`/legal/credits`).
+- El responsable, el correo de contacto, el NIF y el domicilio están en `LEGAL` (`src/config/app.js`). **NIF y
+  domicilio están vacíos: hay que rellenarlos antes de abrir la web al público.**
+- **Contenido ilegal (DSA):** en «Reportar», «Es ilegal» (con tipo y explicación) llega a moderación con un solo
+  aviso; el resto de motivos necesita el mínimo de reportes. Al retirar algo, moderación elige la norma incumplida
+  (`MODERATION_RULES`, numeradas como en las condiciones) y el aviso al dueño la incluye, con cómo recurrir.
+- Documentación interna (registro de tratamientos, evaluación de impacto, brechas, encargados y lo pendiente antes
+  de publicar) en [`docs/legal`](docs/legal/README.md).
 - Al registrarse hay que aceptarlos, y la base de datos guarda la versión aceptada. Si los
   cambias, sube la versión en **dos sitios**, `LEGAL.version` y `yg_terms_version()` (con una
   migración nueva). Todo el mundo tendrá que aceptarlos de nuevo al entrar; quien no quiera

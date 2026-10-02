@@ -10,6 +10,7 @@ import { useEventsStore } from '@/stores/events'
 import { usePhotosStore } from '@/stores/photos'
 import { useUserStore } from '@/stores/user'
 import { useModerationStore } from '@/stores/moderation'
+import { useXpStore } from '@/stores/xp'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import { BADGE_POLL_INTERVAL_MS, BREAKPOINTS } from '@/config/app'
 
@@ -25,6 +26,7 @@ const events = useEventsStore()
 const photos = usePhotosStore()
 const user = useUserStore()
 const moderation = useModerationStore()
+const xp = useXpStore()
 
 // DATA
 // On mobile, messages keep their own page (bottom navigation).
@@ -39,12 +41,16 @@ const refreshBadges = () => {
 }
 
 const onVisibility = () => {
-  if (document.visibilityState === 'visible') refreshBadges()
+  if (document.visibilityState !== 'visible') return
+  refreshBadges()
+  // Coming back on another day counts as a new day in.
+  xp.recordVisit()
 }
 
 // LIFECYCLE
 onMounted(() => {
   refreshBadges()
+  xp.recordVisit().then(() => notifications.loadSummary())
   friends.loadRequests()
   events.loadEvents()
   user.loadSettings().catch(() => {})

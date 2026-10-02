@@ -85,7 +85,9 @@ const groupView = (db, me, group) => {
     description: group.description,
     createdAt: group.createdAt,
     placeLevel: group.placeLevel ?? null,
+    placeKey: group.placeKey ?? null,
     parent: parentOf(db, group),
+    imageUrl: group.imageUrl ?? null,
     canManage: isGroupAdmin(db, group.id, me),
     owner: owner ? summaryOf(db, owner) : null,
     memberCount: groupMemberCount(db, group.id),
@@ -95,7 +97,7 @@ const groupView = (db, me, group) => {
     requestCount: isGroupAdmin(db, group.id, me) ? db.groupJoinRequests.filter((r) => r.groupId === group.id).length : 0,
     mySettings: (() => {
       const m = db.groupMembers.find((x) => x.groupId === group.id && x.userId === me)
-      return m ? { profileShare: m.profileShare ?? 'basic', notify: m.notify ?? 'all' } : null
+      return m ? { profileShare: m.profileShare ?? 'basic', notify: m.notify ?? 'all', hidden: !!m.hidden } : null
     })(),
     newPosts: role && notifyOf(db, me, group) === 'all' ? newPostsFor(db, me, group.id) : 0,
     mentions: role && notifyOf(db, me, group) !== 'none' ? mentionsFor(db, me, group.id) : 0,
@@ -188,7 +190,7 @@ const cleanUpEmptyGroups = (db) => {
 
 const parentOf = (db, group) => {
   const parent = group.parentId ? db.groups.find((g) => g.id === group.parentId) : null
-  return parent ? { id: parent.id, name: parent.name } : null
+  return parent ? { id: parent.id, name: parent.name, placeKey: parent.placeKey ?? null } : null
 }
 
 const placeStatusOf = (db, me, key) => {
@@ -297,6 +299,7 @@ export const localGroupsService = {
       members: inside
         ? db.groupMembers
             .filter((m) => m.groupId === groupId && (m.userId === me || !isBlockedBetween(db, me, m.userId)))
+            .filter((m) => !m.hidden || m.userId === me || m.role !== 'member')
             .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.joinedAt.localeCompare(b.joinedAt))
             .map((m) => ({ person: summaryOf(db, m.userId), role: m.role, joinedAt: m.joinedAt }))
         : [],
@@ -349,6 +352,17 @@ export const localGroupsService = {
       privacy: group.kind === 'user' ? (input.secret ? 'secret' : 'closed') : group.privacy,
       updatedAt: nowIso(),
     })
+    await commit()
+    return groupView(db, me, group)
+  },
+
+  async setImage(groupId, dataUrl) {
+    await latency()
+    const db = await getDb()
+    const me = requireUserId(db)
+    const group = adminGroup(db, me, groupId)
+    ensure(group.kind === 'user', 'forbidden', 'Los grupos de lugares llevan la bandera de su lugar.')
+    group.imageUrl = dataUrl ?? null
     await commit()
     return groupView(db, me, group)
   },
@@ -475,13 +489,15 @@ export const localGroupsService = {
     await commit()
   },
 
-  async setMySettings(groupId, { profileShare, notify }) {
+  async setMySettings(groupId, { profileShare, notify, hidden = false }) {
     validate(['basic', 'info', 'full'].includes(profileShare) && ['all', 'mentions', 'none'].includes(notify) ? null : 'Opción no válida.')
     const db = await getDb()
     const me = requireUserId(db)
     const member = db.groupMembers.find((m) => m.groupId === groupId && m.userId === me)
     ensure(member, 'not_found', 'No formas parte de este grupo.')
-    Object.assign(member, { profileShare, notify })
+    // Only counting in the total is for place groups.
+    const isPlace = db.groups.find((g) => g.id === groupId)?.kind === 'place'
+    Object.assign(member, { profileShare, notify, hidden: !!hidden && isPlace })
     await commit()
     return groupView(db, me, db.groups.find((g) => g.id === groupId))
   },
@@ -500,7 +516,7 @@ export const localGroupsService = {
       const key = `p|${person}|${dayOf(at).day}`
       if (!cards.has(key) || at > cards.get(key).at) cards.set(key, { kind: 'person', person, at })
     }
-    for (const m of members.filter((x) => x.joinedAt >= since && (x.userId === me || !isBlockedBetween(db, me, x.userId)))) {
+    for (const m of members.filter((x) => x.joinedAt >= since && (x.userId === me || !isBlockedBetween(db, me, x.userId)) && (!x.hidden || x.userId === me))) {
       const key = `j|${dayOf(m.joinedAt).day}`
       if (!cards.has(key) || m.joinedAt > cards.get(key).at) cards.set(key, { kind: 'joined', at: m.joinedAt })
     }
@@ -516,7 +532,7 @@ export const localGroupsService = {
       if (c.kind === 'joined') {
         const { day } = dayOf(c.at)
         const people = members
-          .filter((m) => dayOf(m.joinedAt).day === day && (m.userId === me || !isBlockedBetween(db, me, m.userId)))
+          .filter((m) => dayOf(m.joinedAt).day === day && (m.userId === me || !isBlockedBetween(db, me, m.userId)) && (!m.hidden || m.userId === me))
           .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt))
           .map((m) => summaryOf(db, m.userId))
         return { kind: 'joined', day, people, lastActivityAt: c.at }

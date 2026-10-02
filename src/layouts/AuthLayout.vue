@@ -27,6 +27,8 @@ const auth = useAuthStore()
       <nav class="auth__legal" aria-label="Información legal">
         <RouterLink :to="{ name: 'terms' }">Condiciones de uso</RouterLink>
         <RouterLink :to="{ name: 'privacy' }">Privacidad</RouterLink>
+        <RouterLink :to="{ name: 'legal-notice' }">Aviso legal</RouterLink>
+        <RouterLink :to="{ name: 'illegal-report' }">Avisar de contenido ilegal</RouterLink>
       </nav>
     </footer>
   </div>

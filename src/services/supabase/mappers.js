@@ -56,7 +56,7 @@ export const toProfileView = (json) => ({
   // Only present on your own profile.
   visits: json.visits ?? null,
   // Latest text-only post, shown as the profile status.
-  status: json.status ? { postId: json.status.post_id, text: json.status.text, createdAt: json.status.created_at } : null,
+  status: json.status ? { postId: json.status.post_id, text: json.status.text, link: json.status.link ?? null, createdAt: json.status.created_at } : null,
 })
 
 export const toFriendRequest = (json) => {
@@ -138,6 +138,8 @@ export const toPost = (json, urls = {}) => ({
   id: json.id,
   authorId: json.author_id,
   text: json.text,
+  // A Spotify link in a status: { kind, id, title, image }.
+  link: json.link ?? null,
   photoId: json.photo_id,
   createdAt: json.created_at,
   updatedAt: json.updated_at,

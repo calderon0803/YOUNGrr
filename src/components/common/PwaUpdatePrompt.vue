@@ -5,7 +5,17 @@ import { PWA_RELOAD_FALLBACK_MS } from '@/config/app'
 
 // DATA
 // Registers the service worker; with registerType "prompt" we ask before updating.
-const { needRefresh, updateServiceWorker } = useRegisterSW({ immediate: true })
+// An installed app (above all on iPhone) comes back without reloading: look for
+// a new version each time it is shown again.
+const { needRefresh, updateServiceWorker } = useRegisterSW({
+  immediate: true,
+  onRegisteredSW(url, registration) {
+    if (!registration) return
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') registration.update().catch(() => {})
+    })
+  },
+})
 const updating = ref(false)
 
 // METHODS

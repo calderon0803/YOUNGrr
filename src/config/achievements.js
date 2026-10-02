@@ -1,7 +1,7 @@
 // Achievements ("Logros"): names, icons and texts. The codes and thresholds
 // must match yg_achievement_defs() in the database (20261106 migration), which
 // is what really awards them.
-import { Award, Camera, CalendarCheck, Flame, Footprints, Images, MessageSquareHeart, PartyPopper, ScanFace, Sparkles, UserPlus, Users } from 'lucide-vue-next'
+import { Award, Camera, CalendarCheck, Crown, Flame, Footprints, Images, Medal, MessageSquareHeart, PartyPopper, ScanFace, Sparkles, UserPlus, Users } from 'lucide-vue-next'
 import { markRaw } from 'vue'
 import GrrIcon from '@/components/common/GrrIcon.vue'
 
@@ -29,6 +29,12 @@ export const ACHIEVEMENTS = {
   paparazzi: { name: 'Paparazzi', icon: markRaw(ScanFace), thresholds: [10], describe: () => 'Etiquetar a 10 amigos distintos en tus fotos.' },
   grrrr: { name: 'Grrrr', icon: markRaw(GrrIcon), thresholds: [10, 50, 200, 500], describe: (n) => `Recibir ${n} Grr en tus estados y fotos.` },
   buen_rollo: { name: 'Buen rollo', icon: markRaw(MessageSquareHeart), thresholds: [10], describe: () => 'Escribir en el tablón de 10 amigos distintos.' },
+  // Level titles: only shown as achievements (they give no experience themselves).
+  nivel_5: { name: 'Habitual', icon: markRaw(Medal), thresholds: [5], describe: () => 'Llegar al nivel 5.' },
+  nivel_10: { name: 'De la casa', icon: markRaw(Medal), thresholds: [10], describe: () => 'Llegar al nivel 10.' },
+  nivel_20: { name: 'Veterano', icon: markRaw(Medal), thresholds: [20], describe: () => 'Llegar al nivel 20.' },
+  nivel_30: { name: 'Institución', icon: markRaw(Crown), thresholds: [30], describe: () => 'Llegar al nivel 30.' },
+  nivel_50: { name: 'Leyenda', icon: markRaw(Crown), thresholds: [50], describe: () => 'Llegar al nivel 50.' },
 }
 
 /** "Fotógrafo · Oro", or just the name for single-level ones. */

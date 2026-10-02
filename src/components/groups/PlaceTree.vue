@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onMounted, reactive } from 'vue'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useGroupsStore } from '@/stores/groups'
-import { groupKindLabel } from '@/utils/groups'
+import { groupAvatar, groupKindLabel } from '@/utils/groups'
 import { plural } from '@/utils/text'
 
 // The place groups as a tree: communities, their provinces and the towns that
@@ -53,6 +54,7 @@ onMounted(() => {
           <component :is="opened[group.id] ? ChevronDown : ChevronRight" aria-hidden="true" />
         </button>
         <span v-else class="place-tree__spacer" aria-hidden="true" />
+        <UserAvatar :person="groupAvatar(group)" size="xs" decorative />
         <RouterLink class="place-tree__name" :to="{ name: 'group', params: { id: group.id } }">{{ group.name }}</RouterLink>
         <span class="place-tree__meta">{{ groupKindLabel(group) }} · {{ plural(group.memberCount, 'persona', 'personas') }}</span>
         <span v-if="group.myRole" class="place-tree__in">Estás dentro</span>

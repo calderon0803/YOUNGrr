@@ -2,7 +2,7 @@
 // Gallinero photos go to the private "photos" bucket; only the group's members read them.
 // Place groups: communities and provinces exist; towns are asked for until enough people want them.
 import { currentUserId, rpc } from '@/services/supabase/client'
-import { removePhotos, signPhotoUrls, uploadPhoto } from '@/services/supabase/storage'
+import { removePhotos, signPhotoUrls, uploadImage, uploadPhoto } from '@/services/supabase/storage'
 import { blockPhotoPaths, toActivityBlock, toSummary } from '@/services/supabase/mappers'
 import { eventsWithImages } from '@/services/supabase/events.supabase'
 import { validate } from '@/services/errors'
@@ -23,7 +23,11 @@ const toGroup = (json) => ({
   createdAt: json.created_at,
   // Place groups: 'community' | 'province' | 'municipality', and the group they are in.
   placeLevel: json.place_level ?? null,
-  parent: json.parent ?? null,
+  placeKey: json.place_key ?? null,
+  parent: json.parent ? { id: json.parent.id, name: json.parent.name, placeKey: json.parent.place_key ?? null } : null,
+  // Groups made by people: their image (signed below, see withImages).
+  imagePath: json.image_path ?? null,
+  imageUrl: null,
   // Administers it (in place groups, also the moderators who are in it).
   canManage: !!json.can_manage,
   owner: summaryOrNull(json.owner),
@@ -34,7 +38,7 @@ const toGroup = (json) => ({
   requested: !!json.requested,
   requestCount: json.request_count ?? 0,
   // Your settings in it: what non-friends see of you and your notices.
-  mySettings: json.my_settings ? { profileShare: json.my_settings.profile_share, notify: json.my_settings.notify } : null,
+  mySettings: json.my_settings ? { profileShare: json.my_settings.profile_share, notify: json.my_settings.notify, hidden: !!json.my_settings.hidden } : null,
   // Following your notices for this group.
   newPosts: json.new_posts ?? 0,
   mentions: json.mentions ?? 0,
@@ -42,6 +46,13 @@ const toGroup = (json) => ({
   // Only for its owner, while nobody else has joined.
   expiresAt: json.expires_at ?? null,
 })
+
+/** Groups with their images signed (private bucket). */
+const withImages = async (groups) => {
+  const urls = await signPhotoUrls(groups.map((g) => g.imagePath)).catch(() => ({}))
+  return groups.map((g) => ({ ...g, imageUrl: urls[g.imagePath] ?? null }))
+}
+const oneWithImage = async (group) => (await withImages([group]))[0]
 
 const toPlaceStatus = (json) => ({
   group: json.group ? toGroup(json.group) : null,
@@ -88,11 +99,11 @@ const validateGroup = (input) =>
 export const supabaseGroupsService = {
   /** Your groups, the most recently active first, with their new posts. */
   async listMine() {
-    return (await rpc('list_my_groups', {}, 'No se han podido cargar tus grupos.')).map(toGroup)
+    return withImages((await rpc('list_my_groups', {}, 'No se han podido cargar tus grupos.')).map(toGroup))
   },
 
   async invitations() {
-    return (await rpc('group_invitations', {}, 'No se han podido cargar tus invitaciones.')).map(toGroup)
+    return withImages((await rpc('group_invitations', {}, 'No se han podido cargar tus invitaciones.')).map(toGroup))
   },
 
   /** Groups deleted because nobody joined them in time. */
@@ -113,13 +124,13 @@ export const supabaseGroupsService = {
 
   /** Closed groups by name (secret ones never show up). */
   async search(query) {
-    return (await rpc('search_groups', { q: query }, 'No se han podido buscar grupos.')).map(toGroup)
+    return withImages((await rpc('search_groups', { q: query }, 'No se han podido buscar grupos.')).map(toGroup))
   },
 
   async getGroup(groupId) {
     const data = await rpc('get_group', { target: groupId }, 'No se ha podido cargar el grupo.')
     return {
-      group: toGroup(data.group),
+      group: await oneWithImage(toGroup(data.group)),
       members: data.members.map((m) => ({ person: toSummary(m.person), role: m.role, joinedAt: m.joined_at })),
       requests: data.requests.map((r) => ({ person: toSummary(r.person), createdAt: r.created_at })),
     }
@@ -138,6 +149,19 @@ export const supabaseGroupsService = {
   },
 
   /** Only its owner. Your own Gallinero photos are deleted too. */
+  /** Owner and administrators of a group made by people; null removes it. */
+  async setImage(groupId, dataUrl) {
+    const path = dataUrl ? await uploadImage('photos', await currentUserId(), dataUrl, 'gi') : null
+    try {
+      const data = await rpc('set_group_image', { target: groupId, image_path: path }, 'No se ha podido guardar la imagen.')
+      await removePhotos([data.removed_path]).catch(() => {})
+      return oneWithImage(toGroup(data.group))
+    } catch (error) {
+      await removePhotos([path]).catch(() => {})
+      throw error
+    }
+  },
+
   async deleteGroup(groupId) {
     const paths = await rpc('delete_group', { target: groupId }, 'No se ha podido eliminar el grupo.')
     await removePhotos(paths).catch(() => {})
@@ -182,8 +206,10 @@ export const supabaseGroupsService = {
   },
 
   /** Your settings in a group: what non-friends see of you and your notices. */
-  async setMySettings(groupId, { profileShare, notify }) {
-    return toGroup(await rpc('set_my_group_settings', { target: groupId, profile_share: profileShare, notify }, 'No se han podido guardar tus ajustes.'))
+  async setMySettings(groupId, { profileShare, notify, hidden = false }) {
+    return toGroup(
+      await rpc('set_my_group_settings', { target: groupId, profile_share: profileShare, notify, hidden }, 'No se han podido guardar tus ajustes.'),
+    )
   },
 
   /**

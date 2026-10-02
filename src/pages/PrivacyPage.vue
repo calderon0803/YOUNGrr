@@ -44,7 +44,7 @@ import { LIMITS } from '@/utils/validation'
       <li>
         <strong>Grupos:</strong> los grupos que creas o en los que estás, tu papel en cada uno (propietario,
         administración o miembro) y cuándo entraste, las invitaciones y solicitudes para entrar, lo que publicas en su
-        Gallinero (textos, fotos, respuestas, Grr y a quién mencionas), tus ajustes de privacidad y avisos en cada grupo y,
+        Gallinero (textos, fotos, respuestas, Grr y a quién mencionas), tus ajustes de privacidad y avisos en cada grupo, la imagen de los grupos que administras y,
         para saber qué es nuevo para ti, cuándo lo visitaste por última vez. Si pides el grupo de un pueblo o ciudad, guardamos tu petición (el lugar y cuándo la hiciste).
       </li>
       <li>
@@ -62,13 +62,19 @@ import { LIMITS } from '@/utils/validation'
         tus amigos si decides compartirlos.
       </li>
       <li>
+        <strong>Experiencia y nivel:</strong> guardamos qué te ha dado experiencia (de qué tipo, qué contenido y qué
+        día), para que nada cuente dos veces, y los días que entras, para la racha. Tu nivel lo ve quien puede ver tu
+        perfil; tu experiencia exacta, solo tú. No se usa para nada más: no hay clasificaciones ni ventajas.
+      </li>
+      <li>
         <strong>Visitas a perfiles:</strong> para que la misma persona no cuente más de una vez cada 6 horas, cada visita
         deja una marca cifrada con una clave secreta. No contiene tu nombre ni el del perfil, nadie puede consultarla y se
         borra a las 6 horas. Del perfil solo se guarda el total.
       </li>
       <li>
         <strong>Reportes:</strong> si reportas algo, guardamos quién lo reporta, el motivo y una copia del contenido para
-        que se pueda revisar. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno, o con dos en un chat de más de 5 personas; en el Gallinero de un grupo, el 30% de sus personas, entre 3 y 10), y
+        que se pueda revisar. Si avisas de contenido ilegal, guardamos también tu explicación; si lo haces por correo,
+        tu nombre y tu correo, solo para tramitar el aviso y responderte. Llega a moderación cuando lo reportan 10 personas distintas (un mensaje privado, con uno, o con dos en un chat de más de 5 personas; en el Gallinero de un grupo, el 30% de sus personas, entre 3 y 10), y
         quien modera ve cuántos reportes hay y sus motivos, no quién los hizo. La persona reportada no sabe quién la ha
         reportado. Si se retira algo tuyo, deja de verse
         pero guardamos una copia durante 14 días (o hasta que se resuelva tu apelación) para poder devolvértelo, y un
@@ -137,8 +143,9 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         <strong>Grupos de lugares:</strong> los de comunidades, provincias, pueblos y ciudades los ve cualquier persona
-        con cuenta, con cuántas personas tienen. Dentro, como en los demás grupos, sus personas aparecen con su nombre, y lo
-        administra la moderación de YOUNGrr (y quien esta nombre). De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
+        con cuenta, con cuántas personas tienen, y cualquiera puede entrar. Por eso, al unirte te avisamos de que tu nombre
+        y tu foto aparecerán en su lista de personas, lo que dice dónde vives, y en <em>Mi privacidad y avisos</em> del
+        grupo puedes elegir solo contar en el total. Los administra la moderación de YOUNGrr (y quien esta nombre). De las peticiones para crear el grupo de un pueblo solo se muestra cuántas hay, nunca quién las hizo.
       </li>
       <li>
         <strong>Eventos de un grupo:</strong> los ven las personas del grupo, que pueden apuntarse; si te apuntas, verán tu
@@ -147,6 +154,9 @@ import { LIMITS } from '@/utils/validation'
       <li>
         <strong>Logros:</strong> los ve quien puede ver tu perfil. En las Novedades de tus amigos solo aparecen los que tú
         decides compartir.
+      </li>
+      <li>
+        <strong>Nivel:</strong> lo ve quien puede ver tu perfil. Tu experiencia y tu progreso, solo tú.
       </li>
       <li>
         <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro (también en
@@ -169,6 +179,11 @@ import { LIMITS } from '@/utils/validation'
         gustos, reciben el texto que escribes y tu dirección IP, nunca tu cuenta. Están en Estados Unidos. Las carátulas se
         cargan desde TMDB.
       </li>
+      <li>
+        <strong>Spotify</strong>: si pones un enlace de Spotify en tu estado, al guardarlo tu navegador le pide a Spotify
+        el título y la portada, enviándole solo el enlace y tu dirección IP. Quien ve tu estado carga la portada desde los
+        servidores de Spotify, que reciben su dirección IP. Está en Suecia (Unión Europea).
+      </li>
     </ul>
 
     <h2>Cuánto tiempo los guardamos</h2>
@@ -185,6 +200,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Invitaciones para compartir una foto rechazadas</td><td>A los 30 días</td></tr>
         <tr><td>Reportes ya revisados, con su copia del contenido</td><td>Al año de la decisión</td></tr>
         <tr><td>Reportes que no llegan al mínimo para revisarse</td><td>A los 90 días</td></tr>
+        <tr><td>Avisos de contenido ilegal por correo</td><td>Al año de resolverse</td></tr>
         <tr><td>Recuento de acciones por minuto</td><td>En una hora</td></tr>
         <tr><td>Marca de visita a un perfil</td><td>A las 6 horas</td></tr>
         <tr><td>Copia de contenido retirado</td><td>A los 14 días, o al resolverse la apelación</td></tr>
@@ -192,6 +208,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Grupo al que no se ha unido nadie</td><td>A los 7 días, con todo lo publicado en él</td></tr>
         <tr><td>Aviso de grupo eliminado por estar vacío o de grupo de tu pueblo creado</td><td>Al cerrarlo, o a los 30 días</td></tr>
         <tr><td>Petición del grupo de un pueblo o ciudad</td><td>Al crearse el grupo, al retirarla, o a los 90 días</td></tr>
+        <tr><td>Días en los que has entrado (para la racha)</td><td>A los 60 días</td></tr>
       </tbody>
     </table>
     <p>
@@ -207,7 +224,7 @@ import { LIMITS } from '@/utils/validation'
     <h2>Tus derechos</h2>
     <p>Puedes ejercerlos desde la propia app o escribiendo a <a :href="`mailto:${LEGAL.contactEmail}`">{{ LEGAL.contactEmail }}</a>:</p>
     <ul>
-      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus gustos, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
+      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus gustos, tus logros, tu experiencia y tu nivel, y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
       <li><strong>Rectificación:</strong> puedes editar tu perfil y tu contenido en cualquier momento.</li>
       <li><strong>Supresión:</strong> <em>Configuración &gt; Cuenta &gt; Eliminar mi cuenta</em>.</li>
       <li><strong>Oposición y limitación:</strong> por correo, explicando tu caso.</li>

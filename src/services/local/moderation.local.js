@@ -6,7 +6,7 @@ import { canViewPhoto, canViewPost, canViewProfile, groupMemberCount, isGroupMem
 import { ensure, validate } from '@/services/errors'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
-import { APPEAL_DAYS, REPORT_REASONS, REPORT_THRESHOLD } from '@/config/app'
+import { APPEAL_DAYS, ILLEGAL_CATEGORIES, ILLEGAL_REASON, MODERATION_RULES, REPORT_REASONS, REPORT_THRESHOLD } from '@/config/app'
 
 const COLLECTIONS = {
   status: 'posts',
@@ -186,14 +186,17 @@ const reportGroups = (db, filter) => {
   }
   return [...groups.values()]
     .map((g) => g.sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
-    .filter((g) => filter !== 'pending' || g.length >= thresholdFor(db, g[0].targetType, g[0].targetId))
-    .sort((a, b) => b.at(-1).createdAt.localeCompare(a.at(-1).createdAt))
+    .filter((g) => filter !== 'pending' || g.some((r) => r.illegal) || g.length >= thresholdFor(db, g[0].targetType, g[0].targetId))
+    // Illegal content first.
+    .sort((a, b) => Number(b.some((r) => r.illegal)) - Number(a.some((r) => r.illegal)) || b.at(-1).createdAt.localeCompare(a.at(-1).createdAt))
 }
 
 const noticeView = (r) => ({
   id: r.id,
   contentKind: r.contentKind,
   reason: r.reason,
+  rule: r.rule ?? null,
+  automated: false,
   removedAt: r.removedAt,
   appealUntil: r.appealUntil,
   canAppeal: !r.appealedAt && r.appealUntil > nowIso(),
@@ -205,15 +208,22 @@ const noticeView = (r) => ({
 const requireModerator = (db, me) => ensure(db.moderators.includes(me), 'forbidden', 'No tienes acceso a la moderación.')
 
 export const localModerationService = {
-  async reportContent(kind, targetId, reason) {
-    validate(REPORT_REASONS.includes(reason) ? null : 'Elige un motivo.')
+  async reportContent(kind, targetId, reason, { illegalCategory = null, details = null } = {}) {
+    const illegal = reason === ILLEGAL_REASON
+    validate(
+      REPORT_REASONS.includes(reason) || illegal ? null : 'Elige un motivo.',
+      illegal && !ILLEGAL_CATEGORIES.some((c) => c.key === illegalCategory) ? 'Elige qué tipo de contenido ilegal es.' : null,
+      illegal && (details ?? '').trim().length < 10 ? 'Explica por qué es ilegal.' : null,
+    )
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
     const target = findTarget(db, me, kind, targetId)
     ensure(target, 'not_found', 'Este contenido ya no existe.')
     ensure(target.ownerId !== me, 'validation', 'No puedes reportar tu propio contenido.')
-    const open = db.reports.some((r) => r.reporterId === me && r.targetType === kind && r.targetId === targetId && r.status === 'pending')
+    const open = db.reports.find((r) => r.reporterId === me && r.targetType === kind && r.targetId === targetId && r.status === 'pending')
+    // Reporting again as illegal upgrades the report you already sent.
+    if (open && illegal) Object.assign(open, { illegal: true, illegalCategory, details: details.trim(), reason })
     if (!open) {
       db.reports.push({
         id: uid('r'),
@@ -223,6 +233,9 @@ export const localModerationService = {
         targetOwnerId: target.ownerId,
         reason,
         snapshot: target.snapshot,
+        illegal,
+        illegalCategory: illegal ? illegalCategory : null,
+        details: illegal ? details.trim() : null,
         status: 'pending',
         createdAt: nowIso(),
       })
@@ -326,6 +339,9 @@ export const localModerationService = {
         targetId: newest.targetId,
         reportCount: group.length,
         reasons,
+        illegal: group.some((r) => r.illegal),
+        illegalCategories: [...new Set(group.map((r) => r.illegalCategory).filter(Boolean))],
+        details: group.map((r) => r.details).filter(Boolean).reverse(),
         createdAt: group[0].createdAt,
         lastReportedAt: newest.createdAt,
         status: newest.status,
@@ -346,7 +362,8 @@ export const localModerationService = {
     return reportGroups(db, 'pending').length + db.moderationRemovals.filter((r) => r.appealedAt && !r.decision).length
   },
 
-  async resolveReport(reportId, decision, { removeContent = false, note = '' } = {}) {
+  async resolveReport(reportId, decision, { removeContent = false, note = '', rule = null } = {}) {
+    validate(removeContent && !MODERATION_RULES.some((r) => r.key === rule) ? 'Elige qué norma incumple.' : null)
     await latency()
     const db = await getDb()
     const me = requireUserId(db)
@@ -366,6 +383,7 @@ export const localModerationService = {
           contentKind: report.targetType,
           contentId: report.targetId,
           reason: report.reason,
+          rule,
           data: copy(snapshotOf(db, report.targetType, report.targetId)),
           removedAt,
           appealUntil: new Date(Date.parse(removedAt) + APPEAL_DAYS * DAY_MS).toISOString(),

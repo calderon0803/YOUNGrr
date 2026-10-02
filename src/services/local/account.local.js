@@ -27,6 +27,9 @@ export const purgeLocalUser = (db, id) => {
   db.groupNotices = (db.groupNotices ?? []).filter((n) => n.userId !== id)
   db.placeRequests = (db.placeRequests ?? []).filter((r) => r.userId !== id)
   db.tastes = (db.tastes ?? []).filter((t) => t.userId !== id)
+  db.xpLedger = (db.xpLedger ?? []).filter((l) => l.userId !== id)
+  db.xpLogins = (db.xpLogins ?? []).filter((l) => l.userId !== id)
+  if (db.xpTotals) delete db.xpTotals[id]
   db.conversationInvites = (db.conversationInvites ?? []).filter((i) => i.userId !== id && i.invitedBy !== id)
   for (const g of db.groups ?? []) if (g.createdBy === id) g.createdBy = null
   const conversationIds = new Set(db.conversations.filter((c) => c.kind !== 'group' && c.memberIds.includes(id)).map((c) => c.id))
@@ -114,6 +117,16 @@ export const buildLocalExport = (db, id) => {
     tastes: (db.tastes ?? []).filter((t) => t.userId === id).map(({ kind, title, year, source, externalId, rating, createdAt }) => ({ kind, title, year, source, external_id: externalId, stars: rating, created_at: createdAt })),
     wall_messages_written: db.wallMessages.filter((w) => w.authorId === id).map(({ text, createdAt }) => ({ text, created_at: createdAt })),
     invitations_sent: db.invitations.filter((i) => i.inviterId === id).map(({ email, createdAt, usedBy }) => ({ email, created_at: createdAt, used: !!usedBy })),
+    experience: db.xpTotals?.[id] ? { xp: db.xpTotals[id].xp, level: db.xpTotals[id].level } : null,
+    experience_by_source: Object.values(
+      (db.xpLedger ?? []).filter((l) => l.userId === id).reduce((acc, l) => {
+        acc[l.source] ??= { source: l.source, xp: 0, times: 0 }
+        acc[l.source].xp += l.amount
+        acc[l.source].times += 1
+        return acc
+      }, {}),
+    ),
+    login_days: (db.xpLogins ?? []).filter((l) => l.userId === id).map((l) => l.day).sort(),
     achievements: (db.achievements ?? []).filter((a) => a.userId === id).map(({ code, level, earnedAt, sharedAt }) => ({ code, level, earned_at: earnedAt, shared_at: sharedAt })),
     reports_filed: db.reports.filter((r) => r.reporterId === id).map(({ targetType, reason, status, createdAt }) => ({ about: targetType, reason, status, created_at: createdAt })),
   }

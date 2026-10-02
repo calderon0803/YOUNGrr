@@ -109,6 +109,11 @@ import { LIMITS } from '@/utils/validation'
         para que puedas descargar tus datos.
       </li>
       <li>
+        La experiencia y los niveles son solo un reconocimiento: no dan ventajas ni tienen valor fuera de YOUNGrr.
+        La experiencia ganada no se pierde, pero lo que retira la moderación deja de sumar y podemos corregir la que
+        se consiga haciendo trampas.
+      </li>
+      <li>
         Cada persona es responsable de lo que publica. Salvo en lo que la ley no permita limitar, no respondemos del
         contenido que publican los usuarios ni de los daños indirectos por usar o no poder usar el servicio.
       </li>

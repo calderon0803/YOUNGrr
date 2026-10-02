@@ -54,7 +54,8 @@ const load = async () => {
   db.wallMessages ??= []
   db.achievements ??= []
   db.moderationRemovals ??= []
-  for (const table of ['groups', 'groupMembers', 'groupInvites', 'groupJoinRequests', 'groupPosts', 'groupReplies', 'groupPostGrrs', 'groupNotices', 'placeRequests', 'tastes']) db[table] ??= []
+  for (const table of ['groups', 'groupMembers', 'groupInvites', 'groupJoinRequests', 'groupPosts', 'groupReplies', 'groupPostGrrs', 'groupNotices', 'placeRequests', 'tastes', 'xpLedger', 'xpLogins']) db[table] ??= []
+  db.xpTotals ??= {}
   if (!db.albumPhotos) toDefaultAlbums(db)
   db.conversationInvites ??= []
   for (const s of Object.values(db.settings)) s.groups ??= { profileShare: 'basic', notify: 'all', invites: 'friends' }

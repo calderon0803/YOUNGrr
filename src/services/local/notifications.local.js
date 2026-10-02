@@ -5,6 +5,7 @@ import { requireUserId } from '@/services/local/session'
 import { canSeeEvent } from '@/services/local/views'
 import { isBlockedBetween, isGroupAdmin, settingsOf, summaryOf } from '@/services/local/access'
 import { buildSummary, typesSeenAt } from '@/services/notifications.groups'
+import { pendingLevelUp } from '@/services/local/xp.local'
 import { nowIso } from '@/utils/time'
 
 const unreadConversationIds = (db, me) =>
@@ -49,6 +50,7 @@ export const localNotificationsService = {
       groupRequestIds: (db.groupJoinRequests ?? []).filter((r) => isGroupAdmin(db, r.groupId, me) && !isBlockedBetween(db, me, r.userId)).map((r) => r.groupId),
       groupNoticeCount: (db.groupNotices ?? []).filter((n) => n.userId === me).length,
       groupMentionIds: groupMentionIds(db, me),
+      levelUp: pendingLevelUp(db, me),
       chatInviteIds: (db.conversationInvites ?? []).filter((i) => i.userId === me && !isBlockedBetween(db, me, i.invitedBy)).map((i) => i.conversationId),
       unread: db.notifications
         .filter((n) => n.userId === me && !n.readAt && db.profiles.some((p) => p.id === n.actorId))

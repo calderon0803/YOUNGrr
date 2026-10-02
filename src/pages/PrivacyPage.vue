@@ -62,6 +62,11 @@ import { LIMITS } from '@/utils/validation'
         tus amigos si decides compartirlos.
       </li>
       <li>
+        <strong>Experiencia y nivel:</strong> guardamos qué te ha dado experiencia (de qué tipo, qué contenido y qué
+        día), para que nada cuente dos veces, y los días que entras, para la racha. Tu nivel lo ve quien puede ver tu
+        perfil; tu experiencia exacta, solo tú. No se usa para nada más: no hay clasificaciones ni ventajas.
+      </li>
+      <li>
         <strong>Visitas a perfiles:</strong> para que la misma persona no cuente más de una vez cada 6 horas, cada visita
         deja una marca cifrada con una clave secreta. No contiene tu nombre ni el del perfil, nadie puede consultarla y se
         borra a las 6 horas. Del perfil solo se guarda el total.
@@ -151,6 +156,9 @@ import { LIMITS } from '@/utils/validation'
         decides compartir.
       </li>
       <li>
+        <strong>Nivel:</strong> lo ve quien puede ver tu perfil. Tu experiencia y tu progreso, solo tú.
+      </li>
+      <li>
         <strong>Bloqueos:</strong> si bloqueas a alguien, o te bloquea, dejáis de ver el contenido del otro (también en
         los grupos y chats de grupo que compartáis), sus eventos públicos y sus sugerencias. No se avisa a la otra persona.
       </li>
@@ -195,6 +203,7 @@ import { LIMITS } from '@/utils/validation'
         <tr><td>Grupo al que no se ha unido nadie</td><td>A los 7 días, con todo lo publicado en él</td></tr>
         <tr><td>Aviso de grupo eliminado por estar vacío o de grupo de tu pueblo creado</td><td>Al cerrarlo, o a los 30 días</td></tr>
         <tr><td>Petición del grupo de un pueblo o ciudad</td><td>Al crearse el grupo, al retirarla, o a los 90 días</td></tr>
+        <tr><td>Días en los que has entrado (para la racha)</td><td>A los 60 días</td></tr>
       </tbody>
     </table>
     <p>
@@ -210,7 +219,7 @@ import { LIMITS } from '@/utils/validation'
     <h2>Tus derechos</h2>
     <p>Puedes ejercerlos desde la propia app o escribiendo a <a :href="`mailto:${LEGAL.contactEmail}`">{{ LEGAL.contactEmail }}</a>:</p>
     <ul>
-      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus gustos, tus logros y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
+      <li><strong>Acceso y portabilidad:</strong> <em>Configuración &gt; Cuenta &gt; Descargar mis datos</em> te da un archivo con tu cuenta, tu perfil, lo que has publicado, tus amistades, tus grupos y lo que has publicado en ellos, tus peticiones de grupos de lugares, tus gustos, tus logros, tu experiencia y tu nivel, y tus conversaciones completas, más enlaces temporales a tus fotos.</li>
       <li><strong>Rectificación:</strong> puedes editar tu perfil y tu contenido en cualquier momento.</li>
       <li><strong>Supresión:</strong> <em>Configuración &gt; Cuenta &gt; Eliminar mi cuenta</em>.</li>
       <li><strong>Oposición y limitación:</strong> por correo, explicando tu caso.</li>

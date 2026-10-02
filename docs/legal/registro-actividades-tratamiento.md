@@ -32,7 +32,7 @@ Medidas de seguridad comunes a todos los tratamientos: ver el apartado final.
 
 - **Finalidad:** prestar la red social: estados, fotos y álbumes, etiquetas, comentarios, Grr, tablón,
   mensajes privados y chats de grupo, amistades, bloqueos, eventos, grupos y su Gallinero, menciones,
-  peticiones de grupos de pueblos, gustos (artistas, películas y series con estrellas) y logros.
+  peticiones de grupos de pueblos, gustos (artistas, películas y series con estrellas), logros, experiencia y nivel.
 - **Base jurídica:** ejecución del contrato (art. 6.1.b).
 - **Interesados:** personas usuarias, y terceros que aparecen en fotos o textos que suben otras personas.
 - **Datos:** el contenido publicado y sus metadatos (fecha, autor, destinatarios), relaciones y

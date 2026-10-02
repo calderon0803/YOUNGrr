@@ -51,6 +51,13 @@ const metric = (db, person, code) => {
     }
     case 'buen_rollo':
       return new Set(db.wallMessages.filter((w) => w.authorId === person && w.profileId !== person).map((w) => w.profileId)).size
+    // Level titles: the level of the person (see xp.local.js).
+    case 'nivel_5':
+    case 'nivel_10':
+    case 'nivel_20':
+    case 'nivel_30':
+    case 'nivel_50':
+      return db.xpTotals?.[person]?.level ?? 1
     default:
       return 0
   }

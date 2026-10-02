@@ -1,7 +1,8 @@
 <script setup>
 import { computed, markRaw, useId } from 'vue'
-import { AtSign, ChartNoAxesColumn, CalendarDays, CircleAlert, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus, UsersRound } from 'lucide-vue-next'
+import { AtSign, ChartNoAxesColumn, CalendarDays, ChevronsUp, CircleAlert, Images, MessageCircle, MessageSquare, MessageSquareText, Tag, UserCheck, UserPlus, UsersRound } from 'lucide-vue-next'
 import GrrIcon from '@/components/common/GrrIcon.vue'
+import LevelProgress from '@/components/levels/LevelProgress.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
@@ -28,6 +29,7 @@ const ICONS = {
   group_invites: markRaw(UsersRound),
   group_requests: markRaw(UsersRound),
   group_notices: markRaw(CircleAlert),
+  level_up: markRaw(ChevronsUp),
   group_mentions: markRaw(AtSign),
   chat_invites: markRaw(MessageCircle),
   comments_posts: markRaw(MessageSquare),
@@ -55,6 +57,7 @@ const visitsLabel = computed(() => new Intl.NumberFormat('es-ES', { useGrouping:
       <ChartNoAxesColumn class="summary__icon summary__icon--visits" aria-hidden="true" />
       <span><strong>{{ visitsLabel }}</strong> {{ visits === 1 ? 'visita' : 'visitas' }} a tu perfil</span>
     </p>
+    <LevelProgress />
     <ul v-if="notifications.summary.groups.length" class="summary__list" role="list">
       <li v-for="group in notifications.summary.groups" :key="group.key">
         <RouterLink class="summary__item" :to="group.link">
@@ -65,7 +68,8 @@ const visitsLabel = computed(() => new Intl.NumberFormat('es-ES', { useGrouping:
             v-bind="GRR_KEYS.includes(group.key) ? { active: true } : {}"
             aria-hidden="true"
           />
-          <span>{{ group.count }} {{ group.label }}</span>
+          <span v-if="group.key === 'level_up'">{{ group.label }}</span>
+          <span v-else>{{ group.count }} {{ group.label }}</span>
         </RouterLink>
       </li>
     </ul>

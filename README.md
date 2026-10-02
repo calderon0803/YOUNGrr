@@ -160,6 +160,28 @@ en las Novedades de los amigos. La clave de TMDB va en `VITE_TMDB_API_KEY` (es p
 solo lee el catálogo); sin ella, la demo usa un catálogo de ejemplo (`src/data/catalog.js`). Hay
 que citar a TMDB: «Este producto usa la API de TMDB, pero TMDB no lo avala ni lo certifica».
 
+### Experiencia y niveles
+
+Algunas acciones dan experiencia (XP) y la experiencia sube el nivel
+(`xp_for_level(n) = round(50 * (n - 1)^1.5)`). Lo calcula todo la base de datos, y está pensado
+para que no se pueda farmear:
+
+- Lo publicado (fotos, comentarios en lo de otros, mensajes en tablones ajenos, Gallinero,
+  gustos, Grr recibidos, amistades) solo cuenta si sigue ahí **7 días después**: hasta entonces
+  sale como «en camino». Lo suma cada noche `yg_mature_xp()` (pg_cron, 3:40).
+- Cada cosa cuenta una vez (`xp_ledger`, clave usuario + origen + referencia) y hay límites por
+  día de publicación (amistades, por semana). Los estados no dan nada.
+- Al momento: entrar cada día (+5 a los 7 días seguidos y +20 a los 30), completar el perfil,
+  invitaciones que acaban en alta y logros (no los de nivel).
+- La experiencia ganada no se pierde aunque luego se borre algo; solo la quita la moderación
+  cuando retira un contenido (el de ese contenido y sus Grr, trigger en `moderation_removals`).
+
+El nivel lo ve quien puede ver el perfil; la experiencia exacta y lo pendiente, solo uno mismo
+(caja de Inicio). Los títulos (Habitual, De la casa, Veterano, Institución, Leyenda) son logros
+`nivel_*`, que no se comparten ni dan experiencia. No hay clasificación. Las cantidades y
+límites están en `yg_xp_candidates()` / `yg_award_instant()` y en `src/config/levels.js`: si
+cambias uno, cambia el otro.
+
 ### Logros
 
 La base de datos calcula los logros a partir de lo que ya existe (fotos, amigos, planes, Grr,
@@ -366,6 +388,7 @@ select run_retention();
 select yg_check_all_achievements();
 select yg_purge_removals();
 select yg_cleanup_groups();  -- grupos sin nadie a los 7 días y peticiones de pueblos a los 90
+select yg_mature_xp();       -- experiencia de lo publicado hace 7 días
 
 -- Archivos de Storage que ya no usa nadie (bórralos desde el panel de Storage)
 select * from admin_storage_orphans();

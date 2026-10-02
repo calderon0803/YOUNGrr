@@ -28,9 +28,10 @@ export const supabasePostsService = {
   },
 
   /** The new status replaces the previous one (with its comments and Grr). */
-  async setStatus(text) {
+  /** `link`: the Spotify data of a link in the text (the database checks it matches). */
+  async setStatus(text, link = null) {
     validate(rules.required(text, 'Tu estado'), rules.max(text, LIMITS.status, 'El estado'))
-    return (await withPhotos([await rpc('set_status', { body: text }, 'No se ha podido guardar tu estado.')]))[0]
+    return (await withPhotos([await rpc('set_status', { body: text, link }, 'No se ha podido guardar tu estado.')]))[0]
   },
 
   async deletePost(postId) {

@@ -8,6 +8,7 @@ import { LIMITS, rules } from '@/utils/validation'
 import { uid } from '@/utils/ids'
 import { nowIso, toDateInput } from '@/utils/time'
 import { ACTIVITY_WINDOW_DAYS, FEED_PAGE_SIZE } from '@/config/app'
+import { findSpotifyLink } from '@/utils/spotify'
 
 const DAY_MS = 86_400_000
 
@@ -104,13 +105,17 @@ export const localPostsService = {
   },
 
   /** The new status replaces the previous one (with its comments and Grr). */
-  async setStatus(text) {
+  async setStatus(text, link = null) {
     validate(rules.required(text, 'Tu estado'), rules.max(text, LIMITS.status, 'El estado'))
     await latency(150, 300)
     const db = await getDb()
     const me = requireUserId(db)
     for (const old of db.posts.filter((p) => p.authorId === me && (p.kind ?? 'status') === 'status')) removePost(db, old.id)
-    const post = { id: uid('p'), authorId: me, kind: 'status', text: text.trim(), photoId: null, createdAt: nowIso(), updatedAt: null }
+    const body = text.trim()
+    // As the database: only kept if it is the link written in the text.
+    const found = findSpotifyLink(body)
+    const keep = link && found && found.kind === link.kind && found.id === link.id && link.title
+    const post = { id: uid('p'), authorId: me, kind: 'status', text: body, link: keep ? { kind: link.kind, id: link.id, title: link.title, image: link.image ?? null } : null, photoId: null, createdAt: nowIso(), updatedAt: null }
     db.posts.push(post)
     await commit()
     return postView(db, me, post)

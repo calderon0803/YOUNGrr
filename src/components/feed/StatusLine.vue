@@ -10,10 +10,13 @@ import { useToast } from '@/composables/useToast'
 import { useEmojiInsert } from '@/composables/useEmojiInsert'
 import { errorMessage } from '@/services/errors'
 import { LIMITS } from '@/utils/validation'
+import { cleanSpotifyText, findSpotifyLink } from '@/utils/spotify'
+import { fetchSpotifyLink } from '@/services/spotify.service'
 
 // Your status on the home page, in one line, as in Tuenti: the field shows
 // your current status; write a new one and press Enter to replace it. Leaving
-// it empty removes it.
+// it empty removes it. A Spotify link is shown as a card (its title and cover
+// are asked to Spotify when saving).
 
 // STORES
 const feed = useFeedStore()
@@ -43,8 +46,11 @@ const save = async () => {
   saving.value = true
   try {
     if (text.value.trim()) {
-      const post = await feed.setStatus(text.value)
-      setProfileStatus({ postId: post.id, text: post.text, createdAt: post.createdAt })
+      const body = cleanSpotifyText(text.value.trim())
+      const found = findSpotifyLink(body)
+      const link = found ? await fetchSpotifyLink(found) : null
+      const post = await feed.setStatus(body, link)
+      setProfileStatus({ postId: post.id, text: post.text, link: post.link ?? null, createdAt: post.createdAt })
     } else if (current.value && (await feed.deletePost(current.value.postId))) {
       setProfileStatus(null)
     }

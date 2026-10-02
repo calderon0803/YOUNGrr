@@ -7,6 +7,7 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import GrrButton from '@/components/common/GrrButton.vue'
 import PhotoStrip from '@/components/photos/PhotoStrip.vue'
 import PostComments from '@/components/feed/PostComments.vue'
+import SpotifyCard from '@/components/feed/SpotifyCard.vue'
 import ReportDialog from '@/components/feed/ReportDialog.vue'
 import GrrersDialog from '@/components/feed/GrrersDialog.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -14,6 +15,7 @@ import { useFeedStore } from '@/stores/feed'
 import { usePhotosStore } from '@/stores/photos'
 import { useConfirm } from '@/composables/useConfirm'
 import { fullName } from '@/utils/text'
+import { withoutSpotifyLink } from '@/utils/spotify'
 
 // A status or a "ha subido N fotos al álbum" item, Tuenti style: who, what, a
 // small photo strip and discreet text actions. Inside an activity block
@@ -47,6 +49,8 @@ const COMPACT_PHOTOS = 4
 const post = computed(() => feed.posts[props.postId])
 const isOwn = computed(() => post.value?.authorId === auth.meId)
 const isAlbumUpload = computed(() => post.value?.kind === 'album_upload')
+// With a Spotify card, the link is not repeated in the text.
+const shownText = computed(() => withoutSpotifyLink(post.value?.text ?? '', post.value?.link))
 // An album upload whose photos were all deleted has nothing left to show.
 // Only statuses take Grr and comments; photo uploads just tell there are new photos.
 const interactive = computed(() => !props.compact && !isAlbumUpload.value)
@@ -109,8 +113,10 @@ const comment = async () => {
             {{ post.album.title }}
           </RouterLink>
         </template>
-        <span v-else class="item__text user-text">{{ post.text }}</span>
+        <span v-else-if="shownText" class="item__text user-text">{{ shownText }}</span>
       </p>
+
+      <SpotifyCard v-if="post.link" :link="post.link" :small="compact" />
 
       <PhotoStrip
         v-if="isAlbumUpload"

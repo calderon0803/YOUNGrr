@@ -30,7 +30,7 @@ const currentStatus = (db, userId) => {
   const latest = db.posts
     .filter((p) => p.authorId === userId && !p.photoId && p.text.trim())
     .reduce((last, p) => (!last || p.createdAt > last.createdAt ? p : last), null)
-  return latest ? { postId: latest.id, text: latest.text, createdAt: latest.createdAt } : null
+  return latest ? { postId: latest.id, text: latest.text, link: latest.link ?? null, createdAt: latest.createdAt } : null
 }
 
 export const localUsersService = {

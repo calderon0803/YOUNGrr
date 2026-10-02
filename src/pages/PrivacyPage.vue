@@ -179,6 +179,11 @@ import { LIMITS } from '@/utils/validation'
         gustos, reciben el texto que escribes y tu dirección IP, nunca tu cuenta. Están en Estados Unidos. Las carátulas se
         cargan desde TMDB.
       </li>
+      <li>
+        <strong>Spotify</strong>: si pones un enlace de Spotify en tu estado, al guardarlo tu navegador le pide a Spotify
+        el título y la portada, enviándole solo el enlace y tu dirección IP. Quien ve tu estado carga la portada desde los
+        servidores de Spotify, que reciben su dirección IP. Está en Suecia (Unión Europea).
+      </li>
     </ul>
 
     <h2>Cuánto tiempo los guardamos</h2>

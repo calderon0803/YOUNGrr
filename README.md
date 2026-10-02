@@ -160,6 +160,17 @@ en las Novedades de los amigos. La clave de TMDB va en `VITE_TMDB_API_KEY` (es p
 solo lee el catálogo); sin ella, la demo usa un catálogo de ejemplo (`src/data/catalog.js`). Hay
 que citar a TMDB: «Este producto usa la API de TMDB, pero TMDB no lo avala ni lo certifica».
 
+### Enlaces de Spotify en el estado
+
+Si el estado lleva un enlace de `open.spotify.com` (canción, álbum, lista, artista, podcast o
+episodio), se ve como una tarjeta con portada, título y «Escuchar en Spotify», en el perfil, en
+las Novedades y en la página del estado. Al guardar, el enlace se limpia (sin `/intl-es/` ni el
+código `?si=`, que dice a Spotify quién lo compartió) y el navegador pide a Spotify el título y la
+portada (oEmbed, sin clave: `src/services/spotify.service.js`). Se guardan con el estado en
+`posts.link`; `yg_clean_spotify()` solo los acepta si coinciden con el enlace del texto y la
+portada es de Spotify. Si Spotify no responde, el estado se guarda como texto. Spotify no da el
+artista sin clave, así que la tarjeta no lo muestra.
+
 ### Experiencia y niveles
 
 Algunas acciones dan experiencia (XP) y la experiencia sube el nivel
@@ -168,13 +179,13 @@ para que no se pueda farmear:
 
 - Lo publicado (fotos, comentarios en lo de otros, mensajes en tablones ajenos, Gallinero,
   gustos, Grr recibidos, amistades) solo cuenta si sigue ahí **7 días después**: hasta entonces
-  sale como «en camino». Lo suma cada noche `yg_mature_xp()` (pg_cron, 3:40).
+  se ve en la barra de Inicio en un tono más claro. Lo suma cada noche `yg_mature_xp()` (pg_cron, 3:40).
 - Cada cosa cuenta una vez (`xp_ledger`, clave usuario + origen + referencia) y hay límites por
   día de publicación (amistades, por semana). Los estados no dan nada.
 - Al momento: entrar cada día (+5 a los 7 días seguidos y +20 a los 30), completar el perfil,
   invitaciones que acaban en alta y logros (no los de nivel).
-- La experiencia ganada no se pierde aunque luego se borre algo; solo la quita la moderación
-  cuando retira un contenido (el de ese contenido y sus Grr, trigger en `moderation_removals`).
+- La experiencia ganada no se pierde nunca, aunque luego se borre algo. Lo que retira la
+  moderación antes de los 7 días no llega a dar nada.
 
 El nivel lo ve quien puede ver el perfil; la experiencia exacta y lo pendiente, solo uno mismo
 (caja de Inicio). Los títulos (Habitual, De la casa, Veterano, Institución, Leyenda) son logros

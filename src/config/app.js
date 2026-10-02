@@ -116,6 +116,13 @@ export const CATALOGS = {
   minQueryLength: 2,
 }
 
+/** Spotify links in the status: what is recognised and how it is called. */
+export const SPOTIFY = {
+  oembedUrl: 'https://open.spotify.com/oembed',
+  timeoutMs: 5000,
+  kinds: { track: 'Canción', album: 'Álbum', playlist: 'Lista', artist: 'Artista', show: 'Podcast', episode: 'Episodio' },
+}
+
 /** Tastes per kind, and what each section is called. */
 export const TASTES = {
   max: 500,

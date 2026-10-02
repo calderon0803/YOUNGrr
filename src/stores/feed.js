@@ -109,8 +109,8 @@ export const useFeedStore = defineStore('feed', () => {
   }
 
   /** The new status replaces the previous one. */
-  const setStatus = async (text) => {
-    const post = await postsService.setStatus(text)
+  const setStatus = async (text, link = null) => {
+    const post = await postsService.setStatus(text, link)
     posts[post.id] = post
     toast.success('Estado actualizado.')
     return post

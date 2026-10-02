@@ -38,6 +38,8 @@ Medidas de seguridad comunes a todos los tratamientos: ver el apartado final.
 - **Datos:** el contenido publicado y sus metadatos (fecha, autor, destinatarios), relaciones y
   preferencias de privacidad de cada grupo.
 - **Destinatarios:** Supabase (encargado). Las personas a las que cada usuario lo muestra.
+  Si un estado lleva un enlace de Spotify, al publicarlo el navegador envía el enlace y la IP a Spotify, y las
+  portadas se cargan desde Spotify.
   Al buscar en los catálogos, el navegador envía el texto buscado y la IP a TMDB y MusicBrainz, y al
   elegir pueblo a OpenStreetMap (Nominatim); no son encargados: el navegador les hace la petición
   directamente y no reciben la cuenta.

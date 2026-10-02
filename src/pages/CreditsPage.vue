@@ -32,6 +32,11 @@ const PLACE_NAMES = Object.fromEntries(PLACES.flatMap((c) => [c, ...(c.provinces
         <a href="https://www.openstreetmap.org/copyright" rel="noopener" target="_blank">colaboradores de OpenStreetMap</a>,
         bajo licencia ODbL.
       </li>
+      <li>
+        <strong>Enlaces de Spotify:</strong> títulos y portadas de
+        <a href="https://www.spotify.com" rel="noopener" target="_blank">Spotify</a>; cada tarjeta enlaza a su página en
+        Spotify. Las portadas son de sus titulares.
+      </li>
     </ul>
 
     <h2>Banderas</h2>

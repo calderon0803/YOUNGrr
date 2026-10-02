@@ -110,8 +110,8 @@ import { LIMITS } from '@/utils/validation'
       </li>
       <li>
         La experiencia y los niveles son solo un reconocimiento: no dan ventajas ni tienen valor fuera de YOUNGrr.
-        La experiencia ganada no se pierde, pero lo que retira la moderación deja de sumar y podemos corregir la que
-        se consiga haciendo trampas.
+        Lo publicado da experiencia si sigue publicado 7 días después, y lo que retira la moderación antes no da nada.
+        La experiencia ganada no se pierde, salvo la que se consiga haciendo trampas, que podemos corregir.
       </li>
       <li>
         Cada persona es responsable de lo que publica. Salvo en lo que la ley no permita limitar, no respondemos del

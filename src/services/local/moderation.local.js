@@ -7,7 +7,6 @@ import { ensure, validate } from '@/services/errors'
 import { uid } from '@/utils/ids'
 import { nowIso } from '@/utils/time'
 import { APPEAL_DAYS, ILLEGAL_CATEGORIES, ILLEGAL_REASON, MODERATION_RULES, REPORT_REASONS, REPORT_THRESHOLD } from '@/config/app'
-import { loseRemovedXp } from '@/services/local/xp.local'
 
 const COLLECTIONS = {
   status: 'posts',
@@ -396,7 +395,6 @@ export const localModerationService = {
         })
       }
       takeOut(db, report.targetType, report.targetId)
-      loseRemovedXp(db, report.targetOwnerId, report.targetType, report.targetId)
     }
     // Every open report on the same content gets the same decision.
     for (const r of db.reports) {

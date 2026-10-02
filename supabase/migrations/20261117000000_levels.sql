@@ -494,27 +494,6 @@ exception when others then
 end;
 $$;
 
--- ---- Moderation: what is taken out for breaking the rules loses its points -----------------------------
--- Deleting something yourself keeps the experience; a removal by the moderators
--- takes away what it gave (and its Grr), with no other penalty.
-create or replace function yg_xp_on_removal() returns trigger
-language plpgsql security definer set search_path = public as $$
-declare
-  src text := case new.content_kind when 'photo' then 'photo' when 'comment' then 'comment' when 'wall_message' then 'wall'
-    when 'group_post' then 'gallinero' when 'group_reply' then 'gallinero' end;
-begin
-  if src is null then return new; end if;
-  delete from xp_ledger l where l.user_id = new.owner_id
-    and ((l.source = src and l.ref = new.content_id::text) or (l.source = 'grr' and l.ref like '%:' || new.content_id::text));
-  if found then perform yg_xp_refresh(new.owner_id); end if;
-  return new;
-end;
-$$;
-revoke all on function yg_xp_on_removal() from public, authenticated, anon;
-
-create trigger moderation_removals_xp after insert on moderation_removals
-  for each row execute function yg_xp_on_removal();
-
 -- Everyone gets the experience of what they already did (with the same rules);
 -- the level titles reached this way are not announced.
 select yg_mature_xp();

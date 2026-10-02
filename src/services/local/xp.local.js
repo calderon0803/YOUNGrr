@@ -173,20 +173,6 @@ export const localXpService = {
 }
 
 /** For the counters in Inicio: a level not announced yet (or null). */
-const REMOVED_SOURCE = { photo: 'photo', comment: 'comment', wall_message: 'wall', group_post: 'gallinero', group_reply: 'gallinero' }
-
-/** A removal by the moderators takes away what that content gave (and its Grr). */
-export const loseRemovedXp = (db, owner, kind, id) => {
-  const source = REMOVED_SOURCE[kind]
-  if (!source || !owner) return
-  tables(db)
-  const before = db.xpLedger.length
-  db.xpLedger = db.xpLedger.filter(
-    (l) => !(l.userId === owner && ((l.source === source && l.ref === id) || (l.source === 'grr' && l.ref.endsWith(`:${id}`)))),
-  )
-  if (db.xpLedger.length !== before) refresh(db, owner)
-}
-
 export const pendingLevelUp = (db, me) => {
   const t = db.xpTotals?.[me]
   return t && t.level > t.levelSeen ? t.level : null

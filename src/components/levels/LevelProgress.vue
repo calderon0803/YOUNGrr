@@ -16,12 +16,13 @@ const explaining = ref(false)
 
 // COMPUTED
 const mine = computed(() => xp.mine)
-const percent = computed(() => {
-  const m = mine.value
-  if (!m) return 0
-  const span = m.nextLevelXp - m.levelXp
-  return span > 0 ? Math.min(100, Math.round(((m.xp - m.levelXp) / span) * 100)) : 100
-})
+const toPercent = (amount) => {
+  const span = mine.value.nextLevelXp - mine.value.levelXp
+  return span > 0 ? Math.min(100, Math.max(0, Math.round((amount / span) * 100))) : 100
+}
+const percent = computed(() => (mine.value ? toPercent(mine.value.xp - mine.value.levelXp) : 0))
+// What is on its way, in a lighter tone after the progress (up to the end of the bar).
+const pendingPercent = computed(() => (mine.value ? Math.min(100 - percent.value, toPercent(mine.value.pending)) : 0))
 </script>
 
 <template>
@@ -37,21 +38,19 @@ const percent = computed(() => {
       :aria-valuenow="percent"
       aria-valuemin="0"
       aria-valuemax="100"
+      :aria-valuetext="mine.pending ? `${percent} %, y ${mine.pending} XP en camino` : `${percent} %`"
       :aria-label="`Progreso hasta el nivel ${mine.level + 1}`"
     >
       <span class="level__fill" :style="{ width: `${percent}%` }" />
+      <span v-if="pendingPercent" class="level__pending" :style="{ width: `${pendingPercent}%` }" />
     </div>
-    <p v-if="mine.pending || mine.streak > 1" class="level__extra">
-      <template v-if="mine.pending">+{{ mine.pending }} en camino</template>
-      <template v-if="mine.pending && mine.streak > 1"> · </template>
-      <template v-if="mine.streak > 1">{{ mine.streak }} días seguidos</template>
-    </p>
+    <p v-if="mine.streak > 1" class="level__extra">{{ mine.streak }} días seguidos</p>
 
     <BaseModal :open="explaining" title="Cómo se gana experiencia" @close="explaining = false">
       <div class="level-help">
         <p>
-          Lo que publicas cuenta si sigue publicado {{ XP_MATURE_DAYS }} días después: mientras tanto sale como «en camino».
-          La experiencia ganada no se pierde aunque luego borres algo, salvo lo que retire la moderación.
+          Lo que publicas cuenta si sigue publicado {{ XP_MATURE_DAYS }} días después: mientras tanto se ve en la barra en un tono más claro.
+          La experiencia ganada no se pierde nunca, aunque luego borres algo.
         </p>
         <table class="level-help__table">
           <thead>
@@ -102,17 +101,22 @@ const percent = computed(() => {
   }
 
   &__bar {
-    height: 0.4rem;
+    display: flex;
+    height: 0.625rem;
     overflow: hidden;
+    border: 1px solid $color-border-strong;
     border-radius: $radius-pill;
-    background: $color-surface-alt;
+    background: $color-border;
   }
 
-  &__fill {
-    display: block;
+  &__fill,
+  &__pending {
     height: 100%;
-    border-radius: $radius-pill;
     background: $color-brand;
+  }
+
+  &__pending {
+    opacity: 0.5;
   }
 
   &__extra {
